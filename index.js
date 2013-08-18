@@ -91,14 +91,11 @@ body.attachAll();');
     $C('h3', {id:'dsl', $text:'Extendable DSL'});
     $codebox(
 '\
-controls.defCommand_Wrap(\n\
-    "p", // define $p() $$p() commands\n\
-    "X", // $p wrap $X() $$X() with\n\
-    "<p>", "</p>");\n\
+controls.defCommand_Func("$codebox", function(content, _class) { ... });\n\
 \n\
 with(body.fill.$builder())\n\
 {\n\
-    $p("Lorem ipsum dolor sit amet");"));\n\
+    $codebox("Lorem ipsum dolor sit amet");\n\
 }\n\
 ');
     
