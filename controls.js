@@ -1,14 +1,15 @@
+////////////////////////////////////////////////////////////////////////////////
 //     controls.js 0.1
 //     purpose: UI framework, code generation tool
 //     status: proposal, example, valid prototype, under development
-//     http://
+//     http://aplib.github.io/controls.js/
 //     (c) 2013 Vadim Baklanov
 //     License: MIT
 //
 // dependency doT.js
 
 
-"use strict"; (function() {
+(function() { "use strict";
     
 function Controls(doT)
 {
@@ -16,7 +17,7 @@ function Controls(doT)
     controls.VERSION = '0.1';
     controls.id_generator = 53504; // don't use it out of the controls! per session id generator
     
-    var IDENTIFIERS = ',id,parent,element,add,remove,style,class,__type,parameters,attributes,controls,first,last,data,';
+    var IDENTIFIERS = ',add,attach,attributes,class,data,element,first,id,__type,controls,last,name,forEach,parameters,parent,remove,style,';
     var HTML_TAGS = 'A,Abbr,Address,Article,Aside,B,Base,Bdi,Bdo,Blockquote,Button,Canvas,Cite,Code,Col,Colgroup,Command,Datalist,Dd,Del,Details,\
 Dfn,Div,Dl,Dt,Em,Embed,Fieldset,Figcaption,Figure,Footer,Form,Gnome,Header,I,Img,Input,Ins,Kbd,Keygen,Label,Legend,Li,Link,Map,Mark,Menu,Meter,Nav,\
 Noscript,Object,Ol,Optgroup,Option,Output,P,Pre,Progress,Ruby,Rt,Rp,S,Samp,Script,Section,Select,Small,Span,Strong,Style,Sub,Summary,Sup,\
@@ -28,12 +29,13 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr';
     // Initialize control object
     // 
     // type (string) - path.type and initial set of parameters
-    //  format: path.type[/inheritable parameters or modificators separated commas][#unique parameters]
+    //  format: path.type[/inheritable parameters][#not inheritable parameters]
     //  parameters:
-    //  1. [+]parameter name - inside this definition add the parameter set to true
-    //  2. -parameter name - remove parameter from inheritance
-    //  3. parameter name=value - add parameter set to value
-    //  example: bootstrap.BtnGroup/-size,style=info#orient=vertical
+    //  1. parameter name - add parameter and set value to boolean true
+    //  2. parameter name=value - add parameter and set value
+    //  3. -parameter name - remove parameter from inheritance (TODO)
+    //  
+    //  example: bootstrap.Button#size=2,style=info
     //  
     controls.controlInitialize = function(object, __type, parameters, _attributes, outer_template, inner_template)
     {
@@ -53,7 +55,7 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr';
             Object.defineProperty(object, "outer_template",
             {
                 configurable: true, enumerable: true, writable: true,
-                value: (typeof(outer_template) === 'string') ? doT.template(outer_template) : outer_template
+                value: (typeof outer_template === 'string') ? doT.template(outer_template) : outer_template
             });
         }
 
@@ -219,7 +221,7 @@ controls.typeRegister(__type, ' + name + ');';
     {
         addListener: function(call_this/*optional*/, listener)
         {
-            if (typeof(call_this) === 'function')
+            if (typeof call_this === 'function')
             {
                 listener = call_this;
                 call_this = this;
@@ -278,7 +280,7 @@ controls.typeRegister(__type, ' + name + ');';
     {
         listen: function(call_this/*optional*/, listener)
         {
-            if (typeof(call_this) === 'function')
+            if (typeof call_this === 'function')
             {
                 listener = call_this;
                 call_this = this;
@@ -302,7 +304,7 @@ controls.typeRegister(__type, ' + name + ');';
         
         subscribe: function(call_this/*optional*/, listener)
         {
-            if (typeof(call_this) === 'function')
+            if (typeof call_this === 'function')
             {
                 listener = call_this;
                 call_this = this;
@@ -348,6 +350,7 @@ controls.typeRegister(__type, ' + name + ');';
             this.last_changed = this.length - 1;
             this.raise();
         }
+        // TODO
     };
     
     function LocalStorageAdapter(parameters, attributes)
@@ -590,7 +593,7 @@ controls.typeRegister(__type, ' + name + ');';
                 if (!this.hasOwnProperty("outer_template"))
                     Object.defineProperty(this, "outer_template", { configurable: true, enumerable: true, writable: true });
                 
-                var type = typeof(outer_template);
+                var type = typeof outer_template;
                 if (type === 'string')
                 {
                     this.outer_template = doT.template(outer_template);        // template function
@@ -608,7 +611,7 @@ controls.typeRegister(__type, ' + name + ');';
                 if (!this.hasOwnProperty("inner_template"))
                     Object.defineProperty(this, "inner_template", { configurable: true, enumerable: true, writable: true });
             
-                type = typeof(inner_template);
+                type = typeof inner_template;
                 if (type === 'string')
                 {
                     this.inner_template = doT.template(inner_template);        // template function
@@ -693,11 +696,11 @@ controls.typeRegister(__type, ' + name + ');';
             {
                 this.element(document.getElementById(this.id));
             }
-            else if (typeof(something) === 'string')
+            else if (typeof something === 'string')
             {
                 this.element(document.getElementById(something));
             }
-            else if (typeof(something) === 'object')
+            else if (typeof something === 'object')
             {
                 var control_element = something._element;
                 this.element(control_element ? control_element : something);
@@ -730,15 +733,14 @@ controls.typeRegister(__type, ' + name + ');';
             for(var i = subcontrols.length - 1; i >= 0; i--)
                 subcontrols[i].detachAll();
         };
-        
-        function force_event(_this, type, capture)
-        {
-            var dom_events =
+
+        var dom_events =
 ',DOMActivate,load,unload,abort,error,select,resize,scroll,blur,DOMFocusIn,DOMFocusOut,focus,focusin,focusout,\
 click,dblclick,mousedown,mouseenter,mouseleave,mousemove,mouseover,mouseout,mouseup,wheel,keydown,keypress,keyup,oncontextmenu,\
 compositionstart,compositionupdate,compositionend,DOMAttrModified,DOMCharacterDataModified,DOMNodeInserted,\
 DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtreeModified,';
-            
+        function force_event(_this, type, capture)
+        {
             var events = _this.events;
             if (!events)
             {
@@ -778,7 +780,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         //
         this.listen = function(type, call_this/*optional*/, listener, capture/*optional*/)
         {
-            if (typeof(call_this) === 'function')
+            if (typeof call_this === 'function')
             {
                 capture = listener;
                 listener = call_this;
@@ -1139,7 +1141,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             // normalize arguments
             
-            if (typeof(repeats) !== 'number')
+            if (typeof repeats !== 'number')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1167,7 +1169,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 return result;
             }
             
-            if (typeof(type) === 'object')
+            if (typeof type === 'object')
             {
                 // it is a control?
                 var add_control = type;
@@ -1545,7 +1547,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         },
         $$C: function(type, repeats, attributes, callback, this_arg)
         {
-            if (typeof(repeats) !== 'number')
+            if (typeof repeats !== 'number')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1553,7 +1555,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 repeats = 1;
             }
             
-            if (typeof(attributes) === 'function')
+            if (typeof attributes === 'function')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1590,7 +1592,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         // add [T]emplate
         $T: function(template, repeats, attributes, callback, this_arg)
         {
-            if (typeof(repeats) !== 'number')
+            if (typeof repeats !== 'number')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1598,7 +1600,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 repeats = 1;
             }
             
-            if (typeof(attributes) === 'function')
+            if (typeof attributes === 'function')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1616,7 +1618,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         },
         $$T: function(template, repeats, attributes, callback, this_arg)
         {
-            if (typeof(repeats) !== 'number')
+            if (typeof repeats !== 'number')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1624,7 +1626,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 repeats = 1;
             }
             
-            if (typeof(attributes) === 'function')
+            if (typeof attributes === 'function')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1664,7 +1666,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         // add te[X]t
         $X: function(text, repeats, attributes, callback, this_arg)
         {
-            if (typeof(repeats) !== 'number')
+            if (typeof repeats !== 'number')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1672,7 +1674,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 repeats = 1;
             }
             
-            if (typeof(attributes) === 'function')
+            if (typeof attributes === 'function')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1690,7 +1692,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         },
         $$X: function(text, repeats, attributes, callback, this_arg)
         {
-            if (typeof(repeats) !== 'number')
+            if (typeof repeats !== 'number')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1698,7 +1700,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 repeats = 1;
             }
             
-            if (typeof(attributes) === 'function')
+            if (typeof attributes === 'function')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1795,7 +1797,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     //
     controls.reviverJSON = function reviverJSON(key, value)
     {
-        if (typeof(value) === 'object' && value !== null && value.hasOwnProperty('__type'))
+        if (typeof value === 'object' && value !== null && value.hasOwnProperty('__type'))
         {
             var parameters = {};
             var __type = parse_type(value.__type, parameters);
@@ -1830,11 +1832,11 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             if (json_object.hasOwnProperty(prop))
             { 
                 var item = json_object[prop];
-                if (Array.isArray(item) || (typeof(item) === 'object' && item.hasOwnProperty('__type')))
+                if (Array.isArray(item) || (typeof item === 'object' && item.hasOwnProperty('__type')))
                     json_object[prop] = revive(item);
             }
             
-            if (typeof(json_object) === 'object' && json_object.hasOwnProperty('__type'))
+            if (typeof json_object === 'object' && json_object.hasOwnProperty('__type'))
                 json_object = reviverJSON(null, json_object);
         }
         
@@ -2096,11 +2098,9 @@ controls.typeRegister(\'controls.%%NAME%%\', %%NAME%%);\n';
 };
 
 // export controls object
-if (typeof module !== 'undefined' && module.exports)
-    // modular environment
-/*TODO*/    module.exports = Controls;
+if (typeof module !== 'undefined' && module.exports && typeof require !== 'undefined')
+    module.exports = new Controls(require('doT'));
 else if (typeof define === 'function' && define.amd)
-    // AMD
     define(['doT'], function(doT) { return new Controls(doT); });
 else if (!this.controls || this.controls.VERSION < '0.1')
 {
