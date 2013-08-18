@@ -1,3 +1,6 @@
+.gitignore
+tests
+
 lib-cov
 *.seed
 *.log
