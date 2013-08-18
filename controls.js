@@ -2,11 +2,12 @@
 //     controls.js 0.1
 //     purpose: UI framework, code generation tool
 //     status: proposal, example, valid prototype, under development
+//     I need your feedback, any feedback
 //     http://aplib.github.io/controls.js/
-//     (c) 2013 Vadim Baklanov
+//     (c) 2013 vadim baklanov
 //     License: MIT
 //
-// dependency doT.js
+// require doT.js
 
 
 (function() { "use strict";
@@ -15,7 +16,7 @@ function Controls(doT)
 {
     var controls = this;
     controls.VERSION = '0.1';
-    controls.id_generator = 53504; // don't use it out of the controls! per session id generator
+    controls.id_generator = 53504; // use it only as per session elements id generator in controls constructors
     
     var IDENTIFIERS = ',add,attach,attributes,class,data,element,first,id,__type,controls,last,name,forEach,parameters,parent,remove,style,';
     var HTML_TAGS = 'A,Abbr,Address,Article,Aside,B,Base,Bdi,Bdo,Blockquote,Button,Canvas,Cite,Code,Col,Colgroup,Command,Datalist,Dd,Del,Details,\
@@ -55,7 +56,7 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr';
             Object.defineProperty(object, "outer_template",
             {
                 configurable: true, enumerable: true, writable: true,
-                value: (typeof outer_template === 'string') ? doT.template(outer_template) : outer_template
+                value: (typeof(outer_template) === 'string') ? doT.template(outer_template) : outer_template
             });
         }
 
@@ -221,7 +222,7 @@ controls.typeRegister(__type, ' + name + ');';
     {
         addListener: function(call_this/*optional*/, listener)
         {
-            if (typeof call_this === 'function')
+            if (typeof(call_this) === 'function')
             {
                 listener = call_this;
                 call_this = this;
@@ -280,7 +281,7 @@ controls.typeRegister(__type, ' + name + ');';
     {
         listen: function(call_this/*optional*/, listener)
         {
-            if (typeof call_this === 'function')
+            if (typeof(call_this) === 'function')
             {
                 listener = call_this;
                 call_this = this;
@@ -304,7 +305,7 @@ controls.typeRegister(__type, ' + name + ');';
         
         subscribe: function(call_this/*optional*/, listener)
         {
-            if (typeof call_this === 'function')
+            if (typeof(call_this) === 'function')
             {
                 listener = call_this;
                 call_this = this;
@@ -593,7 +594,7 @@ controls.typeRegister(__type, ' + name + ');';
                 if (!this.hasOwnProperty("outer_template"))
                     Object.defineProperty(this, "outer_template", { configurable: true, enumerable: true, writable: true });
                 
-                var type = typeof outer_template;
+                var type = typeof(outer_template);
                 if (type === 'string')
                 {
                     this.outer_template = doT.template(outer_template);        // template function
@@ -611,7 +612,7 @@ controls.typeRegister(__type, ' + name + ');';
                 if (!this.hasOwnProperty("inner_template"))
                     Object.defineProperty(this, "inner_template", { configurable: true, enumerable: true, writable: true });
             
-                type = typeof inner_template;
+                type = typeof(inner_template);
                 if (type === 'string')
                 {
                     this.inner_template = doT.template(inner_template);        // template function
@@ -696,11 +697,11 @@ controls.typeRegister(__type, ' + name + ');';
             {
                 this.element(document.getElementById(this.id));
             }
-            else if (typeof something === 'string')
+            else if (typeof(something) === 'string')
             {
                 this.element(document.getElementById(something));
             }
-            else if (typeof something === 'object')
+            else if (typeof(something) === 'object')
             {
                 var control_element = something._element;
                 this.element(control_element ? control_element : something);
@@ -780,7 +781,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         //
         this.listen = function(type, call_this/*optional*/, listener, capture/*optional*/)
         {
-            if (typeof call_this === 'function')
+            if (typeof(call_this) === 'function')
             {
                 capture = listener;
                 listener = call_this;
@@ -1141,7 +1142,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             // normalize arguments
             
-            if (typeof repeats !== 'number')
+            if (typeof(repeats) !== 'number')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1169,7 +1170,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 return result;
             }
             
-            if (typeof type === 'object')
+            if (typeof(type) === 'object')
             {
                 // it is a control?
                 var add_control = type;
@@ -1541,13 +1542,12 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         {
             var context = this.$context;
             if (!context)
-                throw new TypeError('$builder $C: context undefined! ' + type);
-            
+                throw new TypeError('$C: context undefined! ' + type);
             return context.add(type, repeats, attributes, callback, this_arg);
         },
         $$C: function(type, repeats, attributes, callback, this_arg)
         {
-            if (typeof repeats !== 'number')
+            if (typeof(repeats) !== 'number')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1555,7 +1555,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 repeats = 1;
             }
             
-            if (typeof attributes === 'function')
+            if (typeof(attributes) === 'function')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1592,7 +1592,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         // add [T]emplate
         $T: function(template, repeats, attributes, callback, this_arg)
         {
-            if (typeof repeats !== 'number')
+            if (typeof(repeats) !== 'number')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1600,7 +1600,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 repeats = 1;
             }
             
-            if (typeof attributes === 'function')
+            if (typeof(attributes) === 'function')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1609,7 +1609,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             var context = this.$context;
             if (!context)
-                throw new TypeError('$builder $T: context undefined!');
+                throw new TypeError('$T: context undefined!');
             
             var attrs = attributes || {};
             attrs.$template = template;
@@ -1618,7 +1618,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         },
         $$T: function(template, repeats, attributes, callback, this_arg)
         {
-            if (typeof repeats !== 'number')
+            if (typeof(repeats) !== 'number')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1626,7 +1626,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 repeats = 1;
             }
             
-            if (typeof attributes === 'function')
+            if (typeof(attributes) === 'function')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1635,7 +1635,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             var context = this.$context;
             if (!context)
-                throw new TypeError('$builder $$T: context undefined! ');
+                throw new TypeError('$$T: context undefined! ');
             
             var attrs = attributes || {};
             attrs.$template = template;
@@ -1666,7 +1666,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         // add te[X]t
         $X: function(text, repeats, attributes, callback, this_arg)
         {
-            if (typeof repeats !== 'number')
+            if (typeof(repeats) !== 'number')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1674,7 +1674,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 repeats = 1;
             }
             
-            if (typeof attributes === 'function')
+            if (typeof(attributes) === 'function')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1683,7 +1683,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             var context = this.$context;
             if (!context)
-                throw new TypeError('$builder $X: context undefined!');
+                throw new TypeError('$X: context undefined!');
             
             var attrs = attributes || {};
             attrs.$text = text;
@@ -1692,7 +1692,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         },
         $$X: function(text, repeats, attributes, callback, this_arg)
         {
-            if (typeof repeats !== 'number')
+            if (typeof(repeats) !== 'number')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1700,7 +1700,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 repeats = 1;
             }
             
-            if (typeof attributes === 'function')
+            if (typeof(attributes) === 'function')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1709,7 +1709,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             var context = this.$context;
             if (!context)
-                throw new TypeError('$builder $$X: context undefined!');
+                throw new TypeError('$$X: context undefined!');
             
             var attrs = attributes || {};
             attrs.$text = text;
@@ -1746,10 +1746,9 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         {
             return this.$$X(controls.encodeHTML(text), repeats, attributes, callback, this_arg);
         },
-        
         $encode: function(text) { return controls.encodeHTML(text); },
         
-        $forEach: function(callback, this_arg)
+        forEach: function(callback, this_arg)
         {
             var control = this.$context;
             if (control)
@@ -1797,7 +1796,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     //
     controls.reviverJSON = function reviverJSON(key, value)
     {
-        if (typeof value === 'object' && value !== null && value.hasOwnProperty('__type'))
+        if (typeof(value) === 'object' && value !== null && value.hasOwnProperty('__type'))
         {
             var parameters = {};
             var __type = parse_type(value.__type, parameters);
@@ -1832,11 +1831,11 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             if (json_object.hasOwnProperty(prop))
             { 
                 var item = json_object[prop];
-                if (Array.isArray(item) || (typeof item === 'object' && item.hasOwnProperty('__type')))
+                if (Array.isArray(item) || (typeof(item) === 'object' && item.hasOwnProperty('__type')))
                     json_object[prop] = revive(item);
             }
             
-            if (typeof json_object === 'object' && json_object.hasOwnProperty('__type'))
+            if (typeof(json_object) === 'object' && json_object.hasOwnProperty('__type'))
                 json_object = reviverJSON(null, json_object);
         }
         
@@ -2098,9 +2097,9 @@ controls.typeRegister(\'controls.%%NAME%%\', %%NAME%%);\n';
 };
 
 // export controls object
-if (typeof module !== 'undefined' && module.exports && typeof require !== 'undefined')
+if (typeof(module) !== 'undefined' && module.exports && typeof(require) !== 'undefined')
     module.exports = new Controls(require('doT'));
-else if (typeof define === 'function' && define.amd)
+else if (typeof(define) === 'function' && define.amd)
     define(['doT'], function(doT) { return new Controls(doT); });
 else if (!this.controls || this.controls.VERSION < '0.1')
 {
@@ -2109,5 +2108,5 @@ else if (!this.controls || this.controls.VERSION < '0.1')
     this.controls = new Controls(doT);
 }
 }).call(this);
-// << define controls object
+
 

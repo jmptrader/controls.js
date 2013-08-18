@@ -129,7 +129,7 @@ with(body.fill.$builder())\n\
     $C('h3', {id:'inversion-of-control', $text:'Inversion of control'});
     
     $codebox(
-'\controls.typeRegister("bootstrap.Button#style=success", UserControl);\n\
+'\controls.typeRegister("bootstrap.Button#style=success", CustomBtnControl);\n\
 ...\n\
 > var button = example.add("bootstrap.Button#size=2,style=success");');
     $p('The combination of type name and parameters (where parameters may be inheritable) resoves to the specific type of the object in the runtime. IoC allows to\
