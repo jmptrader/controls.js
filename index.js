@@ -38,7 +38,7 @@ with(body.header.$builder())
 &nbsp;&nbsp;\
 <a href="https://github.com/aplib/controls.js/archive/controls.js-v0.1.zip" class="label label-default">Download v0.1</a>\
 &nbsp;&nbsp;\
-<a href="controls+bootstrap-demo.html" class="label label-default">Bootstrap 3 Demo</a>');
+<a href="bootstrap.controls-demo.html" class="label label-default">Bootstrap 3 Demo</a>');
 }
 
 // document content

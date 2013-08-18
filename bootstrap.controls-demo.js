@@ -8,7 +8,7 @@ body.add(['top:Container', 'header:Container', 'left:Container', 'fill:Container
 with(body.header.$builder())
 {
     $$C('header_pane:div', {class:'header-pane'});
-    $C('a', {href:'controls+bootstrap-demo.html'})
+    $C('a', {href:'bootstrap.controls-demo.html'})
     .add('header:h1', {$text:'bootstrap + controls.js', class:'btn-primary', style:'border-radius:4px; background-color1:#2b3ef4; padding:12px; display:inline-block;'});
     $p('under development');
     // refs:
