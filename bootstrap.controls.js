@@ -314,8 +314,10 @@ if (typeof module !== 'undefined' && module.exports && typeof require !== 'undef
     // node
     module.exports = new Bootstrap(require('doT'), require('controls'));
 else if (typeof define === 'function' && define.amd)
-    // AMD
-    define(['doT', 'controls'], function(doT, controls) { return new Bootstrap(doT, controls); });
+{   // amd
+    var bootstrap;
+    define(['doT', 'controls'], function(doT, controls) { if (!bootstrap) bootstrap = new Bootstrap(doT, controls); return bootstrap; });
+}
 else if (!this.bootstrap || this.bootstrap.VERSION < '0.1')
 {
     // client

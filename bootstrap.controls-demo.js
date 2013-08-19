@@ -1,5 +1,3 @@
-controls.defCommand_Func('$codebox', function(content, _class) { return this.$X('<div class="codebox ' + (_class || 'box') +'"><pre><code>' + this.$encode(content) + '</code></pre></div>'); });
-
 
 var body = controls.create('body');
 body.add(['top:Container', 'header:Container', 'left:Container', 'fill:Container', 'right:Container', 'footer:Container', 'bottom:Container']);
@@ -7,15 +5,11 @@ body.add(['top:Container', 'header:Container', 'left:Container', 'fill:Container
 // header
 with(body.header.$builder())
 {
-    $$C('header_pane:div', {class:'header-pane'});
-    $C('a', {href:'bootstrap.controls-demo.html'})
-    .add('header:h1', {$text:'bootstrap + controls.js', class:'btn-primary', style:'border-radius:4px; background-color1:#2b3ef4; padding:12px; display:inline-block;'});
-    $p('under development');
-    // refs:
-    $X('\
-<a href="https://github.com/aplib/controls.js" class="label label-default">GitHub</a>\
-&nbsp;&nbsp;\
-<a href="." class="label label-default">controls.js Intro</a>');
+    $$C( 'header_pane:div', {class:'header-pane'});
+    
+    $h1ref( 'bootstrap + controls.js', 'bootstrap.controls-demo.html');
+    $p( 'under development');
+    $reflabels(['GitHub', 'default', 'https://github.com/aplib/controls.js',      'controls.js Intro', 'default', 'index.html']);
 }
 
 
@@ -150,29 +144,3 @@ createNavigationPanel(body.fill.content_pane);
 body.attach();
 body.refresh();
 body.attachAll();
-
-
-
-
-
-function createNavigationPanel(content_pane) {
-with(body.left.$builder())
-{
-    $$C('nav_wrapper:div', {class:'nav-pane col-sm-3'});
-    $$C('nav_list:ul', {class:'nav navlist'}, function(nav_list)
-    {
-        content_pane.forEach(function(header)
-        {
-            if (header.__type === 'controls.Heading' && header.parameter('level') === '3')
-            {
-                $T('<li><a href="#' + header.id + '">' + header.text() + '</a></li>');
-            }
-        });
-
-        nav_list.listen('element', function(element)
-        {
-            if (element)
-                nav_list.$.affix({ offset: nav_list.$.offset() });
-        });
-    });
-}}
