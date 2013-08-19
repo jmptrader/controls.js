@@ -1529,6 +1529,8 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         this.$context = control;
         this.$context_stack = [];
     };
+    // $builder commands executed in the context of the control, avoid name conflicts.
+    // Naming convention: $ command does not change the context. $$ command - changing context.
     controls.$builder.prototype =
     {
         // move the $builder context to
@@ -1785,7 +1787,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     
     'p,h1,h2,h3,h4,h5,h6'.split(',').forEach(function(tag) { controls.defCommand_Wrap(tag, 'X', '<' + tag + '>', '</' + tag + '>'); });
     
-    controls.defCommand_Func = function(command, func)
+    controls.defCommand = function(command, func)
     {
         controls.$builder.prototype[command] = func;
     };
@@ -2100,7 +2102,10 @@ controls.typeRegister(\'controls.%%NAME%%\', %%NAME%%);\n';
 if (typeof(module) !== 'undefined' && module.exports && typeof(require) !== 'undefined')
     module.exports = new Controls(require('doT'));
 else if (typeof(define) === 'function' && define.amd)
-    define(['doT'], function(doT) { return new Controls(doT); });
+{   // amd
+    var controls;
+    define(['doT'], function(doT) { if (!controls) controls = new Controls(doT); return controls; });
+}
 else if (!this.controls || this.controls.VERSION < '0.1')
 {
     // client

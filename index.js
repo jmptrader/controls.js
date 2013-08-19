@@ -1,6 +1,4 @@
 
-controls.defCommand_Func('$codebox', function(content, _class) { return this.$X('<div class="codebox ' + (_class || 'box') +'"><pre><code>' + this.$encode(content) + '</code></pre></div>'); });
-
 // user control example
 
 function UserControl(parameters, attributes)
@@ -28,17 +26,12 @@ with(body.header.$builder())
 {
     $$C( 'header_pane:div', {class:'header-pane'} );
     
-    $C( 'header:a', {href:'http://aplib.github.io/controls.js/'} )
-    .add( 'h1', {$text:'controls.js', class:'btn-primary', style:'border-radius:4px; background-color1:#2b3ef4; padding:12px; display:inline-block;'} );
+    $h1ref('controls.js', 'http://aplib.github.io/controls.js/');
     $p( 'for dynamic html documents and UI solutions' );
-    
-    // refs:
-    $X('\
-<a href="https://github.com/aplib/controls.js" class="label label-default">GitHub</a>\
-&nbsp;&nbsp;\
-<a href="https://github.com/aplib/controls.js/archive/controls.js-v0.1.zip" class="label label-default">Download v0.1</a>\
-&nbsp;&nbsp;\
-<a href="bootstrap.controls-demo.html" class="label label-default">Bootstrap 3 Demo</a>');
+    $reflabels([
+        'GitHub',           'default', 'https://github.com/aplib/controls.js',
+        'Download v0.1',    'default', 'https://github.com/aplib/controls.js/archive/controls.js-v0.1.zip',
+        'Bootstrap 3 Demo', 'default', 'bootstrap.controls-demo.html']);
 }
 
 // document content
@@ -158,31 +151,3 @@ createNavigationPanel(body.fill.content_pane);
 body.attach();
 body.refresh();
 body.attachAll();
-
-
-
-
-function createNavigationPanel(content_pane) {
-with(body.left.$builder())
-{
-    $$C('nav_wrapper:div', {class:'nav-pane col-sm-3'});
-    $$C('nav_list:ul', {class:'nav navlist'}, function(nav_list)
-    {
-        content_pane.forEach(function(header)
-        {
-            if (header.__type === 'controls.Heading' && header.parameter('level') === '3')
-            {
-                $T('<li><a href="#' + header.id + '">' + header.text() + '</a></li>');
-            }
-        });
-
-        nav_list.listen('element', function(element)
-        {
-            if (element)
-                nav_list.$.affix({ offset: nav_list.$.offset() });
-        });
-    });
-}}
-
-
-
