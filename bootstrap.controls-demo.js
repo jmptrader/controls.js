@@ -39,7 +39,7 @@ with(body.fill.$builder())
     
             // button chevron-left
 
-            $C('btn_prev:Button#size=2,style=success',  {$icon:'chevron-left'})
+            $C('btn_prev:bootstrap.Button#size=2,style=success',  {$icon:'chevron-left'})
             .listen('click', function()
             {
                 if (btn_size > 0)
@@ -50,7 +50,7 @@ with(body.fill.$builder())
 
             // button chevron-right
 
-            $C('btn_next:Button#size=2,style=default', {$icon:'chevron-right'})
+            $C('btn_next:bootstrap.Button#size=2,style=default', {$icon:'chevron-right'})
             .listen('click', function()
             {
                 if (btn_size < 3)
@@ -63,7 +63,7 @@ with(body.fill.$builder())
 
             ['default','primary','success','info','warning','danger'].forEach(function(style)
             {
-                $C('btn_' + style + ':Button#size=2,style=' + style, {$text:style, $icon:'thumbs-up'})
+                $C('btn_' + style + ':bootstrap.Button#size=2,style=' + style, {$text:style, $icon:'thumbs-up'})
                 .listen('click', function()
                 {
                     alert('Button style: ' + style);
@@ -94,9 +94,9 @@ with(body.fill.$builder())
     
     $$C('div', {class:'example top-box'}, function(example)
     {
-        $$C('bootstrap.BtnGroup', {class: 'btn-group-vertical', style:'display:inline-block;'}, function(group_vertical)
+        $$C('bootstrap.BtnGroup', {class: 'btn-group-vertical'}, function(group_vertical)
         {
-            $C('Button', 4, {$text: 'Button'});
+            $C('bootstrap.Button', 4, {$text: 'Button'});
         });
     });
     
@@ -107,40 +107,78 @@ with(body.fill.$builder())
     group_vertical.add("Button", 4, {$text: "Button"});\n\
 });');
 
+
+    // Forms
+    
+    $C('header:h2', {id: 'forms', $text: 'Forms'});
+    
+    // Basic example
+    
+    $C('header:h3', {id: 'basic-example', $text: 'Basic example'});
+    
+    $$C('div', {class:'example top-box'}, function(example)
+    {
+        $$C('bootstrap.Form');
+        
+        $$C('bootstrap.FormGroup', function(group)
+        {
+            $C('label', {$text:'Email address', for:'exampleInputEmail1'});
+            $C('input:input', {type:'email', class:'form-control', id:'exampleInputEmail1', placeholder:'Enter email (validation)'});
+            var regexp = /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
+            group.input.listen('keyup', group.input, function()
+            {
+                if (this._element)
+                {
+                    if (regexp.test(this._element.value))
+                        group.class('', 'has-error');
+                    else
+                        group.class('has-error');
+                }
+            });
+        });
+        
+        $$C('bootstrap.FormGroup', function()
+        {
+            $C('label', {$text:'Password', for:'exampleInputPassword1'});
+            $C('input', {type:'password', class:'form-control', id:'exampleInputPassword1', placeholder:'Password'});
+        });
+        
+        $$C('bootstrap.FormGroup', function()
+        {
+            $C('label', {$text:'File input', for:'exampleInputFile'});
+            $C('input', {type:'file', id:'exampleInputFile'});
+            $p('Example block-level help text here.', {class:"help-block"});
+        });
+        
+        $C('bootstrap.Button', {type:'submit', $text:'Submit', onclick:'return false;'});
+    });
+    
+    $codebox(
+'$$C("bootstrap.Form");\n\
+$$C("bootstrap.FormGroup", function(group)\n\
+{\n\
+    $C("label", {$text:"Email address", for:"exampleInputEmail1"});\n\
+    $C("input:input", {type:"email", class:"form-control", id:"exampleInputEmail1", placeholder:"Enter email"});\n\
+    \n\
+    var regexp = /(?:[a-z0-9!#$%&.../;\n\
+    group.input.listen("keyup", group.input, function()\n\
+    {\n\
+        if (this._element)\n\
+        {\n\
+            if (regexp.test(this._element.value))\n\
+                group.class("", "has-error");\n\
+            else\n\
+                group.class("has-error");\n\
+        }\n\
+    });\n\
+});');
+    
 }
 
-
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Layout                                                                     //
-////////////////////////////////////////////////////////////////////////////////
-
-//body.add('layout:Layout#float=left');
-//
-//// 6 x ButtonsDemo
-//var size = 100;
-//body.layout.add('UserControl', 6, function(demo)
-//{
-////    demo.style('border:silver solid 1px; transition: background 1s; margin:15px; width:' + size + 'px; height:' + size + 'px;');
-////    demo.next(); // public method
-//    size +=16;
-//});
-//setInterval(function()
-//{
-//    body.layout.forEach(function(control)
-//    {
-//        control.element().style['background-color'] = '#' + (Math.random().toString(16).substr(2,3));
-////        control.$.height(control.$.height() + 3*(Math.random() - 0.5));
-//        
-//    });
-//}, 3000);
 
 createNavigationPanel(body.fill.content_pane);
 
 // Generate document
-
 body.attach();
 body.refresh();
 body.attachAll();
