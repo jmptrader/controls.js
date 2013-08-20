@@ -1,4 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
+//
 //     controls.js 0.1
 //     purpose: UI framework, code generation tool
 //     status: proposal, example, valid prototype, under development
@@ -26,6 +27,7 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr';
     var ENCODE_HTML_MATCH = /&(?!#?\w+;)|<|>|"|'|\//g;
     var ENCODE_HTML_PAIRS = { "<": "&#60;", ">": "&#62;", '"': '&#34;', "'": '&#39;', "&": "&#38;", "/": '&#47;' };
     controls.subtypes = {}; // Registered subtypes
+    controls.doT = doT; // reexport need for gencodes
     
     // Initialize control object
     // 
@@ -52,22 +54,18 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr';
         object.controls     = [];               // This is a collection of nested objects
         
         if (outer_template)
+        Object.defineProperty(object, "outer_template",
         {
-            Object.defineProperty(object, "outer_template",
-            {
-                configurable: true, enumerable: true, writable: true,
-                value: (typeof(outer_template) === 'string') ? doT.template(outer_template) : outer_template
-            });
-        }
+            enumerable: true, writable: true,
+            value: (typeof(outer_template) === 'string') ? doT.template(outer_template) : outer_template
+        });
 
         if (inner_template)
+        Object.defineProperty(object, "inner_template",
         {
-            Object.defineProperty(object, "inner_template",
-            {
-                configurable: true, enumerable: true, writable: true,
-                value: (typeof(inner_template) === 'string') ? doT.template(inner_template) : inner_template
-            });
-        }
+            enumerable: true, writable: true,
+            value: (typeof(inner_template) === 'string') ? doT.template(inner_template) : inner_template
+        });
     };
     
     // plug in control constructor to the controls infrastructure
@@ -156,10 +154,10 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr';
         var dotpos = name.indexOf('.');
         if (dotpos >= 0)
             name = __type.substr(dotpos + 1);
+        outer_template = (typeof(outer_template) === "string") ? doT.template(outer_template) : outer_template;
+        inner_template = (typeof(inner_template) === "string") ? doT.template(inner_template) : inner_template;
         var gencode =
-'var outer_template = (typeof(outer_template) === "string") ? doT.template(outer_template) : outer_template;\
-var inner_template = (typeof(inner_template) === "string") ? doT.template(inner_template) : inner_template;\
-var __type = __type;\
+'var __type = __type;\
 function ' + name + '(p, a)\
 {\
     controls.controlInitialize(this, __type, p, a, outer_template, inner_template);\
@@ -341,6 +339,7 @@ controls.typeRegister(__type, ' + name + ');';
     
     var data_array_common =
     {
+        // ops: 1 - insert, 2 - remove, ...
         push: function(item)
         {
             var proto = Object.getPrototypeOf(this);
@@ -348,8 +347,8 @@ controls.typeRegister(__type, ' + name + ');';
                 proto.push.call(this, arguments[i]);
             this.state_id += c;
             this.last_operation = 1;
-            this.last_changed = this.length - 1;
-            this.raise();
+            this.last_index = this.length - 1;
+            this.raise(this);
         }
         // TODO
     };
@@ -368,7 +367,7 @@ controls.typeRegister(__type, ' + name + ');';
     // Parameters:
     // adapter {string} - registered type
     // Attributes:
-    // data - an array of values ​​for the initial filling of the data array
+    // data - an array of values for the initial filling of the data array
     //
     function DataArray(parameters, attributes) // factory method
     {
@@ -449,7 +448,7 @@ controls.typeRegister(__type, ' + name + ');';
                     var parent_controls = parent.controls;
                     var index = parent_controls.indexOf(this);
                     if (index >= 0)
-                        parent_controls.slice(index, 1);
+                        parent_controls.splice(index, 1);
                     
                     if (name && parent.hasOwnProperty(name) && parent[name] === this)
                         delete parent[name];
@@ -462,7 +461,7 @@ controls.typeRegister(__type, ' + name + ');';
 // profiling: very expensive operation
 //                    var index = value_controls.indexOf(this);
 //                    if (index >= 0)
-//                        parent_controls.slice(index, 1);
+//                        parent_controls.splice(index, 1);
 
                     value_controls.push(this);
                     
@@ -471,6 +470,44 @@ controls.typeRegister(__type, ' + name + ');';
                     
                     value.refresh();
                 }
+                
+                this.raise('parent', this);
+            }
+        });
+        
+        Object.defineProperty(this, 'wrapper',
+        {
+            enumerable: true,
+            get: function() { return this._wrapper; },
+            set: function(value)
+            {
+                var wrapper = this._wrapper;
+                if (value !== wrapper)
+                {
+                    this._wrapper = value;
+
+                    if (wrapper)
+                    {
+                        var wrapper_controls = wrapper.controls;
+                        var index = wrapper_controls.indexOf(this);
+                        if (index >= 0)
+                            wrapper_controls.splice(index, 1);
+                    }
+
+                    if (value)
+                    {
+                        var value_controls = value.controls;
+
+    // profiling: very expensive operation
+    //                    var index = value_controls.indexOf(this);
+    //                    if (index >= 0)
+    //                        wrapper_controls.splice(index, 1);
+
+                        value_controls.push(this);
+
+                        // TODO value.refresh();
+                    }
+                }
             }
         });
         
@@ -478,16 +515,16 @@ controls.typeRegister(__type, ' + name + ');';
         this.__defineGetter__('last', function() { return this.controls[this.controls.length-1]; });
 
         // default html template
-        this.outer_template = doT.template('<div{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.outerHTML()}}{{~}}</div>');
+        this.outer_template = doT.template('<div{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}</div>');
         // default inner html template
-        this.inner_template = doT.template('{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.outerHTML()}}{{~}}');
+        this.inner_template = doT.template('{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}');
                 
         // snippets:
         // 
         // {{? it.attributes.$icon }}<span class="{{=it.attributes.$icon}}"></span>&nbsp;{{?}}
         // {{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}
         // include list of subcontrols html:
-        // {{~it.controls :value:index}}{{=value.outerHTML()}}{{~}}
+        // {{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}
 
         this.innerHTML = function()
         {
@@ -584,6 +621,12 @@ controls.typeRegister(__type, ' + name + ');';
             
             // assemble html
             return this.outer_template(this);
+        };
+        
+        this.wrappedHTML = function()
+        {
+            var wrapper = this._wrapper;
+            return (wrapper) ? wrapper.wrappedHTML() : this.outerHTML();
         };
         
         // set template text or template function
@@ -736,7 +779,7 @@ controls.typeRegister(__type, ' + name + ');';
         };
 
         var dom_events =
-',DOMActivate,load,unload,abort,error,select,resize,scroll,blur,DOMFocusIn,DOMFocusOut,focus,focusin,focusout,\
+',change,DOMActivate,load,unload,abort,error,select,resize,scroll,blur,DOMFocusIn,DOMFocusOut,focus,focusin,focusout,\
 click,dblclick,mousedown,mouseenter,mouseleave,mousemove,mouseover,mouseout,mouseup,wheel,keydown,keypress,keyup,oncontextmenu,\
 compositionstart,compositionupdate,compositionend,DOMAttrModified,DOMCharacterDataModified,DOMNodeInserted,\
 DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtreeModified,';
@@ -1069,7 +1112,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                     if (element)
                         element.style = _style;
                     
-                    this.raise('attributes', {type:'style',data:_style});
+                    this.raise('attributes', {name:'style', value:_style});
                 };
             }
             
@@ -1117,7 +1160,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                     if (element)
                         element.className = _class;
                     
-                    this.raise('attributes', {type:'class',data:_class});
+                    this.raise('attributes', {name:'class', value:_class});
                 }
             }
             
@@ -1484,9 +1527,21 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 for(var prop in alias_parameters)
                     parameters[prop] = alias_parameters[prop];
                 
-                return resolve_ctr(constructor.__type, parameters);
+                constructor = resolve_ctr(constructor.__type, parameters);
             }
         }
+        
+//        if (!constructor && __type.indexOf('controls.' !== 0))
+//        {
+//            // Error: type not resolved and namespace not controls
+//            // try to look for this type in controls namespace
+//            var dotpos = __type.indexOf('.');
+//            if (dotpos > 0)
+//            {
+//                __type = 'controls' + __type.substr(dotpos);
+//                constructor = resolve_ctr(__type, parameters)
+//            }
+//        }
         
         return constructor;
     };
@@ -1526,9 +1581,32 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         if (!this.$move)
             return new controls.$builder(control);
         
+        this.$default = 'controls.';
         this.$context = control;
         this.$context_stack = [];
     };
+    function check_type(builder, type)
+    {
+        var colonpos = type.indexOf(':');
+        var dotpos = type.indexOf('.');
+        var slashpos = type.indexOf('/');
+        var numberpos = type.indexOf('#');
+        
+        if ((~dotpos && colonpos > dotpos) || (~slashpos && colonpos > slashpos) || (~numberpos && colonpos > numberpos))
+            colonpos = -1;
+        if ((~slashpos && dotpos > slashpos) || (~numberpos && dotpos > numberpos))
+            dotpos = -1;
+        
+        if (dotpos < 0)
+        {
+            if (colonpos >= 0)
+                type = type.substr(0, colonpos + 1) + builder.$default + type.substr(colonpos + 1);
+            else
+                type = builder.$default + type;
+        }
+        
+        return type;
+    }
     // $builder commands executed in the context of the control, avoid name conflicts.
     // Naming convention: $ command does not change the context. $$ command - changing context.
     controls.$builder.prototype =
@@ -1538,14 +1616,22 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         {
             this.$context = control;
         },
-        
+        // set default namespace
+        $namespace : function(namespace)
+        {
+            if (namespace.indexOf('.') < 0)
+                namespace = namespace + '.';
+            
+            this.$default = namespace;
+        },
         // add [C]ontrol
         $C: function(type, repeats, attributes, callback, this_arg)
         {
             var context = this.$context;
             if (!context)
                 throw new TypeError('$C: context undefined! ' + type);
-            return context.add(type, repeats, attributes, callback, this_arg);
+
+            return context.add(check_type(this, type), repeats, attributes, callback, this_arg);
         },
         $$C: function(type, repeats, attributes, callback, this_arg)
         {
@@ -1574,7 +1660,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             {
                 this.$context_stack.push(this.$context);
                 
-                control = context.add(type, repeats, attributes, function(control)
+                control = context.add(check_type(this, type), repeats, attributes, function(control)
                 {
                     this.$context = control;
                     callback.call(this_arg || control, control);
@@ -1584,7 +1670,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             }
             else
             {
-                control = context.add(type, repeats, attributes);
+                control = context.add(check_type(this, type), repeats, attributes);
                 this.$context = control;
             }
             
@@ -1889,7 +1975,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         controls.controlInitialize(this, 'controls.Container', parameters, attributes, Container.template);
     };
     Container.prototype = controls.control_prototype;
-    Container.template = doT.template('{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.outerHTML()}}{{~}}');
+    Container.template = doT.template('{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}');
     controls.typeRegister('controls.Container', Container);
     
     // Custom
@@ -1933,7 +2019,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         this.attachAll = function() { Head.prototype.attach.call(this, document.head); Head.prototype.attachAll.call(this); };
     };
     Head.prototype = controls.control_prototype;
-    Head.template = doT.template('<head>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.outerHTML()}}{{~}}</head>');
+    Head.template = doT.template('<head>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}</head>');
     controls.typeRegister('controls.Head', Head);
     
     // controls.Body <BODY></BODY>
@@ -1946,7 +2032,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         this.attachAll = function() { Body.prototype.attach.call(this, document.body); Body.prototype.attachAll.call(this); };
     };
     Body.prototype = controls.control_prototype;
-    Body.template = doT.template('<body{{=it.printAttributes("-id")}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.outerHTML()}}{{~}}</body>');
+    Body.template = doT.template('<body{{=it.printAttributes("-id")}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}</body>');
     controls.typeRegister('controls.Body', Body);
     
     
@@ -1960,7 +2046,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     controls.controlInitialize(this, \'controls.%%NAME%%\', p, a, %%NAME%%.outer_template);\
 };\
 %%NAME%%.prototype = controls.control_prototype;\
-%%NAME%%.outer_template = doT.template(\'%%OPENTAG%%{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.outerHTML()}}{{~}}%%CLOSETAG%%\');\
+%%NAME%%.outer_template = doT.template(\'%%OPENTAG%%{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}%%CLOSETAG%%\');\
 controls.typeRegister(\'controls.%%NAME%%\', %%NAME%%);\n';
 
     HTML_TAGS.split(',').forEach(function(tag)
@@ -2013,7 +2099,7 @@ controls.typeRegister(\'controls.%%NAME%%\', %%NAME%%);\n';
     Heading.prototype = controls.control_prototype;
     Heading.template = doT.template(
 '<h{{=it.level}}{{=it.printAttributes()}}>\
-{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.outerHTML()}}{{~}}\
+{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}\
 </h{{=it.level}}>\n');
     controls.typeRegister('controls.Heading', Heading);
     controls.typeAlias('controls.H1', 'controls.Heading#level=1');
@@ -2053,22 +2139,27 @@ controls.typeRegister(\'controls.%%NAME%%\', %%NAME%%);\n';
     function Layout(parameters, attributes)
     {
         controls.controlInitialize(this, 'controls.Layout', parameters, attributes, Layout.template);
-        
         var clearfix = false; // use clearfix if float
         
         this.cellSet = new Container();
         this.cellSet.listen('attributes', this, function(event)
         {
-            var event_type = event.type;
-            var controls = this.controls;
-            var id = this.id;
-            var attributes = this.cellSet.attributes;
-            for(var i = controls.length - 1; i >= 0; i--)
+            var attr_name = event.name;
+            var attr_value = event.value;
+            var remove = (attr_value === undefined || attr_value === null);
+            
+            var element = this._element;
+            if (element)
             {
-                var cell_id = id + '.' + i;
-                var cell = document.getElementById(cell_id);
-                if (cell)
-                    cell[event_type] = attributes[event_type];
+                var nodes = element.childNodes; // element.querySelectorAll('[data-type=layout-item]');
+                for(var i = nodes.length - 1; i>=0; i--)
+                {
+                    var node = nodes[i];
+                    if (remove)
+                        node.removeAttribute(attr_name);
+                    else
+                        node.setAttribute(attr_name, attr_value);
+                }
             }
         });
         
@@ -2090,17 +2181,53 @@ controls.typeRegister(\'controls.%%NAME%%\', %%NAME%%);\n';
     Layout.prototype = controls.control_prototype;
     Layout.template = doT.template(
 '<div{{=it.printAttributes()}}>\
-{{~it.controls :value:index}}<div id="{{=it.id+"."+index}}"{{=it.cellSet.printAttributes("-id")}}>{{=value.outerHTML()}}</div>{{~}}\
+{{~it.controls :value:index}}<div data-type="layout-item"{{=it.cellSet.printAttributes("-id")}}>{{=value.wrappedHTML()}}</div>{{~}}\
 {{?it.clearfix}}<div style="clear:both;"></div>{{?}}</div>');
     controls.typeRegister('controls.Layout', Layout);
 
     
+    function List(parameters, attributes)
+    {
+        controls.controlInitialize(this, 'controls.List', parameters, attributes, List.template);
+        
+        this.itemSet = new Container();
+        this.itemSet.listen('attributes', this, function(event)
+        {
+            var attr_name = event.name;
+            var attr_value = event.value;
+            var remove = (attr_value === undefined || attr_value === null);
+            
+            var element = this._element;
+            if (element)
+            {
+                var nodes = element.childNodes; // element.querySelectorAll('[data-type=layout-item]');
+                for(var i = nodes.length - 1; i>=0; i--)
+                {
+                    var node = nodes[i];
+                    if (remove)
+                        node.removeAttribute(attr_name);
+                    else
+                        node.setAttribute(attr_name, attr_value);
+                }
+            }
+        });
+    };
+    List.prototype = controls.control_prototype;
+    List.template = doT.template(
+'<ul{{=it.printAttributes()}}>\
+{{~it.controls :value:index}}<li{{=it.itemSet.printAttributes("-id")}}>{{=value.wrappedHTML()}}</li>{{~}}\
+</ul>');
+    controls.typeRegister('controls.List', List);
     
 };
 
 // export controls object
 if (typeof(module) !== 'undefined' && module.exports && typeof(require) !== 'undefined')
-    module.exports = new Controls(require('doT'));
+{
+    module.exports = new Controls(require('dot'));
+    // global export in modular environment can be commented out:
+    if (typeof(window) !== 'undefined') window.controls = module.exports;
+}
 else if (typeof(define) === 'function' && define.amd)
 {   // amd
     var controls;
@@ -2112,6 +2239,7 @@ else if (!this.controls || this.controls.VERSION < '0.1')
     if (!doT) throw new TypeError('controls.js: doT.js not found!');
     this.controls = new Controls(doT);
 }
+
 }).call(this);
 
 

@@ -84,7 +84,7 @@ body.attachAll();');
     $C('h3', {id:'dsl', $text:'Extendable DSL'});
     $codebox(
 '\
-controls.defCommand_Func("$codebox", function(content, _class) { ... });\n\
+controls.defCommand("$codebox", function(content, _class) { ... });\n\
 \n\
 with(body.fill.$builder())\n\
 {\n\

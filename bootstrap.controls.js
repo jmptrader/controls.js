@@ -1,4 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
+//     
 //     controls.bootstrap.js 0.1
 //     purpose: twitter bootstrap VCL for using with controls.js
 //     status: proposal, example, prototype, under development
@@ -90,7 +91,7 @@ function Bootstrap(doT, controls)
 </a>\n\
 {{? (it.controls && it.controls.length > 0) }}\
 <ul class="dropdown-menu">\n\
-{{~it.controls :value:index}}{{=value.outerHTML()}}{{~}}\
+{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}\
 </ul>{{?}}</div>\n');
     controls.typeRegister('bootstrap.DropdownLink', DropdownLink);
 
@@ -106,7 +107,7 @@ function Bootstrap(doT, controls)
 '<a{{=it.printAttributes()}} data-toggle="dropdown" href="#">{{? it.attributes.$icon }}<b class="{{=it.attributes.$icon}}"> </b>{{?}}{{? it.attributes.Caret }}<span class="caret"></span>{{?}}{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}</a>\n\
 {{? (it.controls && it.controls.length > 0) }}\n\
 <ul class="dropdown-menu">\n\
-{{~it.controls :value:index}}{{=value.outerHTML()}}{{~}}\n\
+{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}\n\
 </ul>{{?}}\n');
     controls.typeRegister('bootstrap.ToggleBtn', ToggleBtn);
     
@@ -156,7 +157,7 @@ function Bootstrap(doT, controls)
     };
     Button.prototype = bootstrap.control_prototype;
     Button.template = doT.template(
-'<button{{=it.printAttributes()}} href="#">\
+'<button{{=it.printAttributes()}}>\
 {{? it.attributes.$icon }}<b class="glyphicon glyphicon-{{=it.attributes.$icon}}"> </b>{{?}}\
 {{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}\
 </button>');
@@ -180,7 +181,7 @@ function Bootstrap(doT, controls)
 </button>\
 {{? (it.controls && it.controls.length > 0) }}\
 <ul class="dropdown-menu">\
-{{~it.controls :value:index}}{{=value.outerHTML()}}{{~}}\
+{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}\
 </ul>{{?}}\
 </div>');
     controls.typeRegister('bootstrap.Splitbutton', Splitbutton);
@@ -248,13 +249,12 @@ function Bootstrap(doT, controls)
     function Form(parameters, attributes)
     {
         controls.controlInitialize(this, 'bootstrap.Form', parameters, attributes, Form.template);
+        attributes.role = 'form';
     };
     Form.prototype = bootstrap.control_prototype;
     Form.template = doT.template(
 '<form{{=it.printAttributes()}}>\
-{{? (it.controls && it.controls.length > 0) }}\
-{{~it.controls :value:index}}{{=value.outerHTML()}}{{~}}\
-{{?}}\
+{{? (it.controls && it.controls.length > 0) }}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}{{?}}\
 </form>');
     controls.typeRegister('bootstrap.Form', Form);
     
@@ -270,7 +270,7 @@ function Bootstrap(doT, controls)
     FormGroup.template = doT.template(
 '<div{{=it.printAttributes()}}>\
 {{? (it.controls && it.controls.length > 0) }}\
-{{~it.controls :value:index}}{{=value.outerHTML()}}{{~}}\
+{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}\
 {{?}}\
 </div>');
     controls.typeRegister('bootstrap.FormGroup', FormGroup);
@@ -321,8 +321,7 @@ else if (typeof define === 'function' && define.amd)
 else if (!this.bootstrap || this.bootstrap.VERSION < '0.1')
 {
     // client
-    if (!doT) throw new TypeError('controls.bootstrap.js: doT.js not found!');
     if (!controls) throw new TypeError('controls.bootstrap.js: controls.js not found!');
-    this.bootstrap = new Bootstrap(doT, controls);
+    this.bootstrap = new Bootstrap(controls.doT, controls);
 }
 }).call(this);
