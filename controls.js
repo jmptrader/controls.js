@@ -2040,9 +2040,9 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     function Body(parameters, attributes)
     {
         controls.controlInitialize(this, 'controls.Body', parameters, attributes, Body.template);
-        this.attach    = function()
+        this.attach    = function(force_body)
         {
-            if (!document.body)
+            if (!document.body && force_body)
                 document.head.parentNode.appendChild(document.createElement('BODY'));
         
             Body.prototype.attach.call(this, document.body);

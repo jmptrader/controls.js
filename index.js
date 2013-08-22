@@ -140,14 +140,14 @@ with(body.fill.$builder())\n\
 
 
 
-
-
-
-
 createNavigationPanel(body.fill.content_pane);
 
-// Generate document
-
-body.attach();
-body.refresh();
-body.attachAll();
+// This is a example page, but at the same time I want what they are indexed in google.
+// Therefore, using the server-side code generation and late binding, and not a dynamic page creation.
+if (window.location.href.indexOf('#refresh') >= 0)
+{
+    // Generate document
+    body.attach(true);
+    body.refresh();
+}
+body.attachAll(); // binding to dom
