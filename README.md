@@ -11,9 +11,9 @@ see
 http://aplib.github.io/controls.js/
 
 
-Get started
+##Get started  
 
-## files
+### files
 
 controls.js - development version with comments, requre doT.js  
 controls.min.js - compressed controls.js, requre doT.js  
@@ -30,7 +30,7 @@ controls.browserify.min.js - compressed
 
     <script src="controls.browserify.js"></script>
 
-## Hello World!
+### Hello World!
 
     <!DOCTYPE html>
     <html>
