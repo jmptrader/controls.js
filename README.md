@@ -1,7 +1,7 @@
 # controls.js
 ####for dynamic html documents and UI solutions
 
-controls.js - framework for a visual and data components
+controls.js - framework for a visual and data components  
 bootstrap.controls.js - WCL based on bootstrap and controls.js
 
 see  
