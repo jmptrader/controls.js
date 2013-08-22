@@ -1,20 +1,55 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-US">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>controls.js Intro</title>
     <script src="libs/doT.js"></script>
     <script src="libs/jquery.js"></script>
-<!--    <link rel="stylesheet" href="libs/bootstrap-glyphicons.css">-->
     <link rel="stylesheet" href="libs/bootstrap.css">
     <script src="libs/bootstrap.js"></script>
     <script src="controls.js"></script>
     <script src="bootstrap.controls.js"></script>
     <link rel="stylesheet" href="index.css">
-</head>
-<body>
     <script src="index.components.js"></script>
     <script src="index.js"></script>
-</body>
+</head>
+<body style=""><div class="header-pane" id="d109"><a class="" href="http://aplib.github.io/controls.js/" id="d10a"><h1 class="btn-primary" style="border-radius:4px; background-color1:#2b3ef4; padding:12px; display:inline-block;" id="d10b">controls.js</h1></a><p>for dynamic html documents and UI solutions</p><a href="https://github.com/aplib/controls.js" class="label label-default">GitHub</a>&nbsp;&nbsp;<a href="https://github.com/aplib/controls.js/archive/controls.js-v0.1.zip" class="label label-default">Download v0.1</a>&nbsp;&nbsp;<a href="bootstrap.controls-demo.html" class="label label-default">Bootstrap 3 Demo</a>&nbsp;&nbsp;</div><div class="nav-pane col-sm-3" id="d121"><ul class="nav navlist affix-top" id="d122"><li><a href="#code-first">Code first, both server-side and client-side html code generation</a></li><li><a href="#full-controls">JavaScript controls is used for managing DOM elements</a></li><li><a href="#dsl">Extendable DSL</a></li><li><a href="#code-reuse">Structured and reusable code</a></li><li><a href="#inversion-of-control">Inversion of control</a></li><li><a href="#minimizing-manipulation-of-the-DOM">Minimizing manipulation of the DOM</a></li></ul></div><div class="content-pane col-sm-9" id="d10e"><h2 class="" id="controls-js-concepts">Concepts</h2><h3 class="" id="code-first">Code first, both server-side and client-side html code generation</h3><div class="codebox box"><pre><code>var body = controls.create("body");
+body.add(["top:Container", "left:Container", "fill:Container"]);
+
+...
+
+with(body.fill.$builder())
+{
+    $$C("content_pane:div", {class:"content-pane col-sm-9"});
+    $C("h2", {id: "lorem-ipsum-group", $text: "Lorem ipsum"});
+    $X("&lt;p&gt;Lorem ipsum dolor sit amet&lt;/p&gt;");
+    $p("Lorem ipsum dolor sit amet");
+}
+
+createNavigationPanel(body.fill.content_pane);
+
+body.attach(); body.refresh(); // document.body.outerHTML = body.outerHTML(); 
+body.attachAll();</code></pre></div><h3 class="" id="full-controls">JavaScript controls is used for managing DOM elements</h3><div class="codebox box"><pre><code>var lorem = menu.add("DropdownItem", {$text="Lorem ipsum", class="unchecked"});
+
+&gt; lorem.class("checked");</code></pre></div><h3 class="" id="dsl">Extendable DSL</h3><div class="codebox box"><pre><code>controls.defCommand("$codebox", function(content, _class) { ... });
+
+with(body.fill.$builder())
+{
+    $codebox("Lorem ipsum dolor sit amet");
+}
+</code></pre></div><h3 class="" id="code-reuse">Structured and reusable code</h3><div class="example top-box" id="d112"><div class="" id="d113" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#c15"><button class="btn btn-default" id="d114">OK</button></div><div class="" id="d115" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#1fc"><button class="btn btn-default" id="d116">OK</button></div><div class="" id="d117" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#9b2"><button class="btn btn-default" id="d118">OK</button></div><div class="" id="d119" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#76a"><button class="btn btn-default" id="d11a">OK</button></div><div class="" id="d11b" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#5ab"><button class="btn btn-default" id="d11c">OK</button></div></div><div class="codebox box"><pre><code>function UserControl(parameters, attributes)
+{
+    controls.controlInitialize(this, "UserControl", parameters, attributes);
+
+    this.style("background-color:#" + (Math.random().toString(16).substr(2,3)));
+
+    this.add("OK:bootstrap.Button", {$text:"OK"})
+    .listen("click", function()
+    {
+        alert("Button-click!");
+    });
+}</code></pre></div><h3 class="" id="inversion-of-control">Inversion of control</h3><div class="codebox box"><pre><code>controls.typeRegister("bootstrap.Button#style=success", CustomBtnControl);
+...
+&gt; var button = example.add("bootstrap.Button#size=2,style=success");</code></pre></div><p>The combination of type name and parameters (where parameters may be inheritable) resoves to the specific type of the object in the runtime. IoC allows to override the details of the behavior of existing systems without modifying their code. For example, it will organize a versioning components in the design, switching visual themes at runtime or unbreakable changes at service.</p><h3 class="" id="minimizing-manipulation-of-the-DOM">Minimizing manipulation of the DOM</h3><p>It is preferable not to store data and other information in DOM, except when it leads to simplification and readability.</p></div></body>
 </html>
