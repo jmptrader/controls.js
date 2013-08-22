@@ -14,33 +14,4 @@
     <script src="index.components.js"></script>
     <script src="bootstrap.controls-demo.js"></script>
 </head>
-<body style=""><div class="header-pane" id="d109"><a class="" href="bootstrap.controls-demo.html" id="d10a"><h1 class="btn-primary" style="border-radius:4px; background-color1:#2b3ef4; padding:12px; display:inline-block;" id="d10b">bootstrap + controls.js</h1></a><p>under development</p><a href="https://github.com/aplib/controls.js" class="label label-default">GitHub</a>&nbsp;&nbsp;<a href="index.html" class="label label-default">controls.js Intro</a>&nbsp;&nbsp;</div><div class="nav-pane col-sm-3" id="d12d"><ul class="nav navlist affix-top" id="d12e"><li><a href="#buttons-size-and-styles">Buttons, size and styles</a></li><li><a href="#vertical-button-group">Vertical button group</a></li><li><a href="#basic-example">Forms basic example</a></li></ul></div><div class="content-pane col-sm-9" id="d10e"><h2 class="" id="bootstrap-controls">Bootstrap controls</h2><h3 class="" id="buttons-size-and-styles">Buttons, size and styles</h3><div class="example top-box" id="d10f"><div class="btn-group" id="d110"><button class="btn btn-success" id="d111"><b class="glyphicon glyphicon-chevron-left"></b>&nbsp;</button><button class="btn btn-default" id="d112"><b class="glyphicon glyphicon-chevron-right"></b>&nbsp;</button><button class="btn btn-default" id="d113"><b class="glyphicon glyphicon-thumbs-up"></b>&nbsp;default</button><button class="btn btn-primary" id="d114"><b class="glyphicon glyphicon-thumbs-up"></b>&nbsp;primary</button><button class="btn btn-success" id="d115"><b class="glyphicon glyphicon-thumbs-up"></b>&nbsp;success</button><button class="btn btn-info" id="d116"><b class="glyphicon glyphicon-thumbs-up"></b>&nbsp;info</button><button class="btn btn-warning" id="d117"><b class="glyphicon glyphicon-thumbs-up"></b>&nbsp;warning</button><button class="btn btn-danger" id="d118"><b class="glyphicon glyphicon-thumbs-up"></b>&nbsp;danger</button></div><button class="btn btn-link" style="float:none;" id="d119"><b class="glyphicon glyphicon-thumbs-up"></b>&nbsp;link</button></div><div class="codebox box"><pre><code>example.add("btn_prev:Button#size=2,style=success",  {$icon:"chevron-left"})
-.listen("click", function()
-{
-    if (btn_size &gt; 0)
-        btn_size--;
-
-    this.parent.forEach(function(button) { button.size(btn_size); });
-});</code></pre></div><h3 class="" id="vertical-button-group">Vertical button group</h3><div class="example top-box" id="d11b"><div class="btn-group-vertical" id="d11c"><button class="btn btn-default" id="d11d">Button</button><button class="btn btn-default" id="d11e">Button</button><button class="btn btn-default" id="d11f">Button</button><button class="btn btn-default" id="d120">Button</button></div></div><div class="codebox box"><pre><code>example.add("bootstrap.BtnGroup", {class: "btn-group-vertical"}, function(group_vertical)
-{
-    group_vertical.add("Button", 4, {$text: "Button"});
-});</code></pre></div><h2 class="" id="forms">Forms</h2><h3 class="" id="basic-example">Forms basic example</h3><div class="example top-box" id="d122"><form class="" id="d123" role="form"><div class="form-group" id="d124"><label class="" for="exampleInputEmail1" id="d125">Email address</label><input class="form-control" type="email" id="exampleInputEmail1" placeholder="Enter email (validation)"></div><div class="form-group" id="d126"><label class="" for="exampleInputPassword1" id="d127">Password</label><input class="form-control" type="password" id="exampleInputPassword1" placeholder="Password"></div><div class="form-group" id="d128"><label class="" for="exampleInputFile" id="d129">File input</label><input class="" type="file" id="exampleInputFile"><p>Example block-level help text here.</p></div><button class="btn btn-default" type="submit" onclick="return false;" id="d12b">Submit</button></form></div><div class="codebox box"><pre><code>$$C("bootstrap.Form");
-$$C("bootstrap.FormGroup", function(group)
-{
-    $C("label", {$text:"Email address", for:"exampleInputEmail1"});
-    $C("input:input", {type:"email", class:"form-control", id:"exampleInputEmail1", placeholder:"Enter email"});
-    
-    // e-mail input validation:
-    var regexp = /(?:[a-z0-9!#$%&amp;.../;
-    group.input.listen("keyup", group.input, function()
-    {
-        if (this._element)
-        {
-            if (regexp.test(this._element.value))
-                group.class("", "has-error");
-            else
-                group.class("has-error");
-        }
-    });
-});</code></pre></div></div></body>
 </html>

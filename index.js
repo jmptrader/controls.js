@@ -142,14 +142,11 @@ with(body.fill.$builder())\n\
 
 createNavigationPanel(body.fill.content_pane);
 
-// This is a example page, but at the same time I want what they are indexed in google therefore, 
-// the page body content preloaded.
-if (window.location.href.indexOf('#refresh') >= 0)
+window.addEventListener('load', function()
 {
-    body.attach(true);
-    body.refresh();     // Generate document
-    body.attachAll();   // binding to dom
-}
-else
-    window.addEventListener('load', function() { body.attachAll(); });
+    body.attachAll();
+    
+    if (window.location.href.indexOf('#refresh') >= 0)
+        body.refresh();
+});
 
