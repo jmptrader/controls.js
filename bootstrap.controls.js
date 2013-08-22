@@ -13,9 +13,10 @@
 
 (function() { "use strict";
 
-function Bootstrap(doT, controls)
+function Bootstrap(controls)
 {
     var bootstrap = this;
+    var doT = controls.doT;
     bootstrap.VERSION = '0.1';
     
     bootstrap.control_prototype = (function()
@@ -158,7 +159,7 @@ function Bootstrap(doT, controls)
     Button.prototype = bootstrap.control_prototype;
     Button.template = doT.template(
 '<button{{=it.printAttributes()}}>\
-{{? it.attributes.$icon }}<b class="glyphicon glyphicon-{{=it.attributes.$icon}}"> </b>{{?}}\
+{{? it.attributes.$icon }}<b class="glyphicon glyphicon-{{=it.attributes.$icon}}"></b>&nbsp;{{?}}\
 {{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}\
 </button>');
     controls.typeRegister('bootstrap.Button', Button);
@@ -309,19 +310,18 @@ function Bootstrap(doT, controls)
 
 };
 
-// export bootstrap object
-if (typeof module !== 'undefined' && module.exports && typeof require !== 'undefined')
-    // node
-    module.exports = new Bootstrap(require('doT'), require('controls'));
+
+// A known set of crutches
+if (typeof module !== 'undefined' && typeof require === 'function' && module.exports)
+    module.exports = new Bootstrap(require('controls'));
 else if (typeof define === 'function' && define.amd)
-{   // amd
-    var bootstrap;
-    define(['doT', 'controls'], function(doT, controls) { if (!bootstrap) bootstrap = new Bootstrap(doT, controls); return bootstrap; });
-}
-else if (!this.bootstrap || this.bootstrap.VERSION < '0.1')
 {
-    // client
-    if (!controls) throw new TypeError('controls.bootstrap.js: controls.js not found!');
-    this.bootstrap = new Bootstrap(controls.doT, controls);
+    var instance;
+    define(['controls'], function(controls) { if (!instance) instance = new Bootstrap(controls); return instance; });
+}
+else
+{
+    if (typeof controls === 'undefined') throw new TypeError('controls.bootstrap.js: controls.js not found!');
+    this.bootstrap = new Bootstrap(controls);
 }
 }).call(this);

@@ -47,7 +47,7 @@ test( "type resolving", function()
         this.test_method = function() { return true; };
     };
     DivBlue.prototype = controls.control_prototype;
-    DivBlue.template = doT.template('<div style="background-color:blue;width:50px;height:50px"></div>');
+    DivBlue.template = controls.doT.template('<div style="background-color:blue;width:50px;height:50px"></div>');
     controls.typeRegister('controls.div/blue', DivBlue);
     
     // test
@@ -69,6 +69,9 @@ test( "type resolving", function()
     control.type('#test=777');
     ok(control.type() === 'test.Div#test=777', '.type("#test=777"); - check preserve __type');
     
+    // check default 'controls.'
+    var defcontrols = control.add('div');
+    ok(defcontrols.type() === 'controls.Div', '"test.Div".add("Div"); - check default controls. namespace');
     
     var start = performance.now();
     control = controls.create('Div/blue');
