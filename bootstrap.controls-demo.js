@@ -13,8 +13,6 @@ with(body.header.$builder())
 }
 
 
-//body.add('select:bootstrap.Select', {$data:[1,2,3]});
-
 // document content
 with(body.fill.$builder())
 {
@@ -90,7 +88,7 @@ with(body.fill.$builder())
     
     // "Vertical button group"
     
-    $C('header:h3', {id: 'vertical-button-group', $text: 'Vertical button group'});
+    $C('h3', {id: 'vertical-button-group', $text: 'Vertical button group'});
     
     $$C('div', {class:'example top-box'}, function(example)
     {
@@ -110,11 +108,11 @@ with(body.fill.$builder())
 
     // Forms
     
-    $C('header:h2', {id: 'forms', $text: 'Forms'});
+    $C('h2', {id: 'forms', $text: 'Forms'});
     
-    // Basic example
+    // Forms basic example
     
-    $C('header:h3', {id: 'basic-example', $text: 'Basic example'});
+    $C('h3', {id: 'basic-example', $text: 'Forms basic example'});
     
     $$C('div', {class:'example top-box'}, function(example)
     {
@@ -160,6 +158,7 @@ $$C("bootstrap.FormGroup", function(group)\n\
     $C("label", {$text:"Email address", for:"exampleInputEmail1"});\n\
     $C("input:input", {type:"email", class:"form-control", id:"exampleInputEmail1", placeholder:"Enter email"});\n\
     \n\
+    // e-mail input validation:\n\
     var regexp = /(?:[a-z0-9!#$%&.../;\n\
     group.input.listen("keyup", group.input, function()\n\
     {\n\

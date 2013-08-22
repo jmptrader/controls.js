@@ -10,9 +10,8 @@
 //
 // require doT.js
 
-
 (function() { "use strict";
-    
+
 function Controls(doT)
 {
     var controls = this;
@@ -1244,7 +1243,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             // resolve constructor
             
-            var __type = parse_type(type, parameters, this.__type);
+            var __type = parse_type(type, parameters/*, this.__type*/);
             var constructor = resolve_ctr(__type, parameters);
             if (!constructor)
                 throw new TypeError('Type ' + __type + ' not registered!');
@@ -2221,25 +2220,26 @@ controls.typeRegister(\'controls.%%NAME%%\', %%NAME%%);\n';
     
 };
 
-// export controls object
-if (typeof(module) !== 'undefined' && module.exports && typeof(require) !== 'undefined')
+// при разработкеудобнее бывает подключить контрол отдельным модулем
+
+
+// A known set of crutches
+if (typeof module !== 'undefined' && typeof require === 'function' && module.exports)
 {
     module.exports = new Controls(require('dot'));
-    // global export in modular environment can be commented out:
-    if (typeof(window) !== 'undefined') window.controls = module.exports;
+    // browserify support:
+    if (typeof window !== 'undefined') window.controls = module.exports;
 }
-else if (typeof(define) === 'function' && define.amd)
-{   // amd
-    var controls;
-    define(['doT'], function(doT) { if (!controls) controls = new Controls(doT); return controls; });
+else if (typeof define === 'function' && define.amd)
+{
+    var instance;
+    define(['doT'], function(doT) { if (!instance) instance = new Controls(doT); return instance; });
 }
 else if (!this.controls || this.controls.VERSION < '0.1')
 {
-    // client
-    if (!doT) throw new TypeError('controls.js: doT.js not found!');
+    if (typeof doT === 'undefined') throw new TypeError('controls.js: doT.js not found!');
     this.controls = new Controls(doT);
 }
-
 }).call(this);
 
 
