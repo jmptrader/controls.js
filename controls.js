@@ -2220,8 +2220,6 @@ controls.typeRegister(\'controls.%%NAME%%\', %%NAME%%);\n';
     
 };
 
-// при разработкеудобнее бывает подключить контрол отдельным модулем
-
 
 // A known set of crutches
 if (typeof module !== 'undefined' && typeof require === 'function' && module.exports)

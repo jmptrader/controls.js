@@ -11,12 +11,12 @@ see
 http://aplib.github.io/controls.js/
 
 
-Get started
+##Get started  
 
-# files
+### files
 
-controls.js - development version with comments, requre doT.js
-controls.min.js - compressed controls.js, requre doT.js
+controls.js - development version with comments, requre doT.js  
+controls.min.js - compressed controls.js, requre doT.js  
 
 Include the following code in your head tag:
 
@@ -25,12 +25,12 @@ Include the following code in your head tag:
 
 To simplify the first start i compile doT.js and controls.js into a single file:
 
-controls.browserify.js     - bundled with doT
-controls.browserify.min.js - compressed
+controls.browserify.js     - bundled with doT  
+controls.browserify.min.js - compressed  
 
     <script src="controls.browserify.js"></script>
 
-# Hello World!
+### Hello World!
 
     <!DOCTYPE html>
     <html>
