@@ -39,10 +39,8 @@ controls.browserify.min.js - compressed
         <script>
             var body = controls.create('body');
             body.add('h1', {$text:'Hello World!'});
-
             body.attach();
             body.refresh();
-            body.attachAll();
         </script>
     </body>
     </html>
