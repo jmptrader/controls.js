@@ -12,7 +12,9 @@
     <script src="bootstrap.controls.js"></script>
     <link rel="stylesheet" href="index.css">
     <script src="index.components.js"></script>
-<script>
+</head>
+
+<body><script>
 
 // user control example
 
@@ -152,20 +154,20 @@ with(body.fill.$builder())\n\
 
 
 createNavigationPanel(body.fill.content_pane);
-
 window.addEventListener('load', function()
 {
+    // probe
+    body.insert(0, controls.create('Container', {$text:document.body.childNodes[0].outerHTML})); // preserve this script
     body.attachAll();
-    
     if (window.location.href.indexOf('#refresh') >= 0)
         body.refresh();
 });
 
 </script>
-</head>
-
-<!-- probe -->
-<body><div class="header-pane" id="d109"><a class="" href="http://aplib.github.io/controls.js/" id="d10c"><h1 class="btn-primary" style="border-radius:4px; background-color1:#2b3ef4; padding:12px; display:inline-block;" id="d10d">controls.js</h1></a><p>for dynamic html documents and UI solutions</p><a href="https://github.com/aplib/controls.js" class="label label-default">GitHub</a>&nbsp;&nbsp;<a href="https://github.com/aplib/controls.js/archive/controls.js-v0.1.zip" class="label label-default">Download v0.1</a>&nbsp;&nbsp;<a href="bootstrap.controls-demo.html" class="label label-default">Bootstrap 3 Demo</a>&nbsp;&nbsp;</div><div class="nav-pane col-sm-3" id="d10a"><ul class="nav navlist affix-top" id="d122"><li><a class="" href="#code-first" id="d124">Code first, both server-side and client-side html code generation</a></li><li><a class="" href="#full-controls" id="d125">JavaScript controls is used for managing DOM elements</a></li><li><a class="" href="#dsl" id="d126">Extendable DSL</a></li><li><a class="" href="#code-reuse" id="d127">Structured and reusable code</a></li><li><a class="" href="#inversion-of-control" id="d128">Inversion of control</a></li><li><a class="" href="#minimizing-manipulation-of-the-DOM" id="d129">Minimizing manipulation of the DOM</a></li></ul></div><div class="content-pane col-sm-9" id="d10b"><h2 class="" id="controls-js-concepts">Concepts</h2><h3 class="" id="code-first">Code first, both server-side and client-side html code generation</h3><div class="codebox box"><pre><code>var body = controls.create("body");
+    
+    
+ <!-- probe -->   
+<div class="header-pane" id="d109"><a class="" href="http://aplib.github.io/controls.js/" id="d10c"><h1 class="btn-primary" style="border-radius:4px; padding:12px; display:inline-block;" id="d10d">controls.js</h1></a><p>for dynamic html documents and UI solutions</p><a href="https://github.com/aplib/controls.js" class="label label-default">GitHub</a>&nbsp;&nbsp;<a href="https://github.com/aplib/controls.js/archive/controls.js-v0.1.zip" class="label label-default">Download v0.1</a>&nbsp;&nbsp;<a href="bootstrap.controls-demo.html" class="label label-default">Bootstrap 3 Demo</a>&nbsp;&nbsp;</div><div class="nav-pane col-sm-3" id="d10a"><ul class="nav navlist affix-top" id="d122"><li><a class="" href="#code-first" id="d124">Code first, both server-side and client-side html code generation</a></li><li><a class="" href="#full-controls" id="d125">JavaScript controls is used for managing DOM elements</a></li><li><a class="" href="#dsl" id="d126">Extendable DSL</a></li><li><a class="" href="#code-reuse" id="d127">Structured and reusable code</a></li><li><a class="" href="#inversion-of-control" id="d128">Inversion of control</a></li><li><a class="" href="#minimizing-manipulation-of-the-DOM" id="d129">Minimizing manipulation of the DOM</a></li></ul></div><div class="content-pane col-sm-9" id="d10b"><h2 class="" id="controls-js-concepts">Concepts</h2><h3 class="" id="code-first">Code first, both server-side and client-side html code generation</h3><div class="codebox box"><pre><code>var body = controls.create("body");
 body.add(["top:Container", "left:Container", "fill:Container"]);
 
 ...
@@ -189,7 +191,7 @@ with(body.fill.$builder())
 {
     $codebox("Lorem ipsum dolor sit amet");
 }
-</code></pre></div><h3 class="" id="code-reuse">Structured and reusable code</h3><div class="example top-box" id="d113"><div class="" id="d11c" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#f69"><button class="btn btn-default" id="d11d">OK</button></div><div class="" id="d11a" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#e0a"><button class="btn btn-default" id="d11b">OK</button></div><div class="" id="d118" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#0ff"><button class="btn btn-default" id="d119">OK</button></div><div class="" id="d116" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#fd8"><button class="btn btn-default" id="d117">OK</button></div><div class="" id="d114" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#9a9"><button class="btn btn-default" id="d115">OK</button></div></div><div class="codebox box"><pre><code>function UserControl(parameters, attributes)
+</code></pre></div><h3 class="" id="code-reuse">Structured and reusable code</h3><div class="example top-box" id="d113"><div class="" id="d11c" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#e62"><button class="btn btn-default" id="d11d">OK</button></div><div class="" id="d11a" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#22e"><button class="btn btn-default" id="d11b">OK</button></div><div class="" id="d118" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#81e"><button class="btn btn-default" id="d119">OK</button></div><div class="" id="d116" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#2a5"><button class="btn btn-default" id="d117">OK</button></div><div class="" id="d114" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#9e0"><button class="btn btn-default" id="d115">OK</button></div></div><div class="codebox box"><pre><code>function UserControl(parameters, attributes)
 {
     controls.controlInitialize(this, "UserControl", parameters, attributes);
 

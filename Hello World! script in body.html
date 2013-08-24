@@ -1,0 +1,16 @@
+    <!DOCTYPE html>
+    <html lang="en-US">
+    <head>
+        <meta charset="utf-8">
+        <script src="controls.browserify.js"></script>
+    </head>
+    <body>
+    <!-- content script scripts must be in the body -->
+    <script type="text/javascript">
+        var body = controls.create('body');
+        body.add('h1', {$text: 'Hello World!'});
+        document.write(body.innerHTML());
+        body.attachAll();
+    </script>
+    </body>
+    </html>

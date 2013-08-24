@@ -12,6 +12,8 @@
     <script src="bootstrap.controls.js"></script>
     <link rel="stylesheet" href="index.css">
     <script src="index.components.js"></script>
+</head>
+<body>
 <script>
 
 var body = createDocumentStructure();
@@ -187,8 +189,8 @@ $$C("bootstrap.FormGroup", function(group)\n\
 
 
 createNavigationPanel(body.fill.content_pane);
-document.write(body.outerHTML());
+document.write(body.innerHTML());
 body.attachAll();
 </script>
-</head>
+</body>
 </html>
