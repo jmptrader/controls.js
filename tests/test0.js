@@ -77,8 +77,8 @@ test( "type resolving", function()
     control = controls.create('Div/blue');
     for(var i = 0; i < 10000; i++)
         control.add('Custom#test=5');
-    var spended = performance.now() - start;
-    ok(spended < 300, 'check parameters resolving performance 10 000 controls ' + spended + ' ms < 300 ms OK');
+    var spent = performance.now() - start;
+    ok(spent < 300, 'check parameters resolving performance 10 000 controls ' + spent + ' ms < 300 ms OK (good to firefox)');
 });
 
 // TODO actions ser/deser

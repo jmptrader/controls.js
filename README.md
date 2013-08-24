@@ -1,13 +1,10 @@
 # controls.js
+####for dynamic html documents and UI solutions
 
+controls.js - framework for a visual and data components  
+bootstrap.controls.js - WCL based on bootstrap and controls.js
 
-controls.js 
-Framework for a visual and data components.
-
-bootstrap.controls.js
-WCL based on bootstrap and controls.js
-
-see
+see  
 http://aplib.github.io/controls.js/
 
 
@@ -42,10 +39,8 @@ controls.browserify.min.js - compressed
         <script>
             var body = controls.create('body');
             body.add('h1', {$text:'Hello World!'});
-
             body.attach();
             body.refresh();
-            body.attachAll();
         </script>
     </body>
     </html>

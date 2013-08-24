@@ -432,8 +432,42 @@ controls.typeRegister(__type, ' + name + ');';
             }
         });
         
-        this.__defineGetter__('parent', function() { return this._parent; });
-        this.__defineSetter__('parent', function(value)
+        // The associated element of control
+        this.__defineGetter__('element', function() { return this._element; });
+        this.__defineSetter__('element', function(attach_to_element)
+        {
+            if (arguments.length === 0)
+                return this._element;
+            
+            var element = this._element;
+            if (attach_to_element !== element)
+            {
+                this._element = attach_to_element;
+                
+                var events = this.events;
+                if (events)
+                for(var event_type in events)
+                {
+                    var event = events[event_type];
+                    if (event.is_dom_event)
+                    {
+                        // remove event raiser from detached element
+
+                        if (element)
+                            element.removeEventListener(event.event, event.raise, event.capture);
+
+                        // add event raiser as listener for attached element
+
+                        if (attach_to_element)
+                            attach_to_element.addEventListener(event.event, event.raise, event.capture);
+                    }
+                }
+                
+                this.raise('element', attach_to_element);
+            }
+        });
+        
+        function setParent(value, index)
         {
             var parent = this._parent;
             if (value !== parent)
@@ -461,8 +495,10 @@ controls.typeRegister(__type, ' + name + ');';
 //                    var index = value_controls.indexOf(this);
 //                    if (index >= 0)
 //                        parent_controls.splice(index, 1);
-
-                    value_controls.push(this);
+                    if (index === undefined)
+                        value_controls.push(this);
+                    else
+                        value_controls.splice(index, 0, this);
                     
                     if (name)
                         value[name] = this;
@@ -472,7 +508,9 @@ controls.typeRegister(__type, ' + name + ');';
                 
                 this.raise('parent', this);
             }
-        });
+        }
+        this.__defineGetter__('parent', function() { return this._parent; });
+        this.__defineSetter__('parent', setParent);
         
         Object.defineProperty(this, 'wrapper',
         {
@@ -558,7 +596,7 @@ controls.typeRegister(__type, ' + name + ');';
             }
             
             // assemble html
-            return controls.innerHTMLtemplate(this);
+            return this.inner_template(this);
         };
         
         this.outerHTML = function()
@@ -737,16 +775,16 @@ controls.typeRegister(__type, ' + name + ');';
         {
             if (!something)
             {
-                this.element(document.getElementById(this.id));
+                this.element = document.getElementById(this.id);
             }
             else if (typeof(something) === 'string')
             {
-                this.element(document.getElementById(something));
+                this.element = document.getElementById(something);
             }
             else if (typeof(something) === 'object')
             {
                 var control_element = something._element;
-                this.element(control_element ? control_element : something);
+                this.element = (control_element) ? control_element : something;
             }
         };
         
@@ -754,7 +792,7 @@ controls.typeRegister(__type, ' + name + ');';
         this.attachAll = function()
         {
             if (!this._element)
-                this.element(document.getElementById(this.id));
+                this.element = document.getElementById(this.id);
             
             var subcontrols = this.controls;
             for(var i = subcontrols.length - 1; i >= 0; i--)
@@ -764,19 +802,53 @@ controls.typeRegister(__type, ' + name + ');';
         // Detach from DOM
         this.detach = function()
         {
-            this.element(undefined);
+            this.element = undefined;
         };
         
         // Detach this and all nested from DOM
         this.detachAll = function()
         {
-            this.element(undefined);
+            this.element = undefined;
             
             var subcontrols = this.controls;
             for(var i = subcontrols.length - 1; i >= 0; i--)
                 subcontrols[i].detachAll();
         };
+        
+        // Replace control in the hierarchy tree
+        this.replaceItself = function(control)
+        {
+            var controls = this.controls;
 
+            // .controls may be a DataArray
+            for(var i = controls.length - 1; i >= 0; i--)
+            {
+                var totransfer = controls.shift();
+                control.add(totransfer);
+            }
+            
+            var parent = this.parent;
+            if (!parent)
+                control.parent = undefined;
+            else
+            {
+                var index = parent.controls.indexOf(this);
+                this.parent = undefined;
+                setParent.call(control, parent, index);
+                
+                var element = this._element;
+                if (!element)
+                    control.element = undefined;
+                else
+                {
+                    control.element = element;
+                    control.refresh();
+                }
+                
+                //parent.refreshInner();
+            }
+        };
+        
         var dom_events =
 ',change,DOMActivate,load,unload,abort,error,select,resize,scroll,blur,DOMFocusIn,DOMFocusOut,focus,focusin,focusout,\
 click,dblclick,mousedown,mouseenter,mouseleave,mousemove,mouseover,mouseout,mouseup,wheel,keydown,keypress,keyup,oncontextmenu,\
@@ -865,41 +937,6 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             var event = force_event(this, type, capture_mode);
             event.raise(event_data);
-        };
-        
-        // The associated element of control
-        //
-        this.element = function(attach_to_element)
-        {
-            if (arguments.length === 0)
-                return this._element;
-            
-            var element = this._element;
-            if (attach_to_element !== element)
-            {
-                this._element = attach_to_element;
-                
-                var events = this.events;
-                if (events)
-                for(var event_type in events)
-                {
-                    var event = events[event_type];
-                    if (event.is_dom_event)
-                    {
-                        // remove event raiser from detached element
-
-                        if (element)
-                            element.removeEventListener(event.event, event.raise, event.capture);
-
-                        // add event raiser as listener for attached element
-
-                        if (attach_to_element)
-                            attach_to_element.addEventListener(event.event, event.raise, event.capture);
-                    }
-                }
-                
-                this.raise('element', attach_to_element);
-            }
         };
         
         this.parameter = function(name, value)
@@ -1166,7 +1203,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             return attributes.class;
         };
         
-        // Create control and add to the .controls collection
+        // Create control and insert to the .controls collection
         //
         // type
         //  {string} - type and parameters like 'layout/float=left'
@@ -1177,7 +1214,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         // [attrs_or_callback] {Object,Function} - pass attributes or callback function to initialize the created object
         // [this_arg] {Object} - 'this' argument for callback call
         //
-        this.add = function(type, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg)
+        this.insert = function(index, type, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg)
         {
             if (!type)
                 return;
@@ -1217,7 +1254,8 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 // it is a control?
                 var add_control = type;
                 if (add_control.hasOwnProperty('__type'))
-                    add_control.parent = this;
+                    //add_control.parent = this;
+                    setParent.call(type, this, index);
                 
                 return;
             }
@@ -1226,7 +1264,8 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             var name;
             var colonpos = type.indexOf(':');
-            if (colonpos >= 0)
+            var leftpos = type.indexOf('{');
+            if (colonpos >= 0 && (leftpos < 0 || colonpos < leftpos))
             {
                 // name: syntax detected
                 name = type.substr(0, colonpos);
@@ -1245,9 +1284,22 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             var __type = parse_type(type, parameters/*, this.__type*/);
             var constructor = resolve_ctr(__type, parameters);
+            
             if (!constructor)
-                throw new TypeError('Type ' + __type + ' not registered!');
-                
+            {
+                if (controls.type_error_mode === 0)
+                    throw new TypeError('Type ' + __type + ' not registered!');
+                else
+                {
+                    // route to Stub
+                    parameters['#{type}'] = type; // pass original type
+                    parameters['#{__type}'] = __type;
+                    parameters['#{callback}'] = callback;
+                    parameters['#{this_arg}'] = this_arg;
+                    constructor = resolve_ctr('controls.Stub', parameters);
+                }
+            }
+            
             var result;
             
             // loop for create control(s)
@@ -1278,7 +1330,8 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 new_control.raise('type');
                 
                 // set parent property
-                new_control.parent = this;
+                setParent.call(new_control, this, index);
+                //new_control.parent = this;
             
                 // callback
                 if (callback)
@@ -1294,6 +1347,16 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 this.refresh();
             
             return result;
+        };
+        
+        this.add = function(type, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg)
+        {
+            return this.insert(this.controls.length, type, repeats, attributes, callback, this_arg);
+        };
+        
+        this.unshift = function(type, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg)
+        {
+            return this.insert(0, type, repeats, attributes, callback, this_arg);
         };
         
         // Remove subcontrol from .controls collection
@@ -1380,6 +1443,18 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     //
     function parse_type(type, parameters, namespace)
     {
+        // {reference part}
+        
+        if (type.slice(-1) === '}')
+        {
+            var openpos = type.indexOf('{');
+            if (openpos >= 0)
+            {
+                parameters['#{href}'] = type.substr(openpos + 1, type.length - openpos - 2);
+                type = type.substr(0, openpos).trim();
+            }
+        }
+        
         // get __type
         
         var dotpos = type.indexOf('.');
@@ -1502,7 +1577,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             // check for matching all key params values
             var hit = true;
             for(var prop in parameters)
-            if (prop !== '__ctr' && key_parameters[prop] !== parameters[prop])
+            if ('__ctr,??'.indexOf(prop) < 0 && key_parameters[prop] !== parameters[prop])
             {
                 hit = false;
                 break;
@@ -1530,44 +1605,90 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             }
         }
         
-//        if (!constructor && __type.indexOf('controls.' !== 0))
-//        {
-//            // Error: type not resolved and namespace not controls
-//            // try to look for this type in controls namespace
-//            var dotpos = __type.indexOf('.');
-//            if (dotpos > 0)
-//            {
-//                __type = 'controls' + __type.substr(dotpos);
-//                constructor = resolve_ctr(__type, parameters)
-//            }
-//        }
-        
         return constructor;
     };
     
+    // unresolved type error processing mode
+    // 0 - throw TypeError, 1 - create Stub, 2 - design mode only, do not abuse! create Stub and process stub references
+    //
+    controls.type_error_mode = 0;
+    
     // Create control
     //
+    // syntax: .create(type, attributes); .create(type, parameters, attributes);
     // type - type and parameters
-    // attributes - set attributes to control
-    // parameters - inherited parameters
+    // parameters - optional, parameters
+    // attributes - optional, set attributes to control
+    // return created control
     //
-    controls.create = function(type, attributes)
+    controls.create = function(type, /*optional*/ parameters, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg)
     {
-        var parameters = {};
+        switch(arguments.length)
+        {
+            case 0:  throw new SyntaxError('Invalid Type argument value!');
+            case 1:  attributes = {}; parameters = {}; break;
+            case 2:
+                if (typeof parameters === 'function')
+                {
+                    this_arg = attributes;
+                    callback = parameters;
+                    attributes = {};
+                    parameters = {};
+                }
+                else
+                {
+                    attributes = parameters || {};
+                    parameters = {}; 
+                }
+                break;
+            default:
+                if (typeof attributes === 'function')
+                {
+                    this_arg = callback;
+                    callback = attributes;
+                    attributes = parameters || {};
+                    parameters = {};
+                }
+                else if (typeof parameters === 'function')
+                {
+                    this_arg = attributes;
+                    callback = parameters;
+                    attributes = {};
+                    parameters = {};
+                }
+                else
+                {
+                    attributes = attributes || {};
+                    parameters = parameters || {};
+                }
+        }
+        
         var __type = parse_type(type, parameters);
         var constructor = resolve_ctr(__type, parameters);
-        if (!constructor)
-            throw new TypeError('Type ' + __type + ' not registered!');
         
-        var attrs = attributes || {};
-        if (!attrs.class)
-            attrs.class = '';
+        if (!constructor)
+        {
+            if (controls.type_error_mode === 0)
+                throw new TypeError('Type ' + __type + ' not registered!');
+            else
+            {
+                // route to Stub
+                parameters['#{type}'] = type; // pass original type
+                parameters['#{__type}'] = __type;
+                parameters['#{callback}'] = callback;
+                parameters['#{this_arg}'] = this_arg;
+                constructor = resolve_ctr('controls.Stub', parameters);
+            }
+        }    
+        
+        if (!attributes.class)
+            attributes.class = '';
         
         // create object
         
         var new_control = (constructor.is_constructor) // constructor or factory method ?
-            ? new constructor(parameters, attrs)
-            : constructor(parameters, attrs);
+            ? new constructor(parameters, attributes)
+            : constructor(parameters, attributes);
         
         // reflect after creation
         new_control.raise('type');
@@ -1877,6 +1998,19 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         controls.$builder.prototype[command] = func;
     };
     
+    controls.$test = function(control, callback)
+    {
+        if (!this.$move)
+            return new controls.$test(control, callback);
+        
+        this.$default = 'controls.';
+        this.$context = control;
+        this.$context_stack = [];
+        
+        callback.call(this);
+    };
+    controls.$test.prototype = controls.$builder.prototype;
+    
     // controls.reviverJSON()
     // 
     // use with JSON.parse(json, controls.reviverJSON), this function restores controls
@@ -2010,7 +2144,182 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     };
     Custom.prototype = controls.control_prototype;
     controls.typeRegister('controls.Custom', Custom);
+
+    controls.loaded_resources = {};
+    // Stub
+    // 
+    // Stub control created on type error if type_error_mode === 2
+    // 
+    function Stub(parameters, attributes)
+    {
+        var original_type = parameters['#{type}'];
+        var original__type = parameters['#{__type}'];
+        var callback = parameters['#{callback}'];
+        var this_arg = parameters['#{this_arg}'];
+        var hrefs = parameters['#{href}'];
+        if (hrefs)
+            hrefs = hrefs.split(/,| |;/g);
+        var save_attributes = {};
+        for(var prop in attributes)
+        if (attributes.hasOwnProperty(prop))
+            save_attributes[prop] = attributes[prop];
+        
+        controls.controlInitialize(this, 'controls.Stub', parameters, attributes, Stub.template);
+        
+        this.style('border:lightgray solid 1px; display:inline-block;');
+        
+        this._state = 0; // 0 initial, 1 - resources loading, -1 - error
+        this.state = function(state)
+        {
+            var _state = this._state;
+            if (arguments.length > 0 && state !== _state)
+            {
+                switch(state)
+                {
+                    case 1: // loading
+                        var element = this._element;
+                        if (element)
+                            element.innerText += '.';
+                        break;
+                    case 2: // success
+                        break;
+                    case -1: // error
+                        this.style('border:lightred solid 1px; display:inline-block;');
+                        break;
+                }
+                
+                this.raise('state');
+            }
+            
+            return this._state;
+        };
+        
+        this.start_loading = function()
+        {
+            if(this._state === 2)
+                return;
+     
+            this.state(1);
+            
+            var resources_count = hrefs.length;
+            var error_count = 0, success_count = 0;
+            
+            for(var i = 0, resources_count; i < resources_count; i++)
+            {
+                // load resources, css asynchronously and synchronously load js
+                var href = hrefs[i];
+                
+                if (controls.loaded_resources[href])
+                    success_count++;
+                else
+                {
+                    controls.loaded_resources[href] = true;
+
+                    if (href.indexOf('.css', href.length - 4) >= 0)
+                    {
+                        var link = document.createElement('link');
+                        link.addEventListener('load', function() { success_count++; });
+                        link.addEventListener('error', function() { error_count++; });
+                        link.setAttribute('rel', 'stylesheet');
+                        link.setAttribute('href', href);
+                        link.setAttribute('data-stub', original_type);
+                        document.head.appendChild(link);
+                    }
+                    else if (href.indexOf('.js', href.length - 3) >= 0)
+                    {
+                        var script = document.createElement('script');
+                        script.addEventListener('load', function() { success_count++; });
+                        script.addEventListener('error', function() { error_count++; });
+                        script.setAttribute('src', href);
+                        script.setAttribute('data-stub', original_type);
+                        document.head.appendChild(script);
+                    }
+                }
+            }
+            
+            var script = document.createElement('script');
+            script.setAttribute('data-stub', original_type);
+            document.head.appendChild(script);
+            
+            var attempts = 1000;
+            var _this = this;
+            var timer = setInterval(function()
+            {
+                attempts--;
+                if (attempts < 0 || error_count > 0 || success_count >= resources_count)
+                {
+                    clearInterval(timer);
+                    if (success_count >= resources_count)
+                    {
+                        _this.state(2);
+                        _this.on_resources_loaded();
+                    }
+                    else
+                        _this.state(-1);
+                }
+            }, 50);
+        
+        };
+        
+        this.on_resources_loaded = function()
+        {
+            // after all refs resorces loaded re create requested control
+            var create_type = original_type.split('{')[0]; // prevent recursion
+            var control = controls.create(create_type, save_attributes);
+            if (!control)
+            {
+                // error creating requested control
+                this.state(-1);
+            }
+            else
+            {
+//                // all events assigned to Stub object copy to new control object
+//                var events = this.events;
+//                for(var key in events)
+//                {
+//                    var event = events[key];
+//                    var listeners = event.listeners;
+//                    for(var i = 0, c = listeners; i < c; i+=2)
+//                        control.listen(key, listeners[i+1] || control, listeners[i]);
+//                }
+                
+                this.controls = [];
+                this.replaceItself(control);
+                
+                if (callback)
+                    callback.call((!this_arg || this_arg === this) ? control : this_arg, control);
+                
+                // 'onloaded' event - pass this to new control
+                control.raise('externloaded', this);
+            }
+        };
+        
+        if (controls.type_error_mode === 2)
+        {
+            // debug mode
+            // load sorces into page and return created target control
+            
+            if (hrefs && original__type)
+            {
+                this.add('Button', {type:'button', $text:'load'})
+                .listen('click', this, function()
+                {
+                    this.start_loading();
+                });
+            }               
+        }
+    };
+    Stub.prototype = controls.control_prototype;
+    Stub.template = doT.template('\
+<div{{=it.printAttributes()}}>\
+<p>The first killer feature</p>\
+{{? it.attributes.$text }}<p>{{=it.attributes.$text}}<p>{{?}}\
+{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}\
+</div>');
+    controls.typeRegister('controls.Stub', Stub);
     
+    // Head
+    //
     function Head(parameters, attributes)
     {
         controls.controlInitialize(this, 'controls.Head', parameters, attributes, Head.template);
@@ -2027,7 +2336,10 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     function Body(parameters, attributes)
     {
         controls.controlInitialize(this, 'controls.Body', parameters, attributes, Body.template);
-        this.attach    = function() { Body.prototype.attach.call(this, document.body); };
+        this.attach    = function(force_body)
+        {
+            Body.prototype.attach.call(this, document.body);
+        };
         this.attachAll = function() { Body.prototype.attach.call(this, document.body); Body.prototype.attachAll.call(this); };
     };
     Body.prototype = controls.control_prototype;
@@ -2217,6 +2529,8 @@ controls.typeRegister(\'controls.%%NAME%%\', %%NAME%%);\n';
 {{~it.controls :value:index}}<li{{=it.itemSet.printAttributes("-id")}}>{{=value.wrappedHTML()}}</li>{{~}}\
 </ul>');
     controls.typeRegister('controls.List', List);
+    
+    
     
 };
 
