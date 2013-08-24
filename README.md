@@ -30,17 +30,39 @@ controls.browserify.min.js - compressed
 ### Hello World!
 
     <!DOCTYPE html>
-    <html>
+    <html lang="en-US">
+    <head>
+        <meta charset="utf-8">
+        <script src="controls.browserify.js"></script>
+        <!-- non-content script scripts allowed in the header -->
+        <script type="text/javascript">
+            window.addEventListener('load', function()
+            {
+                var body = controls.create('body');
+                body.add('h1', {$text: 'Hello World!'});
+                body.attach();
+                body.refresh();
+            });
+        </script>
+    </head>
+    <body>
+    </body>
+    </html>
+
+
+    <!DOCTYPE html>
+    <html lang="en-US">
     <head>
         <meta charset="utf-8">
         <script src="controls.browserify.js"></script>
     </head>
     <body>
-        <script>
-            var body = controls.create('body');
-            body.add('h1', {$text:'Hello World!'});
-            body.attach();
-            body.refresh();
-        </script>
+    <!-- content script scripts must be in the body -->
+    <script type="text/javascript">
+        var body = controls.create('body');
+        body.add('h1', {$text: 'Hello World!'});
+        document.write(body.innerHTML());
+        body.attachAll();
+    </script>
     </body>
     </html>
