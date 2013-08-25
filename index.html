@@ -146,9 +146,9 @@ with(body.fill.$builder())\n\
     
     // Minimizing manipulation of the DOM
     
-    $C('h3', {id:'minimizing-manipulation-of-the-DOM', $text:'Minimizing manipulation of the DOM'});
-    
-    $p('It is preferable not to store data and other information in DOM, except when it leads to simplification and readability.');
+//    $C('h3', {id:'minimizing-manipulation-of-the-DOM', $text:'Minimizing manipulation of the DOM'});
+//    
+//    $p('It is preferable not to store data and other information in DOM, except when it leads to simplification and readability.');
 }
 
 
@@ -204,5 +204,6 @@ with(body.fill.$builder())
     });
 }</code></pre></div><h3 class="" id="inversion-of-control">Inversion of control</h3><div class="codebox box"><pre><code>controls.typeRegister("bootstrap.Button#style=success", CustomBtnControl);
 ...
-&gt; var button = example.add("bootstrap.Button#size=2,style=success");</code></pre></div><p>The combination of type name and parameters (where parameters may be inheritable) resoves to the specific type of the object in the runtime. IoC allows to override the details of the behavior of existing systems without modifying their code. For example, it will organize a versioning components in the design, switching visual themes at runtime or unbreakable changes at service.</p><h3 class="" id="minimizing-manipulation-of-the-DOM">Minimizing manipulation of the DOM</h3><p>It is preferable not to store data and other information in DOM, except when it leads to simplification and readability.</p></div></body>
+&gt; var button = example.add("bootstrap.Button#size=2,style=success");</code></pre></div><p>The combination of type name and parameters (where parameters may be inheritable) resoves to the specific type of the object in the runtime. IoC allows to override the details of the behavior of existing systems without modifying their code. For example, it will organize a versioning components in the design, switching visual themes at runtime or unbreakable changes at service.</p>
+</div></body>
 </html>

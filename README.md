@@ -34,7 +34,7 @@ controls.browserify.min.js - compressed
     <head>
         <meta charset="utf-8">
         <script src="controls.browserify.js"></script>
-        <!-- non-content script scripts allowed in the header -->
+        <!-- non-content scripts allowed in the header -->
         <script type="text/javascript">
             window.addEventListener('load', function()
             {
@@ -57,7 +57,7 @@ controls.browserify.min.js - compressed
         <script src="controls.browserify.js"></script>
     </head>
     <body>
-    <!-- content script scripts must be in the body -->
+    <!-- content scripts must be in the body -->
     <script type="text/javascript">
         var body = controls.create('body');
         body.add('h1', {$text: 'Hello World!'});

@@ -452,25 +452,31 @@ controls.typeRegister(__type, ' + name + ');';
     // >> HTML cache
     
     // Caching outerHTML() innerHTML() calculations Optionally only for controls with the set HashControl prop
-    // Caсhe dated for one day removed
-    controls.html_cache = localStorage.getItem('html_cache');
-    var html_cache_date = parseInt(localStorage.getItem('html_cache_date'));
-    if ((!controls.html_cache && !html_cache_date) || (Date.now().valueOf() - html_cache_date) > 86400000)
+    // Cache dated for one day removed
+    try
     {
-        // Initial state of cache
-        localStorage.setItem('html_cache', '');
-        localStorage.setItem('html_cache_date', Date.now().valueOf());
-        controls.html_cache = {};
-    }
-    controls.html_cache_modified = false;
-        setInterval(function()
+        controls.html_cache = localStorage.getItem('html_cache');
+        var html_cache_date = parseInt(localStorage.getItem('html_cache_date'));
+
+    
+        if ((!controls.html_cache && !html_cache_date) || (Date.now().valueOf() - html_cache_date) > 86400000)
         {
-            if (controls.html_cache_modified)
+            // Initial state of cache
+            localStorage.setItem('html_cache', '');
+            localStorage.setItem('html_cache_date', Date.now().valueOf());
+            controls.html_cache = {};
+        }
+        controls.html_cache_modified = false;
+            setInterval(function()
             {
-                localStorage.setItem('html_cache');
-                controls.html_cache_modified = false;
-            }
-        }, 10000);
+                if (controls.html_cache_modified)
+                {
+                    localStorage.setItem('html_cache');
+                    controls.html_cache_modified = false;
+                }
+            }, 10000);
+    }
+    catch (e) {}
     
 // >> Events
     
@@ -568,12 +574,14 @@ controls.typeRegister(__type, ' + name + ');';
             }
             
             if (!listener)
-                return;
+                return this;
             
             if (!this.event)
                 this.event = new controls.Event(this);
             
             this.event.addListener(call_this, listener);
+            
+            return this;
         },
                 
         removeListener: function(listener)
@@ -581,6 +589,8 @@ controls.typeRegister(__type, ' + name + ');';
             var event = this.event;
             if (event)
                 event.removeListener(listener);
+            
+            return this;
         },
         
         subscribe: function(call_this/*optional*/, listener)
@@ -592,12 +602,14 @@ controls.typeRegister(__type, ' + name + ');';
             }
             
             if (!listener)
-                return;
+                return this;
             
             if (!this.post_event)
                 this.post_event = new controls.Event(this);
             
             this.post_event.addListener(call_this, listener);
+            
+            return this;
         },
         
         unsubscribe: function(listener)
@@ -605,6 +617,8 @@ controls.typeRegister(__type, ' + name + ');';
             var post_event = this.post_event;
             if (post_event)
                 post_event.removeListener(listener);
+            
+            return this;
         },
                 
         raise: function(event_data, latency)
@@ -690,63 +704,75 @@ controls.typeRegister(__type, ' + name + ');';
     
     controls.control_prototype = new function()
     {
-        this.__defineGetter__('$', function() { return (this._element) ? $(this._element) : $('#' + this.id); });
-        
-        this.__defineGetter__('name', function() { return this._name; });
-        this.__defineSetter__('name', function(value)
+        Object.defineProperty(this, "$",
         {
-            if (IDENTIFIERS.indexOf(',' + value + ',') >= 0)
-                throw new SyntaxError('Invalid name "' + value + '"!');
-            
-            var name = this._name;
-            if (value !== name)
+            enumerable: true, 
+            get: function() { return (this._element) ? $(this._element) : $('#' + this.id); }
+        });
+        
+        Object.defineProperty(this, "name",
+        {
+            enumerable: true, 
+            get: function() { return this._name; },
+            set: function(value)
             {
-                this._name = value;
-                
-                var parent = this._parent;
-                if (parent)
+                if (IDENTIFIERS.indexOf(',' + value + ',') >= 0)
+                    throw new SyntaxError('Invalid name "' + value + '"!');
+
+                var name = this._name;
+                if (value !== name)
                 {
-                    if (name && parent.hasOwnProperty(name) && parent[name] === this)
-                        delete parent[name];
-                    
-                    if (value)
-                        parent[value] = this;
+                    this._name = value;
+
+                    var parent = this._parent;
+                    if (parent)
+                    {
+                        if (name && parent.hasOwnProperty(name) && parent[name] === this)
+                            delete parent[name];
+
+                        if (value)
+                            parent[value] = this;
+                    }
                 }
             }
         });
         
         // The associated element of control
-        this.__defineGetter__('element', function() { return this._element; });
-        this.__defineSetter__('element', function(attach_to_element)
+        Object.defineProperty(this, "element",
         {
-            if (arguments.length === 0)
-                return this._element;
-            
-            var element = this._element;
-            if (attach_to_element !== element)
+            enumerable: true,
+            get: function() { return this._element; },
+            set: function(attach_to_element)
             {
-                this._element = attach_to_element;
-                
-                var events = this.events;
-                if (events)
-                for(var event_type in events)
+                if (arguments.length === 0)
+                    return this._element;
+
+                var element = this._element;
+                if (attach_to_element !== element)
                 {
-                    var event = events[event_type];
-                    if (event.is_dom_event)
+                    this._element = attach_to_element;
+
+                    var events = this.events;
+                    if (events)
+                    for(var event_type in events)
                     {
-                        // remove event raiser from detached element
+                        var event = events[event_type];
+                        if (event.is_dom_event)
+                        {
+                            // remove event raiser from detached element
 
-                        if (element)
-                            element.removeEventListener(event.event, event.raise, event.capture);
+                            if (element)
+                                element.removeEventListener(event.event, event.raise, event.capture);
 
-                        // add event raiser as listener for attached element
+                            // add event raiser as listener for attached element
 
-                        if (attach_to_element)
-                            attach_to_element.addEventListener(event.event, event.raise, event.capture);
+                            if (attach_to_element)
+                                attach_to_element.addEventListener(event.event, event.raise, event.capture);
+                        }
                     }
+
+                    this.raise('element', attach_to_element);
                 }
-                
-                this.raise('element', attach_to_element);
             }
         });
         
@@ -792,8 +818,12 @@ controls.typeRegister(__type, ' + name + ');';
                 this.raise('parent', this);
             }
         }
-        this.__defineGetter__('parent', function() { return this._parent; });
-        this.__defineSetter__('parent', setParent);
+        Object.defineProperty(this, "parent",
+        {
+            enumerable: true,
+            get: function() { return this._parent; },
+            set: setParent
+        });
         
         Object.defineProperty(this, 'wrapper',
         {
@@ -831,8 +861,8 @@ controls.typeRegister(__type, ' + name + ');';
             }
         });
         
-        this.__defineGetter__('first', function() { return this.controls[0]; });
-        this.__defineGetter__('last', function() { return this.controls[this.controls.length-1]; });
+        Object.defineProperty(this, 'first', function() { return this.controls[0]; });
+        Object.defineProperty(this, 'last', function() { return this.controls[this.controls.length-1]; });
 
         // default html template
         this.outer_template = doT.template('<div{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}</div>');
@@ -1186,7 +1216,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             }
             
             if (!type || !listener)
-                return;
+                return this;
             
             var event = force_event(this, type, capture);
             
@@ -1194,23 +1224,27 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             var listener_func = (listener instanceof Function) ? listener : Function('event', listener);
             
             event.addListener(call_this, listener_func);
+            
+            return this;
         };
         
         // Alias for listen()
         this.addListener = function(type, call_this/*optional*/, listener, capture)
         {
-            this.listen(type, call_this, listener, capture);
+            return this.listen(type, call_this, listener, capture);
         };
         
         this.removeListener = function(type, listener, capture)
         {
             if (!type || !listener)
-                return;
+                return this;
             
             var event = force_event(this, type, capture);
             
             // listener as string inacceptable!
             event.removeListener(listener);
+            
+            return this;
         };
         
         this.raise = function(type, event_data, capture_mode)
@@ -1890,6 +1924,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         
         return constructor;
     };
+    controls.resolveType = resolve_ctr;
     
     // unresolved type error processing mode
     // 0 - throw TypeError, 1 - create Stub, 2 - design mode only, do not abuse! create Stub and process stub references
@@ -1990,6 +2025,9 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     };
     function check_type(builder, type)
     {
+        if (typeof type !== 'string')
+            return type;
+        
         var colonpos = type.indexOf(':');
         var dotpos = type.indexOf('.');
         var slashpos = type.indexOf('/');
@@ -2265,21 +2303,22 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         }
     };
     
-    controls.defCommand_Wrap = function(new_cmd_tag, wrapped_cmd_tag, before, after)
-    {
-        var proto = controls.$builder.prototype;
-        before = before.replace(/\"/g,'\\\"').replace(/\'/g,'\\\'');
-        after = after.replace(/\"/g,'\\\"').replace(/\'/g,'\\\'');
-        proto['$' + new_cmd_tag] = Function('content', 'this.$' + wrapped_cmd_tag + '("' + before + '" + content + "' + after + '");');
-        proto['$$' + new_cmd_tag] = Function('content', 'this.$$' + wrapped_cmd_tag + '("' + before + '" + content + "' + after + '");');
-    };
-    
-    'p,h1,h2,h3,h4,h5,h6'.split(',').forEach(function(tag) { controls.defCommand_Wrap(tag, 'X', '<' + tag + '>', '</' + tag + '>'); });
-    
     controls.defCommand = function(command, func)
     {
         controls.$builder.prototype[command] = func;
     };
+    
+    'p'.split(',').forEach(function(tag)
+    {
+        controls.defCommand('$' + tag, function(text,_class,style) { this.$C(tag, {$text:text, class:_class, style:style}); });
+        controls.defCommand('$$' + tag, function(text,_class,style) { this.$$C(tag, {$text:text, class:_class, style:style}); });
+    });
+    
+    'h1,h2,h3,h4,h5,h6'.split(',').forEach(function(tag)
+    {
+        controls.defCommand('$' + tag, function(text,id,_class,style) { if(id)id=id.replace(/ /g,'-'); this.$C(tag, {$text:text, id:id, class:_class, style:style}); });
+        controls.defCommand('$$' + tag, function(text,id,_class,style) { if(id)id=id.replace(/ /g,'-'); this.$$C(tag, {$text:text, id:id, class:_class, style:style}); });
+    });
     
     controls.$test = function(control, callback)
     {

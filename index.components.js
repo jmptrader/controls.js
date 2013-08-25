@@ -4,7 +4,7 @@
 controls.defCommand('$h1ref', function(text, href)
 {
     this.$C( 'header:a', {href:href} )
-    .add( 'h1', {$text:text, class:'btn-primary', style:'border-radius:4px; background-color1:#2b3ef4; padding:12px; display:inline-block;'} );
+    .add( 'h1', {$text:text, class:'btn-primary', style:'border-radius:4px; padding:12px; display:inline-block;'} );
 });
 
 controls.defCommand('$reflabels', function(refs)
@@ -48,7 +48,7 @@ with(body.left.nav_wrapper.$builder())
     {
         $(content_pane).children('h1,h2,h3').each(function(i,header)
         {
-            $C('a', {href:'#' + header.id, $text:header.innerText});
+            $C('a', {href:'#' + header.id, $text:header.innerHTML});
         });
         
         body.left.nav_wrapper.refresh();
