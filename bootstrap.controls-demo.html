@@ -39,7 +39,6 @@ with(body.fill.content_pane.$builder())
     // "Buttons, size and styles"
     
     $C('h3', {id:'buttons-size-and-styles', $text:'Buttons, size and styles'});
-    
     $$C('div', {class:'example top-box'}, function(example)
     {
         // button group
@@ -87,7 +86,6 @@ with(body.fill.content_pane.$builder())
             alert('Button style: link');
         });
     });
-    
     $codebox(
 'example.add("btn_prev:Button#size=2,style=success",  {$icon:"chevron-left"})\n\
 .listen("click", function()\n\
@@ -101,7 +99,6 @@ with(body.fill.content_pane.$builder())
     // "Vertical button group"
     
     $C('h3', {id: 'vertical-button-group', $text: 'Vertical button group'});
-    
     $$C('div', {class:'example top-box'}, function(example)
     {
         $$C('bootstrap.BtnGroup', {class: 'btn-group-vertical'}, function(group_vertical)
@@ -109,8 +106,6 @@ with(body.fill.content_pane.$builder())
             $C('bootstrap.Button', 4, {$text: 'Button'});
         });
     });
-    
-    
     $codebox(
 'example.add("bootstrap.BtnGroup", {class: "btn-group-vertical"}, function(group_vertical)\n\
 {\n\
@@ -126,7 +121,6 @@ with(body.fill.content_pane.$builder())
     // Forms basic example
     
     $C('h3', {id: 'basic-example', $text: 'Forms basic example'});
-    
     $$C('div', {class:'example top-box'}, function(example)
     {
         $$C('bootstrap.Form');
@@ -163,7 +157,6 @@ with(body.fill.content_pane.$builder())
         
         $C('bootstrap.Button', {type:'submit', $text:'Submit', onclick:'return false;'});
     });
-    
     $codebox(
 '$$C("bootstrap.Form");\n\
 $$C("bootstrap.FormGroup", function(group)\n\
