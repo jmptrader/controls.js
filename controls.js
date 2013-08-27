@@ -37,7 +37,7 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr';
     //  2. parameter name=value - add parameter and set value
     //  3. -parameter name - remove parameter from inheritance (TODO)
     //  
-    //  example: bootstrap.Button#size=2,style=info
+    //  example: bootstrap.Button#size=2;style=info
     //  
     controls.controlInitialize = function(object, __type, parameters, _attributes, outer_template, inner_template)
     {
@@ -382,6 +382,7 @@ controls.typeRegister(__type, ' + name + ');';
     // Attributes:
     // data - an array of values for the initial filling of the data array
     //
+    // No!Brrr! TODO this
     function DataArray(parameters, attributes) // factory method
     {
         var array = [];
@@ -529,7 +530,7 @@ controls.typeRegister(__type, ' + name + ');';
                     if (name)
                         value[name] = this;
                     
-                    value.refresh();
+//                    value.refresh();
                 }
                 
                 this.raise('parent', this);
@@ -879,6 +880,32 @@ controls.typeRegister(__type, ' + name + ');';
             }
         };
         
+        this.createElement = function()
+        {
+            var element = this._element;
+            if (element)
+                throw new TypeError('Already exists!');
+            
+            var new_element = document.createElement('div');
+            
+            var parent = this._parent;
+            if (parent)
+            {
+                var parent_element = parent.element;
+                //new_element.parentNode = parent_element;
+                parent_element.appendChild(new_element);
+                
+                new_element.outerHTML = this.outerHTML();
+                
+                if (!new_element.parentNode)
+                    parent_element.appendChild(new_element);
+            }
+
+            
+            
+            this.element = new_element;
+        };
+        
         var dom_events =
 ',change,DOMActivate,load,unload,abort,error,select,resize,scroll,blur,DOMFocusIn,DOMFocusOut,focus,focusin,focusout,\
 click,dblclick,mousedown,mouseenter,mouseleave,mousemove,mouseover,mouseout,mouseup,wheel,keydown,keypress,keyup,oncontextmenu,\
@@ -893,7 +920,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 _this.events = events;
             }
             
-            var key = (capture) ? ('#' + type) : type;
+            var key = (capture) ? ('#'/*capture*/ + type) : type;
             var event = events[key];
             if (!event)
             {
@@ -986,10 +1013,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 }
             }
             else
-            {
-                var key = '#' + name;
-                return (parameters.hasOwnProperty(key)) ? parameters[key] : parameters[name];
-            }
+                return parameters[name] || parameters['/'+name];
         };
         
         // set attribute value
@@ -1050,23 +1074,23 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 var parameters = this.parameters;
                 for(var prop in parameters)
                 {
-                    if (prop[0] === '#')
+                    if (prop[0] !== '/')
                     {
                         // not inheritable parameters
-                        unheritable.push(prop.substr(1) + '=' + parameters[prop]);
+                        unheritable.push(prop + '=' + parameters[prop]);
                     }
                     else
                     {
                         // inheritable parameters
-                        inheritable.push(prop + '=' + parameters[prop]);
+                        inheritable.push(prop.substr(1) + '=' + parameters[prop]);
                     }
                 }
                 
                 var type = this.__type;
                 if (inheritable.length > 0)
-                    type += '/' + inheritable.join();
+                    type += '/' + inheritable.join(';');
                 if (unheritable.length > 0)
-                    type += '#' + unheritable.join();
+                    type += '#' + unheritable.join(';');
 
                 return type;
             }
@@ -1083,7 +1107,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
 
                 var parent_parameters = parent.parameters;
                 for(var prop in parent_parameters)
-                if (prop.indexOf('#') !== 0)
+                if (prop[0] === '/')
                     parameters[prop] = parent_parameters[prop];
             }
             
@@ -1311,7 +1335,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             var this_parameters = this.parameters;
             var parameters = {};
             for(var prop in this_parameters)
-            if (prop[0] !== '#')
+            if (prop[0] === '/')
                 parameters[prop] = this_parameters[prop];
             
             // resolve constructor
@@ -1377,8 +1401,8 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             }
             
             // refresh dom
-            if (repeats > 0 && this._element)
-                this.refresh();
+//            if (repeats > 0 && this._element)
+//                this.refresh();
             
             return result;
         };
@@ -1472,13 +1496,12 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     // Parse full type to base __type and parameters
     // 
     // type {string} - type string include parameters
-    // parameters {object} - parameters parsed from type string will be assigned to the passed parameters object
+    // parameters {object} - parameters (;-separated list) parsed from type string will be assigned to the passed parameters object
     // namespace {string} - base type or context namespace example: 'bootstrap.Label' or 'bootstrap'
     //
     function parse_type(type, parameters, namespace)
     {
-        // {reference part}
-        
+        // remove {reference part}
         if (type.slice(-1) === '}')
         {
             var openpos = type.indexOf('{');
@@ -1503,7 +1526,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         
         var __type = (typelen < 0) ? type : type.substr(0, typelen);
         
-        // fix type prefix
+        // fix type prefix - namespace
         if (__type && (dotpos < 0 || (typelen >= 0 && dotpos > typelen)))
         {
             if (namespace)
@@ -1530,11 +1553,12 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             var paramstr = type.substr(typelen);
             var inheritable, unheritable;
             
+            // unheritable starts with #
             if (numberpos > slashpos)
                 unheritable = type.substr(numberpos + 1);
             else if (numberpos >= 0)
                 unheritable = type.substr(numberpos + 1, slashpos - numberpos - 1);
-            
+            // unheritable starts with /
             if (slashpos > numberpos)
                 inheritable = type.substr(slashpos + 1);
             else if (slashpos >= 0)
@@ -1542,7 +1566,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             if (inheritable)
             {
-                inheritable = inheritable.split(',');
+                inheritable = inheritable.split(';'); // ';' - separated list
                 for(var i = 0, c = inheritable.length; i < c; i++)
                 {
                     var parameter = inheritable[i];
@@ -1556,7 +1580,8 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                             if (parvalue === undefined)
                                 parvalue = true;
                                 
-                            parameters[parname] = parvalue;
+                            // inheritable writed to parameters hash under '/'+parametername key
+                            parameters['/' + parname] = parvalue;
                         }
                     }
                 }
@@ -1564,7 +1589,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
 
             if (unheritable)
             {
-                unheritable = unheritable.split(',');
+                unheritable = unheritable.split(';'); // ';' - separated list
                 for(var i = 0, c = unheritable.length; i < c; i++)
                 {
                     var parameter = unheritable[i];
@@ -1578,7 +1603,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                             if (parvalue === undefined)
                                 parvalue = true;
                             
-                            parameters['#' + parname] = parvalue;
+                            parameters[parname] = parvalue;
                         }
                     }
                 }
@@ -2437,10 +2462,10 @@ controls.typeRegister(\'controls.%%NAME%%\', %%NAME%%);\n';
         
         this.listen('type', function()
         {
-            var level = '1';
-            var parameters = this.parameters;
+            var level = '1'; 
+           var parameters = this.parameters;
             for(var prop in parameters)
-            if (prop === '#level' || prop === 'level')
+            if (prop === 'level' || prop === '/level')
                 level = parameters[prop];
             
             this.level = level;
@@ -2519,7 +2544,7 @@ controls.typeRegister(\'controls.%%NAME%%\', %%NAME%%);\n';
             var floatvalue;
             
             for(var prop in parameters)
-            if (prop === 'float' || prop === '#float')
+            if (prop === 'float' || prop === '/float')
                 floatvalue = parameters[prop];
             
             if (floatvalue)

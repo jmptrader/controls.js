@@ -40,6 +40,25 @@ function Bootstrap(controls)
         return icon_class;
     };
     
+    
+    // Label
+    // 
+    function Label(parameters, attributes)
+    {
+        controls.controlInitialize(this, 'bootstrap.Label', parameters, attributes, Label.template);
+        this.class('label');
+        
+        this.listen('type', function()
+        {
+            var style = this.parameter('style') || 'default';
+            this.class('label label-' + style, 'label-default label-primary label-success label-info label-warning label-danger');
+        });
+    };
+    Label.prototype = bootstrap.control_prototype;
+    Label.template = doT.template(
+'<span{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}</span>');
+    controls.typeRegister('bootstrap.Label', Label);
+    
     // Dropdowns http://getbootstrap.com/components/#dropdowns
     
     // DropdownItem
@@ -149,7 +168,7 @@ function Bootstrap(controls)
         {
             if (arguments.length > 0)
             {
-                this.parameters['#size'] = size;
+                this.parameters.size = size;
                 this.raise('type');
             }
             
@@ -202,32 +221,7 @@ function Bootstrap(controls)
     controls.typeRegister('bootstrap.BtnGroup', BtnGroup);
 
 
-    // bootstrap.Select
-    //
-    function Select(parameters, attributes)
-    {
-        controls.controlInitialize(this, 'bootstrap.Select', parameters, attributes, Select.template);
-        this.class('form-control');
-        
-        var dao_attributes = {};
-        // $data argument
-        var $data = attributes.$data;
-        if ($data)
-        {
-            dao_attributes.$data = $data;
-            delete attributes.$data;
-        }
-        this.bind(controls.create('DataArray', dao_attributes));
-        
-        this.listen('data', this.refreshInner);
-    };
-    Select.prototype = bootstrap.control_prototype;
-    Select.template = doT.template(
-'<select{{=it.printAttributes()}}>\
-{{?it.data}}{{~it.data :value:index}}<option value={{=value}}>{{=value}}</option>{{~}}{{?}}\
-</select>');
-    Select.inner_template = doT.template('{{?it.data}}{{~it.data :value:index}}<option value={{=value}}>{{=value}}</option>{{~}}{{?}}');
-    controls.typeRegister('bootstrap.Select', Select);
+
     
     
     // TabHeader
@@ -277,23 +271,7 @@ function Bootstrap(controls)
     controls.typeRegister('bootstrap.FormGroup', FormGroup);
     
     
-    // Label
-    // 
-    function Label(parameters, attributes)
-    {
-        controls.controlInitialize(this, 'bootstrap.Label', parameters, attributes, Label.template);
-        this.class('label');
-        
-        this.listen('type', function()
-        {
-            var style = this.parameter('style') || 'default';
-            this.class('label label-' + style, 'label-default label-primary label-success label-info label-warning label-danger');
-        });
-    };
-    Label.prototype = bootstrap.control_prototype;
-    Label.template = doT.template(
-'<span{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}</span>');
-    controls.typeRegister('bootstrap.Label', Label);
+
     
     // ControlLabel
     // 
@@ -306,6 +284,37 @@ function Bootstrap(controls)
     ControlLabel.template = doT.template(
 '<label{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}</label>');
     controls.typeRegister('bootstrap.ControlLabel', ControlLabel);
+    
+    // ControlSelect
+    // 
+    // Attributes:
+    //  $data {DataArray}
+    //
+    function ControlSelect(parameters, attributes)
+    {
+        controls.controlInitialize(this, 'bootstrap.ControlSelect', parameters, attributes, ControlSelect.template);
+        this.class('form-control');
+        this.class('display:inline-block;');
+        
+        var dao_attributes = {};
+        // $data argument
+        var $data = attributes.$data;
+        if ($data)
+        {
+            dao_attributes.$data = $data;
+            delete attributes.$data;
+        }
+        this.bind(controls.create('DataArray', dao_attributes));
+        
+        this.listen('data', this.refreshInner);
+    };
+    ControlSelect.prototype = bootstrap.control_prototype;
+    ControlSelect.template = doT.template(
+'<select{{=it.printAttributes()}}>\
+{{?it.data}}{{~it.data :value:index}}<option value={{=value}}>{{=value}}</option>{{~}}{{?}}\
+</select>');
+    ControlSelect.inner_template = doT.template('{{?it.data}}{{~it.data :value:index}}<option value={{=value}}>{{=value}}</option>{{~}}{{?}}');
+    controls.typeRegister('bootstrap.ControlSelect', ControlSelect);
     
 
 };

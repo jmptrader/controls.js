@@ -48,7 +48,7 @@ with(body.fill.content_pane.$builder())
     
             // button chevron-left
 
-            $C('btn_prev:bootstrap.Button#size=2,style=success',  {$icon:'chevron-left'})
+            $C('btn_prev:bootstrap.Button#size=2;style=success',  {$icon:'chevron-left'})
             .listen('click', function()
             {
                 if (btn_size > 0)
@@ -59,7 +59,7 @@ with(body.fill.content_pane.$builder())
 
             // button chevron-right
 
-            $C('btn_next:bootstrap.Button#size=2,style=default', {$icon:'chevron-right'})
+            $C('btn_next:bootstrap.Button#size=2;style=default', {$icon:'chevron-right'})
             .listen('click', function()
             {
                 if (btn_size < 3)
@@ -72,7 +72,7 @@ with(body.fill.content_pane.$builder())
 
             ['default','primary','success','info','warning','danger'].forEach(function(style)
             {
-                $C('btn_' + style + ':bootstrap.Button#size=2,style=' + style, {$text:style, $icon:'thumbs-up'})
+                $C('btn_' + style + ':bootstrap.Button#size=2;style=' + style, {$text:style, $icon:'thumbs-up'})
                 .listen('click', function()
                 {
                     alert('Button style: ' + style);
@@ -80,14 +80,14 @@ with(body.fill.content_pane.$builder())
             });
         });
         
-        $C('btn_link:bootstrap.Button#size=2,style=link', {$text:'link', $icon:'thumbs-up', style:'float:none;'})
+        $C('btn_link:bootstrap.Button#size=2;style=link', {$text:'link', $icon:'thumbs-up', style:'float:none;'})
         .listen('click', function()
         {
             alert('Button style: link');
         });
     });
     $codebox(
-'example.add("btn_prev:Button#size=2,style=success",  {$icon:"chevron-left"})\n\
+'example.add("btn_prev:Button#size=2;style=success",  {$icon:"chevron-left"})\n\
 .listen("click", function()\n\
 {\n\
     if (btn_size > 0)\n\
