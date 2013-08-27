@@ -137,7 +137,7 @@ with(body.fill.$builder())\n\
     $codebox(
 '\controls.typeRegister("bootstrap.Button#style=success", CustomBtnControl);\n\
 ...\n\
-> var button = example.add("bootstrap.Button#size=2,style=success");');
+> var button = example.add("bootstrap.Button#size=2;style=success");');
     $p('The combination of type name and parameters (where parameters may be inheritable) resoves to the specific type of the object in the runtime. IoC allows to\
  override the details of the behavior of existing systems without modifying their code. For example, it will organize a versioning\
  components in the design, switching visual themes at runtime or unbreakable changes at service.');
@@ -167,7 +167,8 @@ window.addEventListener('load', function()
     
     
  <!-- probe -->   
-<div class="header-pane" id="d109"><a class="" href="http://aplib.github.io/controls.js/" id="d10c"><h1 class="btn-primary" style="border-radius:4px; padding:12px; display:inline-block;" id="d10d">controls.js</h1></a><p>for dynamic html documents and UI solutions</p><a href="https://github.com/aplib/controls.js" class="label label-default">GitHub</a>&nbsp;&nbsp;<a href="https://github.com/aplib/controls.js/archive/controls.js-v0.1.zip" class="label label-default">Download v0.1</a>&nbsp;&nbsp;<a href="bootstrap.controls-demo.html" class="label label-default">Bootstrap 3 Demo</a>&nbsp;&nbsp;</div><div class="nav-pane col-sm-3" id="d10a"><ul class="nav navlist affix-top" id="d122"><li><a class="" href="#code-first" id="d124">Code first, both server-side and client-side html code generation</a></li><li><a class="" href="#full-controls" id="d125">JavaScript controls is used for managing DOM elements</a></li><li><a class="" href="#dsl" id="d126">Extendable DSL</a></li><li><a class="" href="#code-reuse" id="d127">Structured and reusable code</a></li><li><a class="" href="#inversion-of-control" id="d128">Inversion of control</a></li><li><a class="" href="#minimizing-manipulation-of-the-DOM" id="d129">Minimizing manipulation of the DOM</a></li></ul></div><div class="content-pane col-sm-9" id="d10b"><h2 class="" id="controls-js-concepts">Concepts</h2><h3 class="" id="code-first">Code first, both server-side and client-side html code generation</h3><div class="codebox box"><pre><code>var body = controls.create("body");
+ 
+<div class="header-pane" id="d109"><a class="" href="http://aplib.github.io/controls.js/" id="d10c"><h1 class="btn-primary" style="border-radius:4px; padding:12px; display:inline-block;" id="d10d">controls.js</h1></a><p class="undefined" style="undefined" id="d10e">for dynamic html documents and UI solutions</p><a href="https://github.com/aplib/controls.js" class="label label-default">GitHub</a>&nbsp;&nbsp;<a href="https://github.com/aplib/controls.js/archive/controls.js-v0.1.zip" class="label label-default">Download v0.1</a>&nbsp;&nbsp;<a href="bootstrap.controls-demo.html" class="label label-default">Bootstrap 3 Demo</a>&nbsp;&nbsp;</div><div class="nav-pane col-sm-3" id="d10a"><ul class="nav navlist affix-top" id="d121"><li><a class="" href="#code-first" id="d123">Code first, both server-side and client-side html code generation</a></li><li><a class="" href="#full-controls" id="d124">JavaScript controls is used for managing DOM elements</a></li><li><a class="" href="#dsl" id="d125">Extendable DSL</a></li><li><a class="" href="#code-reuse" id="d126">Structured and reusable code</a></li><li><a class="" href="#inversion-of-control" id="d127">Inversion of control</a></li></ul></div><div class="content-pane col-sm-9" id="d10b"><h2 class="" id="controls-js-concepts">Concepts</h2><h3 class="" id="code-first">Code first, both server-side and client-side html code generation</h3><div class="codebox box"><pre><code>var body = controls.create("body");
 body.add(["top:Container", "left:Container", "fill:Container"]);
 
 ...
@@ -191,7 +192,7 @@ with(body.fill.$builder())
 {
     $codebox("Lorem ipsum dolor sit amet");
 }
-</code></pre></div><h3 class="" id="code-reuse">Structured and reusable code</h3><div class="example top-box" id="d113"><div class="" id="d11c" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#e62"><button class="btn btn-default" id="d11d">OK</button></div><div class="" id="d11a" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#22e"><button class="btn btn-default" id="d11b">OK</button></div><div class="" id="d118" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#81e"><button class="btn btn-default" id="d119">OK</button></div><div class="" id="d116" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#2a5"><button class="btn btn-default" id="d117">OK</button></div><div class="" id="d114" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#9e0"><button class="btn btn-default" id="d115">OK</button></div></div><div class="codebox box"><pre><code>function UserControl(parameters, attributes)
+</code></pre></div><h3 class="" id="code-reuse">Structured and reusable code</h3><div class="example top-box" id="d113"><div class="" id="d11c" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#48f"><button class="btn btn-default" id="d11d">OK</button></div><div class="" id="d11a" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#1e0"><button class="btn btn-default" id="d11b">OK</button></div><div class="" id="d118" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#c2d"><button class="btn btn-default" id="d119">OK</button></div><div class="" id="d116" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#4da"><button class="btn btn-default" id="d117">OK</button></div><div class="" id="d114" style="width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#c79"><button class="btn btn-default" id="d115">OK</button></div></div><div class="codebox box"><pre><code>function UserControl(parameters, attributes)
 {
     controls.controlInitialize(this, "UserControl", parameters, attributes);
 
@@ -204,6 +205,7 @@ with(body.fill.$builder())
     });
 }</code></pre></div><h3 class="" id="inversion-of-control">Inversion of control</h3><div class="codebox box"><pre><code>controls.typeRegister("bootstrap.Button#style=success", CustomBtnControl);
 ...
-&gt; var button = example.add("bootstrap.Button#size=2,style=success");</code></pre></div><p>The combination of type name and parameters (where parameters may be inheritable) resoves to the specific type of the object in the runtime. IoC allows to override the details of the behavior of existing systems without modifying their code. For example, it will organize a versioning components in the design, switching visual themes at runtime or unbreakable changes at service.</p>
-</div></body>
+&gt; var button = example.add("bootstrap.Button#size=2;style=success");</code></pre></div><p class="undefined" style="undefined" id="d120">The combination of type name and parameters (where parameters may be inheritable) resoves to the specific type of the object in the runtime. IoC allows to override the details of the behavior of existing systems without modifying their code. For example, it will organize a versioning components in the design, switching visual themes at runtime or unbreakable changes at service.</p></div> 
+
+</body>
 </html>
