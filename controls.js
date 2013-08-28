@@ -873,37 +873,79 @@ controls.typeRegister(__type, ' + name + ');';
                 else
                 {
                     control.element = element;
-                    control.refresh();
+                    control.refresh(); // rewrite dom
                 }
                 
                 //parent.refreshInner();
             }
         };
         
-        this.createElement = function()
+        // opcode {number} - 0 - insert before end, 1 - insert after begin, 2 - insert before, 3 - insert after
+        this.createElement = function(node, opcode)
         {
             var element = this._element;
             if (element)
                 throw new TypeError('Already exists!');
             
-            var new_element = document.createElement('div');
+            if (!node && this.parent)
+                node = this.parent.element;
             
-            var parent = this._parent;
-            if (parent)
+            if (node)
             {
-                var parent_element = parent.element;
-                //new_element.parentNode = parent_element;
-                parent_element.appendChild(new_element);
-                
-                new_element.outerHTML = this.outerHTML();
-                
-                if (!new_element.parentNode)
-                    parent_element.appendChild(new_element);
+                var insertAdjacentHTML = node.insertAdjacentHTML;
+                if (insertAdjacentHTML)
+                {
+                    switch(opcode)
+                    {
+                        case 1:
+                            insertAdjacentHTML('afterbegin', this.outerHTML());
+                            break;
+                        case 2:
+                            insertAdjacentHTML('beforebegin', this.outerHTML());
+                            break;
+                        case 3:
+                            insertAdjacentHTML('afterend', this.outerHTML());
+                            break;
+                        default:
+                            insertAdjacentHTML('beforeend', this.outerHTML());
+                    }
+                }
+                else
+                {
+                    // insertAdjacentHTML not implemented
+                    
+                    var fragment = document.createDocumentFragment();
+                    var el = document.createElement('div');
+                    el.innerHTML = this.outerHTML();
+                    var nodes = el.childNodes;
+                    for(var i = 0, c = nodes.length; i < c; i++)
+                        fragment.appendChild(nodes[i]);
+                    
+                    switch(opcode)
+                    {
+                        case 1:
+                            if (node.childNodes.length === 0)
+                                node.appendChild(fragment);
+                            else
+                                node.insertBefore(node.firstChild, fragment);
+                            break;
+                        case 2:
+                            var nodeparent = node.parentNode;
+                            if (nodeparent)
+                                nodeparent.insertBefore(fragment, node);
+                            break;
+                        case 3:
+                            var nodeparent = node.parentNode;
+                            if (nodeparent)
+                                nodeparent.insertAfter(fragment, node);
+                            break;
+                        default:
+                            node.appendChild(fragment);
+                    }
+                }
             }
-
             
-            
-            this.element = new_element;
+            this.attachAll();
         };
         
         var dom_events =
@@ -1159,7 +1201,9 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                     for(var i = 0, c = attrs.length; i < c; i++)
                     {
                         var key = attrs[i];
-                            result.push(key + '="' + attributes[key] + '"');
+                        var value = attributes[key];
+                        if (value)
+                            result.push(key + '="' + value + '"');
                     }
                 }
             }
@@ -1168,7 +1212,11 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 // unconditional, out all attributes
                 for(var prop in attributes)
                 if (prop[0] !== '$')
-                    result.push(prop + '="' + attributes[prop] + '"');
+                {
+                    var value = attributes[prop];
+                    if (value)
+                        result.push(prop + '="' + value + '"');
+                }
             }
             
             return (result.length === 0) ? '' : (' '+ result.join(' '));
@@ -1339,10 +1387,10 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 parameters[prop] = this_parameters[prop];
             
             // resolve constructor
-            
             var __type = parse_type(type, parameters/*, this.__type*/);
             var constructor = resolve_ctr(__type, parameters);
             
+            // type error processing
             if (!constructor)
             {
                 if (controls.type_error_mode === 0)
@@ -1389,21 +1437,14 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 
                 // set parent property
                 setParent.call(new_control, this, index);
-                //new_control.parent = this;
             
                 // callback
                 if (callback)
-                {
                     callback.call(this_arg || this, new_control);
-                }
                 
                 result = new_control;
             }
-            
-            // refresh dom
-//            if (repeats > 0 && this._element)
-//                this.refresh();
-            
+
             return result;
         };
         
