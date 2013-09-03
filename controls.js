@@ -27,6 +27,7 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr';
     var ENCODE_HTML_PAIRS = { "<": "&#60;", ">": "&#62;", '"': '&#34;', "'": '&#39;', "&": "&#38;", "/": '&#47;' };
     controls.subtypes = {}; // Registered subtypes
     controls.doT = doT; // reexport need for gencodes
+    doT.templateSettings.strip = false; // FIX: strip modifies the pattern incorrectly assuming that it is composed entirely of HTML code
     
     // Initialize control object
     // 
@@ -907,6 +908,7 @@ controls.typeRegister(__type, ' + name + ');';
                             insertAdjacentHTML('afterend', this.outerHTML());
                             break;
                         default:
+                            // illegal invocation on call this method brfore element completed
                             insertAdjacentHTML('beforeend', this.outerHTML());
                     }
                 }
@@ -1393,7 +1395,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             // type error processing
             if (!constructor)
             {
-                if (controls.type_error_mode === 0)
+                if (!type_error_mode)
                     throw new TypeError('Type ' + __type + ' not registered!');
                 else
                 {
@@ -1709,10 +1711,21 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     };
     controls.resolveType = resolve_ctr;
     
-    // unresolved type error processing mode
-    // 0 - throw TypeError, 1 - create Stub, 2 - design mode only, do not abuse! create Stub and process stub references
+    // Unresolved type error processing mode
+    // 0 - throw TypeError, 1 - create Stub
     //
-    controls.type_error_mode = 0;
+    var type_error_mode = 0;
+    controls.createOrStub = function(type, /*optional*/ parameters, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg)
+    {
+        type_error_mode = 1;
+        try {
+            return controls.create.apply(this, arguments);
+        } catch (e) {}
+        finally
+        {
+            type_error_mode = 0;
+        }
+    };
     
     // Create control
     //
@@ -1769,7 +1782,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         
         if (!constructor)
         {
-            if (controls.type_error_mode === 0)
+            if (!type_error_mode)
                 throw new TypeError('Type ' + __type + ' not registered!');
             else
             {
@@ -2200,6 +2213,13 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         return text ? text.replace(ENCODE_HTML_MATCH, function(match) { return ENCODE_HTML_PAIRS[match] || match; }) : text;
     };
     
+    controls.extend = function(object, source)
+    {
+        for(var prop in source)
+            object[prop] = source[prop];
+        return object;
+    };
+    
     
     // Special /////////////////////////////////////////////////////////////////
     
@@ -2250,177 +2270,70 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     Custom.prototype = controls.control_prototype;
     controls.typeRegister('controls.Custom', Custom);
 
-    controls.loaded_resources = {};
     // Stub
     // 
-    // Stub control created on type error if type_error_mode === 2
+    // Stub control created on type error if type_error_mode
     // 
     function Stub(parameters, attributes)
     {
-        var original_type = parameters['#{type}'];
-        var original__type = parameters['#{__type}'];
-        var callback = parameters['#{callback}'];
-        var this_arg = parameters['#{this_arg}'];
-        var hrefs = parameters['#{href}'];
-        if (hrefs)
-            hrefs = hrefs.split(/,| |;/g);
-        var save_attributes = {};
-        for(var prop in attributes)
-        if (attributes.hasOwnProperty(prop))
-            save_attributes[prop] = attributes[prop];
+        this.isStub = true;
+        
+//        var original_type = parameters['#{type}'];
+//        var original__type = parameters['#{__type}'];
+//        var callback = parameters['#{callback}'];
+//        var this_arg = parameters['#{this_arg}'];
+//        var hrefs = parameters['#{href}'];
+//        if (hrefs)
+//            hrefs = hrefs.split(/,| |;/g);
+        
+//        var save_attributes = {};
+//        for(var prop in attributes)
+//        if (attributes.hasOwnProperty(prop))
+//            save_attributes[prop] = attributes[prop];
         
         controls.controlInitialize(this, 'controls.Stub', parameters, attributes, Stub.template);
         
-        this.style('border:lightgray solid 1px; display:inline-block;');
+        this.class('stub');
         
-        this._state = 0; // 0 initial, 1 - resources loading, -1 - error
-        this.state = function(state)
+        var state = 0; // 0 - stub, > 0 - resources loaded, < 0 - load error
+        Object.defineProperty(this, "state",
         {
-            var _state = this._state;
-            if (arguments.length > 0 && state !== _state)
+            enumerable: true, 
+            get: function() { return state; },
+            set: function(value)
             {
-                switch(state)
+                if (value !== state)
                 {
-                    case 1: // loading
-                        var element = this._element;
-                        if (element)
-                            element.innerText += '.';
-                        break;
-                    case 2: // success
-                        break;
-                    case -1: // error
-                        this.style('border:lightred solid 1px; display:inline-block;');
-                        break;
-                }
-                
-                this.raise('state');
-            }
-            
-            return this._state;
-        };
-        
-        this.start_loading = function()
-        {
-            if(this._state === 2)
-                return;
-     
-            this.state(1);
-            
-            var resources_count = hrefs.length;
-            var error_count = 0, success_count = 0;
-            
-            for(var i = 0, resources_count; i < resources_count; i++)
-            {
-                // load resources, css asynchronously and synchronously load js
-                var href = hrefs[i];
-                
-                if (controls.loaded_resources[href])
-                    success_count++;
-                else
-                {
-                    controls.loaded_resources[href] = true;
-
-                    if (href.indexOf('.css', href.length - 4) >= 0)
-                    {
-                        var link = document.createElement('link');
-                        link.addEventListener('load', function() { success_count++; });
-                        link.addEventListener('error', function() { error_count++; });
-                        link.setAttribute('rel', 'stylesheet');
-                        link.setAttribute('href', href);
-                        link.setAttribute('data-stub', original_type);
-                        document.head.appendChild(link);
-                    }
-                    else if (href.indexOf('.js', href.length - 3) >= 0)
-                    {
-                        var script = document.createElement('script');
-                        script.addEventListener('load', function() { success_count++; });
-                        script.addEventListener('error', function() { error_count++; });
-                        script.setAttribute('src', href);
-                        script.setAttribute('data-stub', original_type);
-                        document.head.appendChild(script);
-                    }
-                }
-            }
-            
-            var script = document.createElement('script');
-            script.setAttribute('data-stub', original_type);
-            document.head.appendChild(script);
-            
-            var attempts = 1000;
-            var _this = this;
-            var timer = setInterval(function()
-            {
-                attempts--;
-                if (attempts < 0 || error_count > 0 || success_count >= resources_count)
-                {
-                    clearInterval(timer);
-                    if (success_count >= resources_count)
-                    {
-                        _this.state(2);
-                        _this.on_resources_loaded();
-                    }
+                    state = value;
+                    if (value === 0)
+                        this.class(null, 'stub-loading stub-error');
+                    else if (value < 0)
+                        this.class('stub-error', 'stub-loading');
                     else
-                        _this.state(-1);
+                        this.class('stub-loading', 'stub-error');
+                    
+                    this.raise('state');
+                    
+                    if (this.state > 0)
+                        this.tryReplace();
                 }
-            }, 50);
-        
-        };
-        
-        this.on_resources_loaded = function()
-        {
-            // after all refs resorces loaded re create requested control
-            var create_type = original_type.split('{')[0]; // prevent recursion
-            var control = controls.create(create_type, save_attributes);
-            if (!control)
-            {
-                // error creating requested control
-                this.state(-1);
             }
-            else
-            {
-//                // all events assigned to Stub object copy to new control object
-//                var events = this.events;
-//                for(var key in events)
-//                {
-//                    var event = events[key];
-//                    var listeners = event.listeners;
-//                    for(var i = 0, c = listeners; i < c; i+=2)
-//                        control.listen(key, listeners[i+1] || control, listeners[i]);
-//                }
-                
-                this.controls = [];
+        });
+        
+        // try create control and replace stub on success
+        this.tryReplace = function()
+        {
+            var params = controls.extend({}, this.parameters), attrs = controls.extend({}, this.attributes);
+            for(var prop in this.parameters)
+            if (prop.substr(0,2) === '#{')
+                delete params[prop];
+            var control = controls.create(parameters['#{type}'], params, attrs);
+            if (control)
                 this.replaceItself(control);
-                
-                if (callback)
-                    callback.call((!this_arg || this_arg === this) ? control : this_arg, control);
-                
-                // 'onloaded' event - pass this to new control
-                control.raise('externloaded', this);
-            }
         };
-        
-        if (controls.type_error_mode === 2)
-        {
-            // debug mode
-            // load sorces into page and return created target control
-            
-            if (hrefs && original__type)
-            {
-                this.add('Button', {type:'button', $text:'load'})
-                .listen('click', this, function()
-                {
-                    this.start_loading();
-                });
-            }               
-        }
     };
     Stub.prototype = controls.control_prototype;
-    Stub.template = doT.template('\
-<div{{=it.printAttributes()}}>\
-<p>The first killer feature</p>\
-{{? it.attributes.$text }}<p>{{=it.attributes.$text}}<p>{{?}}\
-{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}\
-</div>');
+    Stub.template = doT.template('<div{{=it.printAttributes()}}>{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}</div>');
     controls.typeRegister('controls.Stub', Stub);
     
     // Head
