@@ -1,6 +1,6 @@
 {
   "name": "controls",
-  "version": "1.0",
+  "version": "0.6",
   "author": "vadim baklanov <antheworld@gmail.com> (http://aplib.github.io/controls.js/)",
   "description": "framework for dynamic html documents and UI solutions",
   "repository": {
