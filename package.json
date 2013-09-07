@@ -18,7 +18,7 @@
  "bugs": {
     "url": "http://github.com/aplib/controls.js/issues"
   },
-"files": ["controls.js","controls.min.js","controls.browserify.js","controls.browserify.min.js"],
+"files": ["controls.js","controls.min.js","controls.browserify.js","controls.browserify.min.js","LICENSE","README.md"],
  
   "license": "MIT"
 }

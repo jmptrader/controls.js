@@ -10,12 +10,12 @@
 //
 // require doT.js
 
-(function() { "use strict";
+(function() { "use strict"; var VERSION = '0.6.3';
 
 function Controls(doT)
 {
     var controls = this;
-    controls.VERSION = '0.6';
+    controls.VERSION = VERSION;
     controls.id_generator = 53504; // use it only as per session elements id generator in controls constructors
     
     var IDENTIFIERS = ',add,attach,attributes,class,data,element,first,id,__type,controls,last,name,forEach,parameters,parent,remove,style,';
@@ -2586,7 +2586,7 @@ else if (typeof define === 'function' && define.amd)
     var instance;
     define(['doT'], function(doT) { if (!instance) instance = new Controls(doT); return instance; });
 }
-else if (!this.controls || this.controls.VERSION < '0.1')
+else if (!this.controls || this.controls.VERSION < VERSION)
 {
     if (typeof doT === 'undefined') throw new TypeError('controls.js: doT.js not found!');
     this.controls = new Controls(doT);

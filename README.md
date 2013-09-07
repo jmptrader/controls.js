@@ -1,14 +1,18 @@
 # controls.js
-####for dynamic html documents and UI solutions
+#### framework for dynamic html documents and UI solutions
 
 controls.js - framework for a visual and data components  
 bootstrap.controls.js - WCL based on bootstrap and controls.js
 
-see  
 http://aplib.github.io/controls.js/
-
+[Simple Markdown site template](http://aplib.github.io/markdown-site-template/)
 
 ##Get started  
+
+### Installation
+
+1. Download from GitHub
+2. npm install controlsjs
 
 ### files
 
@@ -26,6 +30,7 @@ controls.browserify.js     - bundled with doT
 controls.browserify.min.js - compressed  
 
     <script src="controls.browserify.js"></script>
+
 
 ### Hello World!
 
@@ -66,3 +71,4 @@ controls.browserify.min.js - compressed
     </script>
     </body>
     </html>
+
