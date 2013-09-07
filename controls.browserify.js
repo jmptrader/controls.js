@@ -283,7 +283,7 @@ InstallDots.prototype.compileAll = function() {
 },{"./doT":1,"fs":4}],3:[function(require,module,exports){
 ////////////////////////////////////////////////////////////////////////////////
 //
-//     controls.js 0.1
+//     controls.js
 //     purpose: UI framework, code generation tool
 //     status: proposal, example, valid prototype, under development
 //     I need your feedback, any feedback
@@ -298,7 +298,7 @@ InstallDots.prototype.compileAll = function() {
 function Controls(doT)
 {
     var controls = this;
-    controls.VERSION = '0.1';
+    controls.VERSION = '0.6';
     controls.id_generator = 53504; // use it only as per session elements id generator in controls constructors
     
     var IDENTIFIERS = ',add,attach,attributes,class,data,element,first,id,__type,controls,last,name,forEach,parameters,parent,remove,style,';

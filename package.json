@@ -1,6 +1,6 @@
 {
   "name": "controlsjs",
-  "version": "0.6.0",
+  "version": "0.6.2",
   "author": {
     "name": "vadim baklanov",
     "email": "antheworld@gmail.com"
@@ -18,7 +18,7 @@
  "bugs": {
     "url": "http://github.com/aplib/controls.js/issues"
   },
-"files": ["controls.js"],
+"files": ["controls.js","controls.min.js","controls.browserify.js","controls.browserify.min.js"],
  
   "license": "MIT"
 }
