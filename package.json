@@ -1,7 +1,11 @@
 {
   "name": "controls",
   "version": "0.6.0",
-  "author": "vadim baklanov <antheworld@gmail.com> (http://aplib.github.io/controls.js/)",
+  "author": {
+    "name": "vadim baklanov",
+    "email": "antheworld@gmail.com"
+  },
+  "homepage": "http://aplib.github.io/controls.js/",
   "description": "framework for dynamic html documents and UI solutions",
   "repository": {
     "type": "git",
