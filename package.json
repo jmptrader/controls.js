@@ -18,6 +18,7 @@
  "bugs": {
     "url": "http://github.com/aplib/controls.js/issues"
   },
+"files": ["controls.js"],
  
   "license": "MIT"
 }
