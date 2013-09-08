@@ -12,7 +12,7 @@ test( "construction, passing the parameters and attributes", function()
     custom.add(['label:bootstrap.Label', 'layout:Layout#float=left']);
     custom.label.text('test012');
     ok(custom.label.text() === 'test012'
-    && custom.layout.parameters['#float'] === 'left', 'bulk add');
+    && custom.layout.parameters['float'] === 'left', 'bulk add');
     
     // parameters options
     var callback_passed = false;
@@ -53,12 +53,13 @@ test( "type resolving", function()
     // test
     
     var control = controls.create('div/blue');
+    ok(control.parameters['/blue'], "check parameter value");
     ok(control.test_method(), "controls.create('div/blue'); - subtype resolving");
     
     // change type
     control.type('test.Custom#test=5');
     ok(control.__type === 'test.Custom', '.type("test.Custom#test=5"); - change type');
-    ok(control.parameters['#test'] === '5', "check parameter value");
+    ok(control.parameters['test'] === '5', "check parameter value");
     
     // check preserve namespace
     control.type('Div#test=5');
@@ -100,7 +101,7 @@ test( "serialize-deserialize controls", function()
         }
         else
         {
-            control = controls.create(type + '/test=1#test=2');
+            control = controls.create(type + '/test=1;test4=4#test=2;test5=5');
         }
         
         
@@ -131,8 +132,11 @@ test( "serialize-deserialize controls", function()
         var deserialized = JSON.parse(serialized, controls.reviverJSON);
         
         // check deserialized object
-        
-        ok(deserialized.parameters.test === '1' && deserialized.parameters['#test'] === '2', type + " check deserialized parameters" );
+        if (deserialized.parameters['/test'] !== '1' || deserialized.parameters['test'] !== '2')
+        {
+            console.log('!');
+        }
+        ok(deserialized.parameters['/test'] === '1' && deserialized.parameters['test'] === '2', type + " check deserialized parameters" );
         ok(deserialized.attributes.$text === 'test', type + " check deserialized attributes" );
 //        ok(deserialized.events['#click'], type + " check deserialized listeners" );
         

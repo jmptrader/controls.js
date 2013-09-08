@@ -20,7 +20,7 @@ function Controls(doT)
     
     var IDENTIFIERS = ',add,attach,attributes,class,data,element,first,id,__type,controls,last,name,forEach,parameters,parent,remove,style,';
     var HTML_TAGS = 'A,Abbr,Address,Article,Aside,B,Base,Bdi,Bdo,Blockquote,Button,Canvas,Cite,Code,Col,Colgroup,Command,Datalist,Dd,Del,Details,\
-Dfn,Div,Dl,Dt,Em,Embed,Fieldset,Figcaption,Figure,Footer,Form,Gnome,Header,I,Img,Input,Ins,Kbd,Keygen,Label,Legend,Li,Link,Map,Mark,Menu,Meter,Nav,\
+Dfn,Div,Dl,Dt,Em,Embed,Fieldset,Figcaption,Figure,Footer,Form,Gnome,Header,I,IFrame,Img,Input,Ins,Kbd,Keygen,Label,Legend,Li,Link,Map,Mark,Menu,Meter,Nav,\
 Noscript,Object,Ol,Optgroup,Option,Output,P,Pre,Progress,Ruby,Rt,Rp,S,Samp,Script,Section,Select,Small,Span,Strong,Style,Sub,Summary,Sup,\
 Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr';
     var ENCODE_HTML_MATCH = /&(?!#?\w+;)|<|>|"|'|\//g;
@@ -913,17 +913,17 @@ controls.typeRegister(__type, ' + name + ');';
                     switch(opcode)
                     {
                         case 1:
-                            insertAdjacentHTML('afterbegin', this.outerHTML());
+                            insertAdjacentHTML.call(node, 'afterbegin', this.outerHTML());
                             break;
                         case 2:
-                            insertAdjacentHTML('beforebegin', this.outerHTML());
+                            insertAdjacentHTML.call(node, 'beforebegin', this.outerHTML());
                             break;
                         case 3:
-                            insertAdjacentHTML('afterend', this.outerHTML());
+                            insertAdjacentHTML.call(node, 'afterend', this.outerHTML());
                             break;
                         default:
                             // illegal invocation on call this method brfore element completed
-                            insertAdjacentHTML('beforeend', this.outerHTML());
+                            insertAdjacentHTML.call(node, 'beforeend', this.outerHTML());
                     }
                 }
                 else
@@ -963,6 +963,18 @@ controls.typeRegister(__type, ' + name + ');';
             
             this.attachAll();
         };
+        
+        this.deleteElement = function()
+        {
+            var element = this._element;
+            if (element)
+            {
+                var parent_node = element.parentNode;
+                if (parent_node)
+                    parent_node.removeChild(element);
+                this._element = undefined;
+            }
+        }
         
         var dom_events =
 ',change,DOMActivate,load,unload,abort,error,select,resize,scroll,blur,DOMFocusIn,DOMFocusOut,focus,focusin,focusout,\
