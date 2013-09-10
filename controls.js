@@ -5,7 +5,7 @@
 //     status: proposal, example, valid prototype, under development
 //     I need your feedback, any feedback
 //     http://aplib.github.io/controls.js/
-//     (c) 2013 vadim baklanov
+//     (c) 2013 vadim b.
 //     License: MIT
 //
 // require doT.js
@@ -20,7 +20,7 @@ function Controls(doT)
     
     var IDENTIFIERS = ',add,attach,attributes,class,data,element,first,id,__type,controls,last,name,forEach,parameters,parent,remove,style,';
     var HTML_TAGS = 'A,Abbr,Address,Article,Aside,B,Base,Bdi,Bdo,Blockquote,Button,Canvas,Cite,Code,Col,Colgroup,Command,Datalist,Dd,Del,Details,\
-Dfn,Div,Dl,Dt,Em,Embed,Fieldset,Figcaption,Figure,Footer,Form,Gnome,Header,I,Img,Input,Ins,Kbd,Keygen,Label,Legend,Li,Link,Map,Mark,Menu,Meter,Nav,\
+Dfn,Div,Dl,Dt,Em,Embed,Fieldset,Figcaption,Figure,Footer,Form,Gnome,Header,I,IFrame,Img,Input,Ins,Kbd,Keygen,Label,Legend,Li,Link,Map,Mark,Menu,Meter,Nav,\
 Noscript,Object,Ol,Optgroup,Option,Output,P,Pre,Progress,Ruby,Rt,Rp,S,Samp,Script,Section,Select,Small,Span,Strong,Style,Sub,Summary,Sup,\
 Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr';
     var ENCODE_HTML_MATCH = /&(?!#?\w+;)|<|>|"|'|\//g;
@@ -254,6 +254,11 @@ controls.typeRegister(__type, ' + name + ');';
             var index = listeners.indexOf(listener);
             if (index >= 0)
                 listeners.splice(index, 2);
+        },
+        
+        clear: function()
+        {
+            this.listeners = [];
         }
 
 //        toJSON: function()
@@ -588,9 +593,10 @@ controls.typeRegister(__type, ' + name + ');';
             }
         });
         
-        Object.defineProperty(this, 'first', function() { return this.controls[0]; });
-        Object.defineProperty(this, 'last', function() { return this.controls[this.controls.length-1]; });
-
+        Object.defineProperty(this, 'length', { enumerable: true, get: function() { return this.controls.length; } });
+        Object.defineProperty(this, 'first',  { enumerable: true, get: function() { return this.controls[0]; } });
+        Object.defineProperty(this, 'last',   { enumerable: true, get: function() { return this.controls[this.controls.length-1]; } });
+        
         // default html template
         this.outer_template = doT.template('<div{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}</div>');
         // default inner html template
@@ -913,17 +919,17 @@ controls.typeRegister(__type, ' + name + ');';
                     switch(opcode)
                     {
                         case 1:
-                            insertAdjacentHTML('afterbegin', this.outerHTML());
+                            insertAdjacentHTML.call(node, 'afterbegin', this.outerHTML());
                             break;
                         case 2:
-                            insertAdjacentHTML('beforebegin', this.outerHTML());
+                            insertAdjacentHTML.call(node, 'beforebegin', this.outerHTML());
                             break;
                         case 3:
-                            insertAdjacentHTML('afterend', this.outerHTML());
+                            insertAdjacentHTML.call(node, 'afterend', this.outerHTML());
                             break;
                         default:
                             // illegal invocation on call this method brfore element completed
-                            insertAdjacentHTML('beforeend', this.outerHTML());
+                            insertAdjacentHTML.call(node, 'beforeend', this.outerHTML());
                     }
                 }
                 else
@@ -963,6 +969,18 @@ controls.typeRegister(__type, ' + name + ');';
             
             this.attachAll();
         };
+        
+        this.deleteElement = function()
+        {
+            var element = this._element;
+            if (element)
+            {
+                var parent_node = element.parentNode;
+                if (parent_node)
+                    parent_node.removeChild(element);
+                this._element = undefined;
+            }
+        }
         
         var dom_events =
 ',change,DOMActivate,load,unload,abort,error,select,resize,scroll,blur,DOMFocusIn,DOMFocusOut,focus,focusin,focusout,\

@@ -1,11 +1,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 //     
-//     controls.bootstrap.js 0.1
+//     controls.bootstrap.js
 //     purpose: twitter bootstrap VCL for using with controls.js
 //     status: proposal, example, prototype, under development
 //     I need your feedback, any feedback
 //     http://aplib.github.io/controls.js/controls+bootstrap-demo.html
-//     (c) 2013 vadim baklanov
+//     (c) 2013 vadim b.
 //     License: MIT
 //
 // require doT.js, controls.js
@@ -219,9 +219,21 @@ function Bootstrap(controls)
     };
     BtnGroup.prototype = bootstrap.control_prototype;
     controls.typeRegister('bootstrap.BtnGroup', BtnGroup);
-
-
-
+    
+    
+    // TabPanelHeader
+    // 
+    function TabPanelHeader(parameters, attributes)
+    {
+        controls.controlInitialize(this, 'bootstrap.TabPanelHeader', parameters, attributes, TabPanelHeader.template);
+        this.class('nav nav-tabs tabpanel-header');
+    };
+    TabPanelHeader.prototype = bootstrap.control_prototype;
+    TabPanelHeader.template = doT.template(
+'<ul{{=it.printAttributes()}}>\
+{{? it.attributes.$text}}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}\
+</ul>');
+    controls.typeRegister('bootstrap.TabPanelHeader', TabPanelHeader);
     
     
     // TabHeader
@@ -229,14 +241,37 @@ function Bootstrap(controls)
     function TabHeader(parameters, attributes)
     {
         controls.controlInitialize(this, 'bootstrap.TabHeader', parameters, attributes, TabHeader.template);
+        this.class('tab-header');
     };
     TabHeader.prototype = bootstrap.control_prototype;
     TabHeader.template = doT.template(
 '<li{{=it.printAttributes()}}>\
-<a href="#" data-toggle="tab">\
+<a href={{=it.attributes.$href}} data-toggle="tab">\
 {{? it.attributes.$icon }}<b class="{{=it.attributes.$icon}}"> </b>{{?}}\
 {{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}</a></li>');
     controls.typeRegister('bootstrap.TabHeader', TabHeader);
+    
+    
+    // TabPanelBody
+    // 
+    function TabPanelBody(parameters, attributes)
+    {
+        controls.controlInitialize(this, 'bootstrap.TabPanelBody', parameters, attributes);
+        this.class('tab-content tabpanel-body');
+    };
+    TabPanelBody.prototype = bootstrap.control_prototype;
+    controls.typeRegister('bootstrap.TabPanelBody', TabPanelBody);
+    
+    
+    // TabPage
+    // 
+    function TabPage(parameters, attributes)
+    {
+        controls.controlInitialize(this, 'bootstrap.TabPage', parameters, attributes);
+        this.class('tab-pane fade');
+    };
+    TabPage.prototype = bootstrap.control_prototype;
+    controls.typeRegister('bootstrap.TabPage', TabPage);
     
     
     // Form
