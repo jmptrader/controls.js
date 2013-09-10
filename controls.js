@@ -5,7 +5,7 @@
 //     status: proposal, example, valid prototype, under development
 //     I need your feedback, any feedback
 //     http://aplib.github.io/controls.js/
-//     (c) 2013 vadim baklanov
+//     (c) 2013 vadim b.
 //     License: MIT
 //
 // require doT.js
@@ -254,6 +254,11 @@ controls.typeRegister(__type, ' + name + ');';
             var index = listeners.indexOf(listener);
             if (index >= 0)
                 listeners.splice(index, 2);
+        },
+        
+        clear: function()
+        {
+            this.listeners = [];
         }
 
 //        toJSON: function()
@@ -588,9 +593,10 @@ controls.typeRegister(__type, ' + name + ');';
             }
         });
         
-        Object.defineProperty(this, 'first', function() { return this.controls[0]; });
-        Object.defineProperty(this, 'last', function() { return this.controls[this.controls.length-1]; });
-
+        Object.defineProperty(this, 'length', { enumerable: true, get: function() { return this.controls.length; } });
+        Object.defineProperty(this, 'first',  { enumerable: true, get: function() { return this.controls[0]; } });
+        Object.defineProperty(this, 'last',   { enumerable: true, get: function() { return this.controls[this.controls.length-1]; } });
+        
         // default html template
         this.outer_template = doT.template('<div{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}</div>');
         // default inner html template
