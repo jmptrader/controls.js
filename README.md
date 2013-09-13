@@ -1,5 +1,6 @@
 # controls.js
 #### framework for dynamic html documents and UI solutions
+[![NPM version](https://badge.fury.io/js/controlsjs.png)](http://badge.fury.io/js/controlsjs)
 
 controls.js - framework for a visual and data components  
 bootstrap.controls.js - WCL based on bootstrap and controls.js

@@ -507,7 +507,7 @@ controls.typeRegister(__type, ' + name + ');';
 //            for(var i = 0, c = listeners_data.length; i < c; i+=2)
 //            {
 //                var json_listener = listeners_data[i];
-//                var listener_func = (json_listener instanceof Function) ? json_listener : Function('event', json_listener);
+//                var listener_func = (typeof json_listener === 'function') ? json_listener : Function('event', json_listener);
 //                listeners.push(listener_func);
 //                listeners.push(listeners_data[i+1]);
 //            }
@@ -1022,7 +1022,7 @@ controls.typeRegister(__type, ' + name + ');';
                 }
             }
             
-            if (outer_template)
+            if (inner_template)
             {
                 if (!this.hasOwnProperty("inner_template"))
                     Object.defineProperty(this, "inner_template", { configurable: true, enumerable: true, writable: true });
@@ -1324,7 +1324,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             var event = force_event(this, type, capture);
             
             // listener as string acceptable:
-            var listener_func = (listener instanceof Function) ? listener : Function('event', listener);
+            var listener_func = (typeof listener === 'function') ? listener : Function('event', listener);
             
             event.addListener(call_this, listener_func);
             
@@ -1558,7 +1558,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         
         this.style = function(_style)
         {
-            if (_style)
+            if (arguments.length)
             {
                 var attributes = this.attributes;
                 var style = attributes.style;
@@ -1644,7 +1644,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             // normalize arguments
             
-            if (typeof(repeats) !== 'number')
+            if (typeof repeats !== 'number')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1652,7 +1652,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 repeats = 1;
             }
 
-            if (attributes instanceof Function)
+            if (typeof attributes === 'function')
             {
                 this_arg = callback;
                 callback = attributes;
@@ -1672,7 +1672,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 return result;
             }
             
-            if (typeof(type) === 'object')
+            if (typeof type === 'object')
             {
                 // it is a control?
                 var add_control = type;
@@ -1697,11 +1697,11 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             // get inheritable parameters from this object for transfer to the created object
             
-            var this_parameters = this.parameters;
+            var inheritable_parameters = this.parameters;
             var parameters = {};
-            for(var prop in this_parameters)
+            for(var prop in inheritable_parameters)
             if (prop[0] === '/')
-                parameters[prop] = this_parameters[prop];
+                parameters[prop] = inheritable_parameters[prop];
             
             // resolve constructor
             var __type = parse_type(type, parameters/*, this.__type*/);
@@ -1732,14 +1732,17 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 // prepare parameters and attributes
                 
                 var params = {};
-                for(var prop in parameters)
-//                if (parameters.hasOwnProperty(prop))
-                    params[prop] = parameters[prop];
-            
                 var attrs = {class:''};
+                
+                for(var prop in parameters)
+                {
+                    params[prop] = parameters[prop];
+                    if (prop[0] === '$')
+                        attrs[prop.substr(1)] = parameters[prop];
+                }
+                
                 if (attributes)
                 for(var prop in attributes)
-//                if (attributes.hasOwnProperty(prop))
                     attrs[prop] = attributes[prop];
             
                 // create control(s)
@@ -1840,7 +1843,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     
     function extract_func_code(func)
     {
-        if (func instanceof Function)
+        if (typeof func === 'function')
         {
             func = func.toString();
             var first_par = func.indexOf('{');
@@ -1933,13 +1936,15 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                         parameter = parameter.split('=');
                         var parname = parameter[0];
                         var parvalue = parameter[1];
-                        if (parname || parvalue)
+                        if (parname)
                         {
                             if (parvalue === undefined)
                                 parvalue = true;
+                            else if (parvalue)
+                                parvalue = parvalue.trim();
                                 
                             // inheritable writed to parameters hash under '/'+parametername key
-                            parameters['/' + parname] = parvalue;
+                            parameters['/' + parname.trim()] = parvalue;
                         }
                     }
                 }
@@ -1956,12 +1961,14 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                         parameter = parameter.split('=');
                         var parname = parameter[0];
                         var parvalue = parameter[1];
-                        if (parname || parvalue)
+                        if (parname)
                         {
                             if (parvalue === undefined)
                                 parvalue = true;
+                            else if (parvalue)
+                                parvalue = parvalue.trim();
                             
-                            parameters[parname] = parvalue;
+                            parameters[parname.trim()] = parvalue;
                         }
                     }
                 }
@@ -2113,6 +2120,10 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         if (!attributes.class)
             attributes.class = '';
         
+        for(var prop in parameters)
+        if (prop[0] === '$')
+            attributes[prop.substr(1)] = parameters[prop];
+                
         // create object
         
         var new_control = (constructor.is_constructor) // constructor or factory method ?
