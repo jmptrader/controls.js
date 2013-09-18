@@ -18,6 +18,7 @@ function Bootstrap(controls)
     var bootstrap = this;
     var doT = controls.doT;
     bootstrap.VERSION = '0.1';
+    var CONTROL_STYLE = 'default info link success primary warning danger';
     
     bootstrap.control_prototype = (function()
     {
@@ -40,18 +41,31 @@ function Bootstrap(controls)
         return icon_class;
     };
     
+    function controlStyle(parameters)
+    {
+        var style;
+            
+        for(var prop in parameters)
+        {
+            var lowercase = prop.toLowerCase();
+            if (CONTROL_STYLE.indexOf(lowercase) >= 0)
+                style = lowercase;
+        }
+        
+        return parameters.style || style || 'default';
+    }
+    
     
     // Label
     // 
     function Label(parameters, attributes)
     {
         controls.controlInitialize(this, 'bootstrap.Label', parameters, attributes, Label.template);
-        this.class('label');
-        
+         
         this.listen('type', function()
         {
             var style = this.parameter('style') || 'default';
-            this.class('label label-' + style, 'label-default label-primary label-success label-info label-warning label-danger');
+            this.class('label label-' + controlStyle(this.parameters), 'label-default label-link label-primary label-success label-info label-warning label-danger');
         });
     };
     Label.prototype = bootstrap.control_prototype;
@@ -59,7 +73,57 @@ function Bootstrap(controls)
 '<span{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}</span>');
     controls.typeRegister('bootstrap.Label', Label);
     
-    // Dropdowns http://getbootstrap.com/components/#dropdowns
+    
+    // Panel
+    // 
+    function Panel(parameters, attributes)
+    {
+        controls.controlInitialize(this, 'bootstrap.Panel', parameters, attributes);
+        this.body = this.add('div', {class:'panel-body'});
+        Object.defineProperty(this, 'header', { enumerable: true, get: function()
+        {
+            var _header = this._header;
+            if (!_header)
+            {
+                 _header = this.insert(0, 'div', {class:'panel-heading panel-title'});
+                 _header._name = 'header';
+                 this._header = _header;
+            }
+            return _header;
+        } });
+        Object.defineProperty(this, 'footer', { enumerable: true, get: function()
+        {
+            var _footer = this._footer;
+            if (!_footer)
+            {
+                 _footer = this.add('div', {class:'panel-footer'});
+                 _footer._name = 'header';
+                 this._footer = _footer;
+            }
+            return _footer;
+        } });
+    
+        this.listen('type', function()
+        {
+            this.class('panel panel-' + controlStyle(this.parameters), 'panel-default panel-link panel-primary panel-success panel-info panel-warning panel-danger');
+        });
+
+        this.text = function(_text)
+        {
+            return this.body.text(_text);
+        };
+        
+        if (attributes.$text)
+        {
+            this.body.text(attributes.$text);
+            attributes.$text = undefined;
+        }
+    };
+    Panel.prototype = bootstrap.control_prototype;
+    controls.typeRegister('bootstrap.Panel', Panel);
+    
+    
+    // Dropdowns
     
     // DropdownItem
     // 
@@ -157,6 +221,8 @@ function Bootstrap(controls)
         this.listen('type', function()
         {
             var style = this.parameter('style') || 'default';
+            Object.keys(parameters).some(function(param) { if (CONTROL_STYLE.indexOf(param) >= 0) style = param; });
+            
             this.class('btn btn-' + style, 'btn-default btn-primary btn-success btn-info btn-warning btn-danger btn-link');
             
             var size = bootstrap.BUTTON_SIZES['' + this.parameter('size') || '2'];
@@ -293,16 +359,10 @@ function Bootstrap(controls)
     // 
     function FormGroup(parameters, attributes)
     {
-        controls.controlInitialize(this, 'bootstrap.FormGroup', parameters, attributes, FormGroup.template);
+        controls.controlInitialize(this, 'bootstrap.FormGroup', parameters, attributes);
         this.class('form-group');
     };
     FormGroup.prototype = bootstrap.control_prototype;
-    FormGroup.template = doT.template(
-'<div{{=it.printAttributes()}}>\
-{{? (it.controls && it.controls.length > 0) }}\
-{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}\
-{{?}}\
-</div>');
     controls.typeRegister('bootstrap.FormGroup', FormGroup);
     
     
@@ -319,6 +379,46 @@ function Bootstrap(controls)
     ControlLabel.template = doT.template(
 '<label{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}</label>');
     controls.typeRegister('bootstrap.ControlLabel', ControlLabel);
+    
+    
+    // ControlLabel
+    // 
+    function ControlInput(parameters, attributes)
+    {
+        controls.controlInitialize(this, 'bootstrap.ControlInput', parameters, attributes, ControlInput.template);
+        this.class('form-control');
+        
+        
+        Object.defineProperty(this, 'value',
+        {
+            get: function()
+            {
+                var element = this._element;
+                if (element)
+                    this.attributes.value = element.value;
+                
+                return this.attributes.value;
+            },
+            set: function(value)
+            {
+                var element = this._element;
+                if (element)
+                    element.value = value;
+                
+                this.attributes.value = value;
+            }
+        });
+        this.listen('element', function(element)
+        {
+            if (element)
+                element.value = this.attributes.value;
+        });
+    };
+    ControlInput.prototype = bootstrap.control_prototype;
+    ControlInput.template = doT.template(
+'<input{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}</input>');
+    controls.typeRegister('bootstrap.ControlInput', ControlInput);
+    
     
     // ControlSelect
     // 
@@ -350,8 +450,6 @@ function Bootstrap(controls)
 </select>');
     ControlSelect.inner_template = doT.template('{{?it.data}}{{~it.data :value:index}}<option value={{=value}}>{{=value}}</option>{{~}}{{?}}');
     controls.typeRegister('bootstrap.ControlSelect', ControlSelect);
-    
-
 };
 
 
