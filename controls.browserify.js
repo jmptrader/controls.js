@@ -293,7 +293,7 @@ InstallDots.prototype.compileAll = function() {
 //
 // require doT.js
 
-(function() { "use strict"; var VERSION = '0.6.3';
+(function() { "use strict"; var VERSION = '0.6.7';
 
 function Controls(doT)
 {
@@ -1170,17 +1170,14 @@ controls.typeRegister(__type, ' + name + ');';
                 var index = parent.controls.indexOf(this);
                 this.parent = undefined;
                 setParent.call(control, parent, index);
-                
-                var element = this._element;
-                if (!element)
-                    control.element = undefined;
-                else
-                {
-                    control.element = element;
-                    control.refresh(); // rewrite dom
-                }
-                
-                //parent.refreshInner();
+            }
+            var element = this._element;
+            if (!element)
+                control.element = undefined;
+            else
+            {
+                control.element = element;
+                control.refresh(); // rewrite dom
             }
         };
         
@@ -1191,8 +1188,10 @@ controls.typeRegister(__type, ' + name + ');';
             if (element)
                 throw new TypeError('Already exists!');
             
-            if (!node && this.parent)
+            if (!node && this.parent) {
                 node = this.parent.element;
+                opcode = 0;
+            }
             
             if (node)
             {
@@ -1222,9 +1221,11 @@ controls.typeRegister(__type, ' + name + ');';
                     var fragment = document.createDocumentFragment();
                     var el = document.createElement('div');
                     el.innerHTML = this.outerHTML();
-                    var nodes = el.childNodes;
+                    var nodes = el.childNodes, buf = [];
                     for(var i = 0, c = nodes.length; i < c; i++)
-                        fragment.appendChild(nodes[i]);
+                        buf.push(nodes[i]);
+                    for(var i = 0, c = buf.length; i < c; i++)
+                        fragment.appendChild(buf[i]);
                     
                     switch(opcode)
                     {

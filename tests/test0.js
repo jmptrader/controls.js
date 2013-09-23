@@ -105,9 +105,10 @@ test( "serialize-deserialize controls", function()
         }
         
         
-        control.text('test');
+        control.attr('xtest', 'xvalue');
         control.listen('click', function(event) { return false; }, true);
         
+        var custom_rendered = control.outerHTML();
         if (type === 'controls.custom')
         {
             control.template('<div></div>');
@@ -137,19 +138,18 @@ test( "serialize-deserialize controls", function()
             console.log('!');
         }
         ok(deserialized.parameters['/test'] === '1' && deserialized.parameters['test'] === '2', type + " check deserialized parameters" );
-        ok(deserialized.attributes.$text === 'test', type + " check deserialized attributes" );
+        ok(deserialized.attr('xtest') === 'xvalue', type + " check deserialized attributes" );
 //        ok(deserialized.events['#click'], type + " check deserialized listeners" );
         
-        if (type === 'controls.Frame')
+        if (type === 'controls.frame')
         {
             ok(deserialized.attr('src') === 'http://localhost/', type + ' check deserialized attribute src, value:"' + deserialized.attr('src') + '"');
         }
-        
-        if (type === 'controls.Custom')
+        else if (type === 'controls.custom')
         {
-            ok(deserialized.outerHTML() === '<div></div>', type + ' check deserialized outerHTML(). Expected "<div></div>", in fact "' + deserialized.outerHTML() + '"');
+            ok(deserialized.outerHTML() === custom_rendered, type + ' check deserialized outerHTML(). Expected "' + custom_rendered + '", in fact "' + deserialized.outerHTML() + '"');
         }
-        else
+        else if (type !== 'controls.container')
         {
             ok(!!deserialized.outerHTML() === true, type + ' check deserialized outerHTML() empty');
         }
