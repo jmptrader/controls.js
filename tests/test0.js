@@ -86,9 +86,7 @@ test( "type resolving", function()
 test( "serialize-deserialize controls", function()
 {
     for(var type in controls)
-    if ((type.indexOf('controls.') === 0 || type.indexOf('bootstrap.') === 0)
-    // exclude types:
-    && 'controls.dataarray, controls.localstorage'.indexOf(type) < 0)
+    if ((type.indexOf('controls.') === 0 || type.indexOf('bootstrap.') === 0))
     {
         // Test all controls, set custom parameters, attributes, template and listeners
         
@@ -104,6 +102,8 @@ test( "serialize-deserialize controls", function()
             control = controls.create(type + '/test=1;test4=4#test=2;test5=5');
         }
         
+        if (!control.attr)
+            continue; // It is not control
         
         control.attr('xtest', 'xvalue');
         control.listen('click', function(event) { return false; }, true);
