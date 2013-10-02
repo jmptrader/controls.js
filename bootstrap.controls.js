@@ -1,10 +1,6 @@
-////////////////////////////////////////////////////////////////////////////////
-//     
 //     controls.bootstrap.js
 //     purpose: twitter bootstrap VCL for using with controls.js
-//     status: proposal, example, prototype, under development
-//     I need your feedback, any feedback
-//     http://aplib.github.io/controls.js/controls+bootstrap-demo.html
+//     http://aplib.github.io/controls.js/bootstrap.controls-demo.html
 //     (c) 2013 vadim b.
 //     License: MIT
 //
@@ -17,18 +13,19 @@ function Bootstrap(controls)
 {
     var bootstrap = this;
     var doT = controls.doT;
-    bootstrap.VERSION = '0.1';
-    var CONTROL_STYLE = 'default info link success primary warning danger';
+    bootstrap.VERSION = '0.6.8';
+    controls.bootstrap = bootstrap;
     
-    bootstrap.control_prototype = (function()
+    var control_prototype = (function()
     {
         function bootstrap_proto() { }
         bootstrap_proto.prototype = controls.control_prototype;
         return new bootstrap_proto();
     })();
+    bootstrap.control_prototype = control_prototype;
     
     // icon()
-    bootstrap.control_prototype.icon = function(icon_class)
+    control_prototype.icon = function(icon_class)
     {
         if (arguments.length === 0)
             return this.attributes.$icon;
@@ -41,19 +38,41 @@ function Bootstrap(controls)
         return icon_class;
     };
     
-    function controlStyle(parameters)
+    var CONTROL_STYLE = ' default info link success primary warning danger ';
+    control_prototype.getControlStyle = function(parameters, style_enum)
     {
-        var style;
-            
+        parameters = parameters || this.parameters;
+        style_enum = style_enum || CONTROL_STYLE;
+        var cstyle = parameters.style || parameters['/style'];
+        
+        if (!cstyle)
         for(var prop in parameters)
         {
             var lowercase = prop.toLowerCase();
-            if (CONTROL_STYLE.indexOf(lowercase) >= 0)
-                style = lowercase;
+            if (style_enum.indexOf(lowercase) > 0 && parameters[prop] === true)
+                cstyle = lowercase;
         }
         
-        return parameters.style || style || 'default';
-    }
+        return cstyle || 'default';
+    };
+    
+    var CONTROL_SIZE = ' large small ';
+    control_prototype.getControlSize = function(parameters, size_enum)
+    {
+        parameters = parameters || this.parameters;
+        size_enum = size_enum || CONTROL_SIZE;
+        var csize = parameters.size || parameters['/size'];
+        
+        if (!csize)
+        for(var prop in parameters)
+        {
+            var lowercase = prop.toLowerCase();
+            if (size_enum.indexOf(lowercase) > 0 && parameters[prop] === true)
+                csize = lowercase;
+        }
+        
+        return csize || '';
+    };
     
     
     // Label
@@ -64,11 +83,10 @@ function Bootstrap(controls)
          
         this.listen('type', function()
         {
-            var style = this.parameter('style') || 'default';
-            this.class('label label-' + controlStyle(this.parameters), 'label-default label-link label-primary label-success label-info label-warning label-danger');
+            this.class('label label-' + this.getControlStyle(), 'label-default label-link label-primary label-success label-info label-warning label-danger');
         });
     };
-    Label.prototype = bootstrap.control_prototype;
+    Label.prototype = control_prototype;
     Label.template = doT.template(
 '<span{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}</span>');
     controls.typeRegister('bootstrap.Label', Label);
@@ -105,7 +123,7 @@ function Bootstrap(controls)
     
         this.listen('type', function()
         {
-            this.class('panel panel-' + controlStyle(this.parameters), 'panel-default panel-link panel-primary panel-success panel-info panel-warning panel-danger');
+            this.class('panel panel-' + this.getControlStyle(), 'panel-default panel-link panel-primary panel-success panel-info panel-warning panel-danger');
         });
 
         this.text = function(_text)
@@ -119,7 +137,7 @@ function Bootstrap(controls)
             attributes.$text = undefined;
         }
     };
-    Panel.prototype = bootstrap.control_prototype;
+    Panel.prototype = control_prototype;
     controls.typeRegister('bootstrap.Panel', Panel);
     
     
@@ -135,7 +153,7 @@ function Bootstrap(controls)
     {
         controls.controlInitialize(this, 'bootstrap.DropdownItem', parameters, attributes, DropdownItem.template);
     };
-    DropdownItem.prototype = bootstrap.control_prototype;
+    DropdownItem.prototype = control_prototype;
     DropdownItem.template = doT.template(
 '<li id="{{=it.id}}">\
 <a data-toggle="tab"{{=it.printAttributes("-id")}}>\
@@ -153,7 +171,7 @@ function Bootstrap(controls)
         controls.controlInitialize(this, 'bootstrap.DividerItem', parameters, attributes, DividerItem.template);
         this.class('divider');
     };
-    DividerItem.prototype = bootstrap.control_prototype;
+    DividerItem.prototype = control_prototype;
     DividerItem.template = doT.template('<li{{=it.printAttributes()}}></li>');
     controls.typeRegister('bootstrap.DividerItem', DividerItem);
     
@@ -166,7 +184,7 @@ function Bootstrap(controls)
         controls.controlInitialize(this, 'bootstrap.DropdownLink', parameters, attributes, DropdownLink.template);
         this.class('dropdown');
     };
-    DropdownLink.prototype = bootstrap.control_prototype;
+    DropdownLink.prototype = control_prototype;
     DropdownLink.template = doT.template(
 '<div{{=it.printAttributes()}}>\
 <a class="dropdown-toggle" data-toggle="dropdown" href="#">\
@@ -186,7 +204,7 @@ function Bootstrap(controls)
         controls.controlInitialize(this, 'bootstrap.ToggleBtn', parameters, attributes, ToggleBtn.template);
         this.class('btn dropdown-toggle');
     };
-    ToggleBtn.prototype = bootstrap.control_prototype;
+    ToggleBtn.prototype = control_prototype;
     ToggleBtn.template = doT.template(
 '<a{{=it.printAttributes()}} data-toggle="dropdown" href="#">{{? it.attributes.$icon }}<b class="{{=it.attributes.$icon}}"> </b>{{?}}{{? it.attributes.Caret }}<span class="caret"></span>{{?}}{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}</a>\n\
 {{? (it.controls && it.controls.length > 0) }}\n\
@@ -241,7 +259,7 @@ function Bootstrap(controls)
             return this.parameter('size');
         };
     };
-    Button.prototype = bootstrap.control_prototype;
+    Button.prototype = control_prototype;
     Button.template = doT.template(
 '<button{{=it.printAttributes()}}>\
 {{? it.attributes.$icon }}<b class="glyphicon glyphicon-{{=it.attributes.$icon}}"></b>&nbsp;{{?}}\
@@ -256,7 +274,7 @@ function Bootstrap(controls)
     {
         controls.controlInitialize(this, 'bootstrap.Splitbutton', parameters, attributes, Splitbutton.template);
     };
-    Splitbutton.prototype = bootstrap.control_prototype;
+    Splitbutton.prototype = control_prototype;
     Splitbutton.template = doT.template(
 '<div id="{{=it.id}}" class="btn-group">\
 <button type="button" class="btn btn-primary {{=it.attributes.class}}"{{=it.printAttributes("style")}}>{{=it.attributes.$text}}\
@@ -283,7 +301,7 @@ function Bootstrap(controls)
         if (!this.attributes.class || this.attributes.class.indexOf('btn-group') < 0)
             this.class('btn-group');
     };
-    BtnGroup.prototype = bootstrap.control_prototype;
+    BtnGroup.prototype = control_prototype;
     controls.typeRegister('bootstrap.BtnGroup', BtnGroup);
     
     
@@ -294,7 +312,7 @@ function Bootstrap(controls)
         controls.controlInitialize(this, 'bootstrap.TabPanelHeader', parameters, attributes, TabPanelHeader.template);
         this.class('nav nav-tabs tabpanel-header');
     };
-    TabPanelHeader.prototype = bootstrap.control_prototype;
+    TabPanelHeader.prototype = control_prototype;
     TabPanelHeader.template = doT.template(
 '<ul{{=it.printAttributes()}}>\
 {{? it.attributes.$text}}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}\
@@ -309,7 +327,7 @@ function Bootstrap(controls)
         controls.controlInitialize(this, 'bootstrap.TabHeader', parameters, attributes, TabHeader.template);
         this.class('tab-header');
     };
-    TabHeader.prototype = bootstrap.control_prototype;
+    TabHeader.prototype = control_prototype;
     TabHeader.template = doT.template(
 '<li{{=it.printAttributes()}}>\
 <a href={{=it.attributes.$href}} data-toggle="tab">\
@@ -325,7 +343,7 @@ function Bootstrap(controls)
         controls.controlInitialize(this, 'bootstrap.TabPanelBody', parameters, attributes);
         this.class('tab-content tabpanel-body');
     };
-    TabPanelBody.prototype = bootstrap.control_prototype;
+    TabPanelBody.prototype = control_prototype;
     controls.typeRegister('bootstrap.TabPanelBody', TabPanelBody);
     
     
@@ -336,7 +354,7 @@ function Bootstrap(controls)
         controls.controlInitialize(this, 'bootstrap.TabPage', parameters, attributes);
         this.class('tab-pane fade');
     };
-    TabPage.prototype = bootstrap.control_prototype;
+    TabPage.prototype = control_prototype;
     controls.typeRegister('bootstrap.TabPage', TabPage);
     
     
@@ -347,7 +365,7 @@ function Bootstrap(controls)
         controls.controlInitialize(this, 'bootstrap.Form', parameters, attributes, Form.template);
         attributes.role = 'form';
     };
-    Form.prototype = bootstrap.control_prototype;
+    Form.prototype = control_prototype;
     Form.template = doT.template(
 '<form{{=it.printAttributes()}}>\
 {{? (it.controls && it.controls.length > 0) }}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}{{?}}\
@@ -362,7 +380,7 @@ function Bootstrap(controls)
         controls.controlInitialize(this, 'bootstrap.FormGroup', parameters, attributes);
         this.class('form-group');
     };
-    FormGroup.prototype = bootstrap.control_prototype;
+    FormGroup.prototype = control_prototype;
     controls.typeRegister('bootstrap.FormGroup', FormGroup);
     
     
@@ -375,7 +393,7 @@ function Bootstrap(controls)
         controls.controlInitialize(this, 'bootstrap.ControlLabel', parameters, attributes, ControlLabel.template);
         this.class('control-label');
     };
-    ControlLabel.prototype = bootstrap.control_prototype;
+    ControlLabel.prototype = control_prototype;
     ControlLabel.template = doT.template(
 '<label{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}</label>');
     controls.typeRegister('bootstrap.ControlLabel', ControlLabel);
@@ -414,7 +432,7 @@ function Bootstrap(controls)
                 element.value = this.attributes.value;
         });
     };
-    ControlInput.prototype = bootstrap.control_prototype;
+    ControlInput.prototype = control_prototype;
     ControlInput.template = doT.template(
 '<input{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}</input>');
     controls.typeRegister('bootstrap.ControlInput', ControlInput);
@@ -443,7 +461,7 @@ function Bootstrap(controls)
         
         this.listen('data', this.refreshInner);
     };
-    ControlSelect.prototype = bootstrap.control_prototype;
+    ControlSelect.prototype = control_prototype;
     ControlSelect.template = doT.template(
 '<select{{=it.printAttributes()}}>\
 {{?it.data}}{{~it.data :value:index}}<option value={{=value}}>{{=value}}</option>{{~}}{{?}}\

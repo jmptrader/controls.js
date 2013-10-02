@@ -10,7 +10,7 @@
 //
 // require doT.js
 
-(function() { "use strict"; var VERSION = '0.6.3';
+(function() { "use strict"; var VERSION = '0.6.8';
 
 function Controls(doT)
 {
@@ -25,6 +25,7 @@ Noscript,Object,Ol,Optgroup,Option,Output,P,Pre,Progress,Ruby,Rt,Rp,S,Samp,Scrip
 Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr';
     var ENCODE_HTML_MATCH = /&(?!#?\w+;)|<|>|"|'|\//g;
     var ENCODE_HTML_PAIRS = { "<": "&#60;", ">": "&#62;", '"': '&#34;', "'": '&#39;', "&": "&#38;", "/": '&#47;' };
+    var DECODE_HTML_MATCH = /&#(\d{1,8});/g;
     controls.subtypes = {}; // Registered subtypes
     controls.doT = doT; // reexport need for gencodes
     doT.templateSettings.strip = false; // FIX: strip modifies the pattern incorrectly assuming that it is composed entirely of HTML code
@@ -281,15 +282,21 @@ controls.typeRegister(__type, ' + name + ');';
     
     // Post processing
     
-    var post_events = {};
+    var post_events = [];
     setInterval(function()
     {
-        for(var prop in post_events)
-        if (--post_events[prop] <= 0)
+        if (post_events.length > 0)
+        for(var i = 0, c = post_events.length; i < c; i++)
         {
-            delete post_events[prop];
-            prop.raise();
+            try
+            {
+                post_events[i].post_event.raise();
+            }
+            catch (e) { console.log(e); }
+            
+            post_events.length = 0;
         };
+        
     } , 30);
     
 // >> Data objects
@@ -352,7 +359,7 @@ controls.typeRegister(__type, ' + name + ');';
             return this;
         },
                 
-        raise: function(event_data, latency)
+        raise: function(event_data)
         {
             var event = this.event;
             if (event)
@@ -360,9 +367,46 @@ controls.typeRegister(__type, ' + name + ');';
             
             var post_event = this.post_event;
             if (post_event)
-                post_events[this] = latency || 1;
+            {
+                var index = post_events.indexOf(this);
+                if (index < 0 || index !== post_events.length - 1)
+                {
+                    if (index >= 0)
+                        post_events.splice(index, 1);
+                    post_events.push(this);
+                }
+            }
+        },
+        
+        set: function(name, value)
+        {
+            this.state_id++;
+            this[name] = value;
+            this.last_name = name;
+            this.raise();
+        },
+        setx: function(collection)
+        {
+            var modified;
+            for(var prop in collection)
+            if (collection.hasOwnProperty(prop))
+            {
+                modified = true;
+                this.state_id++;
+                this[prop] = collection[prop];
+                this.last_name = collection;
+            }
+            if (modified)
+                this.raise();
         }
     };
+    
+    function DataObject(parameters, attributes)
+    {
+        this.state_id = Number.MIN_VALUE;
+    }
+    DataObject.prototype = data_object_common;
+    controls.typeRegister('DataObject', DataObject);
     
     var data_array_common =
     {
@@ -379,7 +423,7 @@ controls.typeRegister(__type, ' + name + ');';
         }
         // TODO
     };
-    
+        
     function LocalStorageAdapter(parameters, attributes)
     {
     };
@@ -601,6 +645,8 @@ controls.typeRegister(__type, ' + name + ');';
         this.outer_template = doT.template('<div{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}</div>');
         // default inner html template
         this.inner_template = doT.template('{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}');
+        // default inline template
+        this.outer_inline_template = doT.template('<span{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}</span>');
                 
         // snippets:
         // 
@@ -887,17 +933,14 @@ controls.typeRegister(__type, ' + name + ');';
                 var index = parent.controls.indexOf(this);
                 this.parent = undefined;
                 setParent.call(control, parent, index);
-                
-                var element = this._element;
-                if (!element)
-                    control.element = undefined;
-                else
-                {
-                    control.element = element;
-                    control.refresh(); // rewrite dom
-                }
-                
-                //parent.refreshInner();
+            }
+            var element = this._element;
+            if (!element)
+                control.element = undefined;
+            else
+            {
+                control.element = element;
+                control.refresh(); // rewrite dom
             }
         };
         
@@ -908,8 +951,10 @@ controls.typeRegister(__type, ' + name + ');';
             if (element)
                 throw new TypeError('Already exists!');
             
-            if (!node && this.parent)
+            if (!node && this.parent) {
                 node = this.parent.element;
+                opcode = 0;
+            }
             
             if (node)
             {
@@ -939,9 +984,11 @@ controls.typeRegister(__type, ' + name + ');';
                     var fragment = document.createDocumentFragment();
                     var el = document.createElement('div');
                     el.innerHTML = this.outerHTML();
-                    var nodes = el.childNodes;
+                    var nodes = el.childNodes, buf = [];
                     for(var i = 0, c = nodes.length; i < c; i++)
-                        fragment.appendChild(nodes[i]);
+                        buf.push(nodes[i]);
+                    for(var i = 0, c = buf.length; i < c; i++)
+                        fragment.appendChild(buf[i]);
                     
                     switch(opcode)
                     {
@@ -2249,6 +2296,11 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
 
             return control;
         }
+    };
+    
+    controls.decodeHTML = function(text)
+    {
+        return text ? text.replace(DECODE_HTML_MATCH, function(match) { return String.fromCharCode(parseInt(match.slice(2))); }) : text;
     };
     
     controls.encodeHTML = function(text)
