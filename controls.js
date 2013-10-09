@@ -1,5 +1,3 @@
-////////////////////////////////////////////////////////////////////////////////
-//
 //     controls.js
 //     purpose: UI framework, code generation tool
 //     status: proposal, example, valid prototype, under development
@@ -28,7 +26,11 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr';
     var DECODE_HTML_MATCH = /&#(\d{1,8});/g;
     controls.subtypes = {}; // Registered subtypes
     controls.doT = doT; // reexport need for gencodes
-    doT.templateSettings.strip = false; // FIX: strip modifies the pattern incorrectly assuming that it is composed entirely of HTML code
+    // BUG doT strip modifies the pattern incorrectly assuming that it is composed entirely of HTML code, FIX:
+    try{doT.templateSettings.strip=0;}catch(e){}
+    // BUG2 Safari throw error on fix this bug, FIX2 place this condition:
+    if (doT.templateSettings.strip)
+        throw new SyntaxError('Due to bugs and the inability to cross-browser fix them, please remove strip option in doT library! #112');
     
     // Initialize control object
     // 
