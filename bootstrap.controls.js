@@ -13,7 +13,7 @@ function Bootstrap(controls)
 {
     var bootstrap = this;
     var doT = controls.doT;
-    bootstrap.VERSION = '0.6.8';
+    bootstrap.VERSION = '0.6.10';
     controls.bootstrap = bootstrap;
     
     var control_prototype = (function()
@@ -157,7 +157,7 @@ function Bootstrap(controls)
     DropdownItem.template = doT.template(
 '<li id="{{=it.id}}">\
 <a data-toggle="tab"{{=it.printAttributes("-id")}}>\
-{{? it.attributes.$icon }}<span class="{{=it.attributes.$icon}}"></span>&nbsp;{{?}}\
+{{? it.attributes.$icon }}<span class="glyphicon glyphicon-{{=it.attributes.$icon}}"></span>&nbsp;{{?}}\
 {{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}\
 </a></li>\n');
     controls.typeRegister('bootstrap.DropdownItem', DropdownItem);
@@ -188,7 +188,7 @@ function Bootstrap(controls)
     DropdownLink.template = doT.template(
 '<div{{=it.printAttributes()}}>\
 <a class="dropdown-toggle" data-toggle="dropdown" href="#">\
-{{? it.attributes.$icon }}<b class="{{=it.attributes.$icon}}"> </b>{{?}}\
+{{? it.attributes.$icon }}<b class="glyphicon glyphicon-{{=it.attributes.$icon}}"> </b>{{?}}\
 {{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}\
 </a>\n\
 {{? (it.controls && it.controls.length > 0) }}\
@@ -206,7 +206,7 @@ function Bootstrap(controls)
     };
     ToggleBtn.prototype = control_prototype;
     ToggleBtn.template = doT.template(
-'<a{{=it.printAttributes()}} data-toggle="dropdown" href="#">{{? it.attributes.$icon }}<b class="{{=it.attributes.$icon}}"> </b>{{?}}{{? it.attributes.Caret }}<span class="caret"></span>{{?}}{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}</a>\n\
+'<a{{=it.printAttributes()}} data-toggle="dropdown" href="#">{{? it.attributes.$icon }}<b class="glyphicon glyphicon-{{=it.attributes.$icon}}"> </b>{{?}}{{? it.attributes.Caret }}<span class="caret"></span>{{?}}{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}</a>\n\
 {{? (it.controls && it.controls.length > 0) }}\n\
 <ul class="dropdown-menu">\n\
 {{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}\n\
@@ -260,11 +260,14 @@ function Bootstrap(controls)
         };
     };
     Button.prototype = control_prototype;
-    Button.template = doT.template(
-'<button{{=it.printAttributes()}}>\
-{{? it.attributes.$icon }}<b class="glyphicon glyphicon-{{=it.attributes.$icon}}"></b>&nbsp;{{?}}\
-{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}\
-</button>');
+    Button.template = function(it) {
+        var attrs = it.attributes;
+        return '<button' + it.printAttributes() + '>'
+            + (attrs.$icon ? ('<b class="glyphicon glyphicon-' + attrs.$icon + '"></b>') : '')
+            + ((attrs.$icon && attrs.$text) ? '&nbsp;' : '')
+            + (attrs.$text || '')
+            + '</button>';
+    };
     controls.typeRegister('bootstrap.Button', Button);
     
     
@@ -278,7 +281,7 @@ function Bootstrap(controls)
     Splitbutton.template = doT.template(
 '<div id="{{=it.id}}" class="btn-group">\
 <button type="button" class="btn btn-primary {{=it.attributes.class}}"{{=it.printAttributes("style")}}>{{=it.attributes.$text}}\
-{{? it.attributes.$icon }}<b class="{{=it.attributes.$icon}}"> </b>{{?}}\
+{{? it.attributes.$icon}}<b class="glyphicon glyphicon-{{=it.attributes.$icon}}"> </b>{{?}}\
 </button>\
 <button type="button" class="btn btn-primary {{=it.attributes.class}} dropdown-toggle" data-toggle="dropdown">\
 <span class="caret"></span>\
@@ -331,8 +334,8 @@ function Bootstrap(controls)
     TabHeader.template = doT.template(
 '<li{{=it.printAttributes()}}>\
 <a href={{=it.attributes.$href}} data-toggle="tab">\
-{{? it.attributes.$icon }}<b class="{{=it.attributes.$icon}}"> </b>{{?}}\
-{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}</a></li>');
+{{? it.attributes.$icon}}<b class="glyphicon glyphicon-{{=it.attributes.$icon}}"> </b>{{?}}\
+{{? it.attributes.$text}}{{=it.attributes.$text}}{{?}}</a></li>');
     controls.typeRegister('bootstrap.TabHeader', TabHeader);
     
     
@@ -406,28 +409,25 @@ function Bootstrap(controls)
         controls.controlInitialize(this, 'bootstrap.ControlInput', parameters, attributes, ControlInput.template);
         this.class('form-control');
         
-        
         Object.defineProperty(this, 'value',
         {
-            get: function()
-            {
-                var element = this._element;
-                if (element)
-                    this.attributes.value = element.value;
-                
+            get: function() {
                 return this.attributes.value;
             },
-            set: function(value)
-            {
+            set: function(value) {
                 var element = this._element;
                 if (element)
                     element.value = value;
-                
-                this.attributes.value = value;
+                else
+                    this.attributes.value = value;
             }
         });
-        this.listen('element', function(element)
-        {
+        
+        this.listen('change', function() {
+            this.attributes.value = this.element.value;
+        });
+        
+        this.listen('element', function(element) {
             if (element)
                 element.value = this.attributes.value;
         });
@@ -445,21 +445,40 @@ function Bootstrap(controls)
     //
     function ControlSelect(parameters, attributes)
     {
-        controls.controlInitialize(this, 'bootstrap.ControlSelect', parameters, attributes, ControlSelect.template);
+        controls.controlInitialize(this, 'bootstrap.ControlSelect', parameters, attributes, ControlSelect.template, ControlSelect.inner_template);
         this.class('form-control');
         this.class('display:inline-block;');
         
-        var dao_attributes = {};
-        // $data argument
-        var $data = attributes.$data;
-        if ($data)
-        {
-            dao_attributes.$data = $data;
-            delete attributes.$data;
-        }
-        this.bind(controls.create('DataArray', dao_attributes));
+        if (attributes.hasOwnProperty('$data'))
+            this.bind(controls.create('DataArray', {$data: attributes.$data}));
+        else
+            this.bind(controls.create('DataArray'));
         
+        // chenge event routed from data object
         this.listen('data', this.refreshInner);
+        
+        Object.defineProperty(this, 'value',
+        {
+            get: function() {
+                return this.attributes.value;
+            },
+            set: function(value) {
+                var element = this._element;
+                if (element)
+                    element.value = value;
+                else
+                    this.attributes.value = value;
+            }
+        });
+        
+        this.listen('change', function() {
+            this.attributes.value = this.element.value;
+        });
+        
+        this.listen('element', function(element) {
+            if (element)
+                element.value = this.attributes.value;
+        });
     };
     ControlSelect.prototype = control_prototype;
     ControlSelect.template = doT.template(
