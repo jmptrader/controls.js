@@ -316,10 +316,7 @@ function Bootstrap(controls)
         this.class('nav nav-tabs tabpanel-header');
     };
     TabPanelHeader.prototype = control_prototype;
-    TabPanelHeader.template = doT.template(
-'<ul{{=it.printAttributes()}}>\
-{{? it.attributes.$text}}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}\
-</ul>');
+    TabPanelHeader.template = function(it) { return '<ul' + it.printAttributes() + '>' + (it.attributes.$text || '') + it.printControls() + '</ul>'; };
     controls.typeRegister('bootstrap.TabPanelHeader', TabPanelHeader);
     
     
@@ -369,10 +366,7 @@ function Bootstrap(controls)
         attributes.role = 'form';
     };
     Form.prototype = control_prototype;
-    Form.template = doT.template(
-'<form{{=it.printAttributes()}}>\
-{{? (it.controls && it.controls.length > 0) }}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}{{?}}\
-</form>');
+    Form.template = function(it) { return '<form' + it.printAttributes() + '>' + it.printControls() + '</form>'; };
     controls.typeRegister('bootstrap.Form', Form);
     
     
@@ -397,8 +391,7 @@ function Bootstrap(controls)
         this.class('control-label');
     };
     ControlLabel.prototype = control_prototype;
-    ControlLabel.template = doT.template(
-'<label{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}</label>');
+    ControlLabel.template = function(it) { return '<label' + it.printAttributes() + '>' + (it.attributes.$text || '') + '</label>'; };
     controls.typeRegister('bootstrap.ControlLabel', ControlLabel);
     
     
@@ -433,8 +426,7 @@ function Bootstrap(controls)
         });
     };
     ControlInput.prototype = control_prototype;
-    ControlInput.template = doT.template(
-'<input{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}</input>');
+    ControlInput.template = function(it) { return '<input' + it.printAttributes() + '>' + (it.attributes.$text || '') + '</input>'; };
     controls.typeRegister('bootstrap.ControlInput', ControlInput);
     
     

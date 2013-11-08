@@ -18,7 +18,7 @@ function Controls(doT)
     
     var IDENTIFIERS = ',add,attach,attributes,class,data,element,first,id,__type,controls,last,name,forEach,parameters,parent,remove,style,';
     var HTML_TAGS = 'A,Abbr,Address,Article,Aside,B,Base,Bdi,Bdo,Blockquote,Button,Canvas,Cite,Code,Col,Colgroup,Command,Datalist,Dd,Del,Details,\
-Dfn,Div,Dl,Dt,Em,Embed,Fieldset,Figcaption,Figure,Footer,Form,Gnome,Header,I,IFrame,Img,Input,Ins,Kbd,Keygen,Label,Legend,Li,Link,Map,Mark,Menu,Meter,Nav,\
+Dfn,Div,Dl,Dt,Em,Embed,Fieldset,Figcaption,Figure,Footer,Form,Gnome,H1,H2,H3,H4,H5,H6,Header,I,IFrame,Img,Input,Ins,Kbd,Keygen,Label,Legend,Li,Link,Map,Mark,Menu,Meter,Nav,\
 Noscript,Object,Ol,Optgroup,Option,Output,P,Pre,Progress,Ruby,Rt,Rp,S,Samp,Script,Section,Select,Small,Span,Strong,Style,Sub,Summary,Sup,\
 Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr';
     var ENCODE_HTML_MATCH = /&(?!#?\w+;)|<|>|"|'|\//g;
@@ -80,37 +80,15 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr';
     //
     controls.typeRegister = function(type, constructor, revive)
     {
-        var key_parameters = {};
-        var __type = parse_type(type, key_parameters) .toLowerCase();
-        
+        controls.factoryRegister(type, constructor);
         constructor.is_constructor = true;
         constructor.revive = revive;
-        
-        if (__type.length < type.length) // type is subtype with parameters, register to controls.subtypes
-        {
-            var subtypes_array = controls.subtypes[__type];
-            if (!subtypes_array)
-            {
-                subtypes_array = [];
-                controls.subtypes[__type] = subtypes_array;
-            }
-            key_parameters.__ctr = constructor;
-            subtypes_array.push(key_parameters);
-        }
-        else
-        {
-            // check name conflict
-            if (controls[__type])
-                throw new TypeError('Type ' + type + ' already registered!');
-            
-            controls[__type] = constructor;
-        }
     };
     
     controls.factoryRegister = function(type, factory_method)
     {
-        var key_parameters = {};
-        var __type = parse_type(type, key_parameters) .toLowerCase();
+        var key_parameters = {},
+            __type = parse_type(type, key_parameters) .toLowerCase();
         
         if (__type.length < type.length) // type is subtype with parameters, register to controls.subtypes
         {
@@ -140,10 +118,9 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr';
     //
     controls.typeAlias = function(alias, type)
     {
-        var parameters = {};
-        var __type = parse_type(type, parameters) .toLowerCase();
-        
-        var constructor = resolve_ctr(__type, parameters);
+        var parameters = {},
+            __type = parse_type(type, parameters) .toLowerCase(),
+            constructor = resolve_ctr(__type, parameters);
         if (!constructor)
             throw new TypeError('Type ' + __type + ' not registered!');
             
@@ -153,8 +130,8 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr';
     //
     controls.createTemplatedControl = function(__type, outer_template, inner_template)
     {
-        var name = __type;
-        var dotpos = name.indexOf('.');
+        var name = __type,
+            dotpos = name.indexOf('.');
         if (dotpos >= 0)
             name = __type.substr(dotpos + 1);
         outer_template = (typeof(outer_template) === "string") ? doT.template(outer_template) : outer_template;
@@ -217,8 +194,8 @@ controls.typeRegister(__type, ' + name + ');';
 
         removeListener: function(listener)
         {
-            var listeners = this.listeners;
-            var index = listeners.indexOf(listener);
+            var listeners = this.listeners,
+                index = listeners.indexOf(listener);
             if (index >= 0)
                 listeners.splice(index, 2);
         },
@@ -416,10 +393,8 @@ controls.typeRegister(__type, ' + name + ');';
             // $data
             var data = attributes.$data;
             if (data)
-            {
                 for(var i = 0, c = data.length; i < c; i++)
                     array[i] = data[i];
-            }
         }
         
         for(var prop in data_object_common)
@@ -524,13 +499,12 @@ controls.typeRegister(__type, ' + name + ');';
             if (value !== parent)
             {
                 this._parent = value;
-                
                 var name = this._name;
                 
                 if (parent)
                 {
-                    var parent_controls = parent.controls;
-                    var index = parent_controls.indexOf(this);
+                    var parent_controls = parent.controls,
+                        index = parent_controls.indexOf(this);
                     if (index >= 0)
                         parent_controls.splice(index, 1);
                     
@@ -553,8 +527,6 @@ controls.typeRegister(__type, ' + name + ');';
                     
                     if (name)
                         value[name] = this;
-                    
-//                    value.refresh();
                 }
                 
                 this.raise('parent', value);
@@ -590,7 +562,7 @@ controls.typeRegister(__type, ' + name + ');';
                     {
                         var value_controls = value.controls;
 
-    // profiling: very expensive operation
+    // profiling: indexOf very expensive operation
     //                    var index = value_controls.indexOf(this);
     //                    if (index >= 0)
     //                        wrapper_controls.splice(index, 1);
@@ -608,12 +580,15 @@ controls.typeRegister(__type, ' + name + ');';
         Object.defineProperty(this, 'last',   { enumerable: true, get: function() { return this.controls[this.controls.length-1]; } });
         
         // default html template
-        this.outer_template = doT.template('<div{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}</div>');
+        this.outer_template = function(it) { return '<div' + it.printAttributes() + '>' + (it.attributes.$text || '') + it.printControls() + '</div>'; };
+        controls.default_outer_template = this.outer_template;
         // default inner html template
-        this.inner_template = doT.template('{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}');
+        this.inner_template = function(it) { return (it.attributes.$text || '') + it.printControls(); };
+        controls.default_inner_template = this.inner_template;
         // default inline template
-        this.outer_inline_template = doT.template('<span{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}</span>');
-                
+        this.outer_inline_template = function(it) { return '<span' + it.printAttributes() + '>' + (it.attributes.$text || '') + it.printControls() + '</span>'; };
+        controls.default_outer_inline_template = this.outer_inline_template;
+
         // snippets:
         // 
         // {{? it.attributes.$icon }}<span class="{{=it.attributes.$icon}}"></span>&nbsp;{{?}}
@@ -746,19 +721,7 @@ controls.typeRegister(__type, ' + name + ');';
         // Attach to DOM element
         this.attach = function(something)
         {
-            if (!something)
-            {
-                this.element = document.getElementById(this.id);
-            }
-            else if (typeof(something) === 'string')
-            {
-                this.element = document.getElementById(something);
-            }
-            else if (typeof(something) === 'object')
-            {
-                var control_element = something._element;
-                this.element = (control_element) ? control_element : something;
-            }
+            this.element = (typeof(something) === 'object') ? (something._element || something) : document.getElementById(something || this.id);
         };
         
         // Attach this and all nested controls to DOM by id
@@ -767,9 +730,8 @@ controls.typeRegister(__type, ' + name + ');';
             if (!this._element)
                 this.element = document.getElementById(this.id);
             
-            var subcontrols = this.controls;
-            for(var i = subcontrols.length - 1; i >= 0; i--)
-                subcontrols[i].attachAll();
+            for(var ctrls = this.controls, i = 0, c = ctrls.length; i < c; i++)
+                ctrls[i].attachAll();
         };
         
         // Detach from DOM
@@ -782,10 +744,8 @@ controls.typeRegister(__type, ' + name + ');';
         this.detachAll = function()
         {
             this.element = undefined;
-            
-            var subcontrols = this.controls;
-            for(var i = subcontrols.length - 1; i >= 0; i--)
-                subcontrols[i].detachAll();
+            for(var ctrls = this.controls, i = 0, c = ctrls.length; i < c; i++)
+                ctrls[i].detachAll();
         };
         
         // Replace control in the hierarchy tree
@@ -795,10 +755,7 @@ controls.typeRegister(__type, ' + name + ');';
 
             // .controls may be a DataArray
             for(var i = controls.length - 1; i >= 0; i--)
-            {
-                var totransfer = controls.shift();
-                control.add(totransfer);
-            }
+                control.add(controls.shift());
             
             var parent = this.parent;
             if (!parent)
@@ -1160,11 +1117,15 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             if (filter)
             {
+                // TODO: temporary inserted this checking:
+                if (filter.indexOf(',') >= 0)
+                    console.log('printAttributes() Use a space to separate of identifiers');
+                
                 if (filter[0] === '-')
                 {
                     // exclusion defined
 
-                    var exclude = filter.substr(1).split(/ |,|;/g);
+                    var exclude = filter.substr(1).split(' ');
                     for(var prop in this.attributes)
                     if (prop[0] !== '$' && exclude.indexOf(prop) < 0)
                     {
@@ -1177,7 +1138,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 {
                     // list of attributes
                     
-                    var attrs = filter.split(/ |,|;/g);
+                    var attrs = filter.split(' ');
                     for(var i = 0, c = attrs.length; i < c; i++)
                     {
                         var key = attrs[i];
@@ -1189,7 +1150,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             }
             else
             {
-                // unconditional, out all attributes
+                // unconditional out all attributes
                 for(var prop in attributes)
                 if (prop[0] !== '$')
                 {
@@ -1199,32 +1160,37 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 }
             }
             
-            return (result.length === 0) ? '' : (' '+ result.join(' '));
+            return (result.length) ? (' '+ result.join(' ')) : '';
+        };
+        
+        this.printControls = function()
+        {
+            var result = [];
+            for(var ctrls = this.controls, i = 0, c = ctrls.length; i < c; i++)
+                result.push(ctrls[i].wrappedHTML());
+            return result.join('');
         };
         
         // Set .$text attribute on this object and refresh DOM element.outerHTML
         this.text = function(_text)
         {
-            if (arguments.length > 0)
+            var attributes = this.attributes;
+            if (arguments.length)
             {
-                var attributes = this.attributes;
-                var text = attributes.$text;
-
-                if (_text !== text)
+                if (_text !== attributes.$text)
                 {
                     attributes.$text = _text;
                     this.refresh();
                 }
             }
-            return this.attributes.$text;
+            return attributes.$text;
         };
         
         this.style = function(_style)
         {
             if (arguments.length)
             {
-                var attributes = this.attributes;
-                var style = attributes.style;
+                var attributes = this.attributes, style = attributes.style;
 
                 if (_style !== style)
                 {
@@ -1252,7 +1218,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 
                 if (remove)
                 {
-                    remove = remove.split(/\s|,|;/g);
+                    remove = remove.split(' ');
                     for(var i = 0, c = remove.length; i < c; i++)
                     {
                         var remove_class = remove[i];
@@ -1264,7 +1230,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 
                 if (set)
                 {
-                    set = set.split(/\s|,|;/g);
+                    set = set.split(' ');
                     for(var i = 0, c = set.length; i < c; i++)
                     {
                         var set_class = set[i];
@@ -1445,7 +1411,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         //
         this.remove = function(control)
         {
-            if (arguments.length === 0)
+            if (!arguments.length)
             {
                 // .remove() without arguments removes this control from parent .controls collection
                 this.parent = undefined;
@@ -1460,10 +1426,8 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         //
         this.removeAll = function()
         {
-            var controls = this.controls;
-            
-            for(var i = controls.length - 1; i >= 0; i--)
-                this.remove(controls[i]);
+            for(var ctrls = this.controls, i = ctrls.length - 1; i >= 0; i--)
+                this.remove(ctrls[i]);
         };
         
         function route_data_event()
@@ -1542,9 +1506,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         
         // get __type
         
-        var dotpos = type.indexOf('.');
-        var slashpos = type.indexOf('/');
-        var numberpos = type.indexOf('#');
+        var dotpos = type.indexOf('.'), slashpos = type.indexOf('/'), numberpos = type.indexOf('#');
         
         var typelen = -1;
         if (slashpos >= 0)
@@ -1601,8 +1563,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                     if (parameter)
                     {
                         parameter = parameter.split('=');
-                        var parname = parameter[0];
-                        var parvalue = parameter[1];
+                        var parname = parameter[0], parvalue = parameter[1];
                         if (parname)
                         {
                             if (parvalue === undefined)
@@ -1626,8 +1587,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                     if (parameter)
                     {
                         parameter = parameter.split('=');
-                        var parname = parameter[0];
-                        var parvalue = parameter[1];
+                        var parname = parameter[0], parvalue = parameter[1];
                         if (parname)
                         {
                             if (parvalue === undefined)
@@ -1655,7 +1615,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         // after parse and before ctr resolve apply alias
         
         var constructor;
-        __type = __type.toLowerCase();
+            __type = __type.toLowerCase();
         
         // map __type -> subtypes array
         var subtypes_array = controls.subtypes[__type]; 
@@ -1766,8 +1726,8 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 }
         }
         
-        var __type = parse_type(type, parameters);
-        var constructor = resolve_ctr(__type, parameters);
+        var __type = parse_type(type, parameters),
+            constructor = resolve_ctr(__type, parameters);
         
         if (!constructor)
         {
@@ -1817,10 +1777,10 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         if (typeof type !== 'string')
             return type;
         
-        var colonpos = type.indexOf(':');
-        var dotpos = type.indexOf('.');
-        var slashpos = type.indexOf('/');
-        var numberpos = type.indexOf('#');
+        var colonpos = type.indexOf(':'),
+            dotpos = type.indexOf('.'),
+            slashpos = type.indexOf('/'),
+            numberpos = type.indexOf('#');
         
         if ((~dotpos && colonpos > dotpos) || (~slashpos && colonpos > slashpos) || (~numberpos && colonpos > numberpos))
             colonpos = -1;
@@ -2130,9 +2090,9 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     {
         if (typeof(value) === 'object' && value !== null && value.hasOwnProperty('__type'))
         {
-            var parameters = {};
-            var __type = parse_type(value.__type, parameters);
-            var constructor = resolve_ctr(__type, parameters);
+            var parameters = {},
+                __type = parse_type(value.__type, parameters),
+                constructor = resolve_ctr(__type, parameters);
             
             if (!constructor)
                 throw new TypeError('controls.reviverJSON(): ' + __type + ' constructor not registered!');
@@ -2223,19 +2183,42 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         return setTimeout(function() { return func.apply(null, Array.prototype.slice.call(arguments, 2)); }, delay);
     };
     
+    
+    (function(){
+        
+        // Elementals //////////////////////////////////////////////////////////////
+        
+        function getgentemplate(tagname) {
+            return 'function c' + tagname + '(p, a) { controls.controlInitialize(this, \'controls.' + tagname + '\', p, a, c' + tagname + '.outer_template); }\
+c' + tagname + '.prototype = controls.control_prototype;\
+c' + tagname + '.outer_template = function(it) { return \'<' + tagname + '\' + it.printAttributes() + \'>\' + (it.attributes.$text || \'\') + it.printControls() + \'</' + tagname + '>\'; };\
+controls.typeRegister(\'controls.' + tagname + '\', c' + tagname + ');';
+        }
+        Function('controls', HTML_TAGS.split(',').map(function(tagname) { return getgentemplate(tagname.toLowerCase()); }).join(''))(controls);
+    
+        // Templated ///////////////////////////////////////////////////////////////
+
+        controls.createTemplatedControl('controls.Area',    function(it){ return '<area'    + it.printAttributes() + '>'; });
+        controls.createTemplatedControl('controls.Hr',      function(it){ return '<hr'      + it.printAttributes() + '>'; });
+        controls.createTemplatedControl('controls.Meta',    function(it){ return '<meta'    + it.printAttributes() + '>'; });
+        controls.createTemplatedControl('controls.Param',   function(it){ return '<param'   + it.printAttributes() + '>'; });
+        controls.createTemplatedControl('controls.Source',  function(it){ return '<source'  + it.printAttributes() + '>'; });
+        controls.createTemplatedControl('controls.Track',   function(it){ return '<track'   + it.printAttributes() + '>'; });
+    })();
+    
+    
     // Special /////////////////////////////////////////////////////////////////
-    
-    
+
+            
     // Container
     // 
     // without own html
     // 
     function Container(parameters, attributes)
     {
-        controls.controlInitialize(this, 'controls.Container', parameters, attributes, Container.template);
+        controls.controlInitialize(this, 'controls.Container', parameters, attributes, controls.default_inner_template);
     };
     Container.prototype = controls.control_prototype;
-    Container.template = doT.template('{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}');
     controls.typeRegister('controls.Container', Container);
     
     // Custom
@@ -2244,30 +2227,9 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     // 
     function Custom(parameters, attributes)
     {
-        var outer_template, inner_template;
-        // $template
-        var $template = attributes.$template;
-        if ($template)
-        {
-            outer_template = $template;
-            delete attributes.$template;
-        }
-        // $outer_template
-        var $outer_template = attributes.$outer_template;
-        if ($outer_template)
-        {
-            outer_template = $outer_template;
-            delete attributes.$outer_template;
-        }
-        // $inner_template
-        var $inner_template = attributes.$inner_template;
-        if ($inner_template)
-        {
-            inner_template = $inner_template;
-            delete attributes.$inner_template;
-        }
-        
-        controls.controlInitialize(this, 'controls.Custom', parameters, attributes, outer_template, inner_template);
+        controls.controlInitialize(this, 'controls.Custom', parameters, attributes,
+            attributes.$template || attributes.$outer_template,
+            attributes.$inner_template);
     };
     Custom.prototype = controls.control_prototype;
     controls.typeRegister('controls.Custom', Custom);
@@ -2338,19 +2300,17 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         };
     };
     Stub.prototype = controls.control_prototype;
-    Stub.template = doT.template('<div{{=it.printAttributes()}}>{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}</div>');
     controls.typeRegister('controls.Stub', Stub);
     
     // Head
     //
     function Head(parameters, attributes)
     {
-        controls.controlInitialize(this, 'controls.Head', parameters, attributes, Head.template);
+        controls.controlInitialize(this, 'controls.Head', parameters, attributes, function(it) { return '<head>' + (it.attributes.$text || '') + it.printControls() + '</head>'; });
         this.attach    = function() { Head.prototype.attach.call(this, document.head); };
         this.attachAll = function() { Head.prototype.attach.call(this, document.head); Head.prototype.attachAll.call(this); };
     };
     Head.prototype = controls.control_prototype;
-    Head.template = doT.template('<head>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}</head>');
     controls.typeRegister('controls.Head', Head);
     
     // controls.Body <BODY></BODY>
@@ -2358,107 +2318,15 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     // 
     function Body(parameters, attributes)
     {
-        controls.controlInitialize(this, 'controls.Body', parameters, attributes, Body.template);
-        this.attach    = function(force_body)
+        controls.controlInitialize(this, 'controls.Body', parameters, attributes, function(it) { return '<body' + it.printAttributes('-id') + '>' + (it.attributes.$text || '') + it.printControls() + '</body>'; });
+        this.attach = function(force_body)
         {
             Body.prototype.attach.call(this, document.body);
         };
         this.attachAll = function() { Body.prototype.attach.call(this, document.body); Body.prototype.attachAll.call(this); };
     };
     Body.prototype = controls.control_prototype;
-    Body.template = doT.template('<body{{=it.printAttributes("-id")}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}</body>');
     controls.typeRegister('controls.Body', Body);
-    
-    
-    // Elementals //////////////////////////////////////////////////////////////
-    
-    
-    var gencode = '';
-    var genplate =
-'function %%NAME%%(p, a)\
-{\
-    controls.controlInitialize(this, \'controls.%%NAME%%\', p, a, %%NAME%%.outer_template);\
-};\
-%%NAME%%.prototype = controls.control_prototype;\
-%%NAME%%.outer_template = doT.template(\'%%OPENTAG%%{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}%%CLOSETAG%%\');\
-controls.typeRegister(\'controls.%%NAME%%\', %%NAME%%);\n';
-
-    HTML_TAGS.split(',').forEach(function(tag)
-    {
-        var taglowercase = tag.toLowerCase();
-        gencode += genplate
-                .replace(/%%NAME%%/g, tag)
-                .replace(/%%OPENTAG%%/g, '<'+taglowercase+'{{=it.printAttributes()}}>')
-                .replace(/%%CLOSETAG%%/g, '</'+taglowercase+'>');
-    });
-    Function('doT,controls', gencode)(doT,controls);
-    
-    
-    // Templated ///////////////////////////////////////////////////////////////
-    
-    controls.createTemplatedControl('controls.Area',        '<area{{=it.printAttributes()}}>'   );
-    controls.createTemplatedControl('controls.Hr',          '<hr{{=it.printAttributes()}}>'     );
-    controls.createTemplatedControl('controls.Meta',        '<meta{{=it.printAttributes()}}>'   );
-    controls.createTemplatedControl('controls.Param',       '<param{{=it.printAttributes()}}>'  );
-    controls.createTemplatedControl('controls.Source',      '<source{{=it.printAttributes()}}>' );
-    controls.createTemplatedControl('controls.Track',       '<track{{=it.printAttributes()}}>'  );
-    
-    
-    // Html tags
-    
-    
-    // Heading,H1,H2,H3,H4,H5,H6
-    // 
-    // Parameters
-    //  level - hading level
-    // Attributes
-    //  $text - inner text
-    // 
-    function Heading(parameters/*level*/, attributes/*$text*/) // function-constructor
-    {
-        this.level = '1';
-        controls.controlInitialize(this, 'controls.Heading', parameters, attributes, Heading.template);
-        
-        this.listen('type', function()
-        {
-            var level = '1'; 
-           var parameters = this.parameters;
-            for(var prop in parameters)
-            if (prop === 'level' || prop === '/level')
-                level = parameters[prop];
-            
-            this.level = level;
-        });
-    };
-    Heading.prototype = controls.control_prototype;
-    Heading.template = doT.template(
-'<h{{=it.level}}{{=it.printAttributes()}}>\
-{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}\
-</h{{=it.level}}>');
-    controls.typeRegister('controls.Heading', Heading);
-    controls.typeAlias('controls.H1', 'controls.Heading#level=1');
-    controls.typeAlias('controls.H2', 'controls.Heading#level=2');
-    controls.typeAlias('controls.H3', 'controls.Heading#level=3');
-    controls.typeAlias('controls.H4', 'controls.Heading#level=4');
-    controls.typeAlias('controls.H5', 'controls.Heading#level=5');
-    controls.typeAlias('controls.H6', 'controls.Heading#level=6');
-    
-    
-    // Frame <iframe src=...></iframe>
-    // 
-    // controls.create('controls.Frame', {src: 'http://www.ibm.com'});
-    // 
-    // Deprecated, for delete
-    function Frame(parameters, attributes/* must have "src" */) // function-constructor
-    {
-        if (!attributes || !attributes.src)
-            throw new TypeError('controls.Frame: Must be defined "src" attribute!');
-        
-        controls.controlInitialize(this, 'controls.Frame', parameters, attributes, Frame.template);
-    };
-    Frame.prototype = controls.control_prototype;
-    Frame.template = doT.template('<iframe{{=it.printAttributes()}}></iframe>');
-    controls.typeRegister('controls.Frame', Frame);
     
 
     // Layouts /////////////////////////////////////////////////////////////////
@@ -2479,9 +2347,9 @@ controls.typeRegister(\'controls.%%NAME%%\', %%NAME%%);\n';
         this.cellSet = new Container();
         this.cellSet.listen('attributes', this, function(event)
         {
-            var attr_name = event.name;
-            var attr_value = event.value;
-            var remove = (attr_value === undefined || attr_value === null);
+            var attr_name = event.name,
+                attr_value = event.value,
+                remove = (attr_value === undefined || attr_value === null);
             
             var element = this._element;
             if (element)
@@ -2500,8 +2368,8 @@ controls.typeRegister(\'controls.%%NAME%%\', %%NAME%%);\n';
         
         this.listen('type', function()
         {
-            var parameters = this.parameters;
-            var floatvalue;
+            var parameters = this.parameters,
+                floatvalue;
             
             for(var prop in parameters)
             if (prop === 'float' || prop === '/float')
@@ -2554,8 +2422,7 @@ controls.typeRegister(\'controls.%%NAME%%\', %%NAME%%);\n';
 </ul>');
     controls.typeRegister('controls.List', List);
     
-    
-    
+   
 };
 
 
