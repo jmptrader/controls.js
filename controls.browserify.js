@@ -2538,7 +2538,7 @@ controls.typeRegister(\'controls.' + tagname + '\', c' + tagname + ');';
 //        if (attributes.hasOwnProperty(prop))
 //            save_attributes[prop] = attributes[prop];
         
-        controls.controlInitialize(this, 'controls.Stub', parameters, attributes, Stub.template);
+        controls.controlInitialize(this, 'controls.Stub', parameters, attributes, function(it) { return '<div' + it.printAttributes() + '>' + it.printControls() + '</div>'; } );
         
         this.class('stub');
         
