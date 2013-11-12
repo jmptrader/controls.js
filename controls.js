@@ -16,10 +16,6 @@ function Controls(doT) {
     controls.id_generator = 53504; // use it only as per session elements id generator in controls constructors
     
     var IDENTIFIERS = ',add,attach,attributes,class,data,element,first,id,__type,controls,last,name,forEach,parameters,parent,remove,style,';
-    var HTML_TAGS = 'A,Abbr,Address,Article,Aside,B,Base,Bdi,Bdo,Blockquote,Button,Canvas,Cite,Code,Col,Colgroup,Command,Datalist,Dd,Del,Details,\
-Dfn,Div,Dl,Dt,Em,Embed,Fieldset,Figcaption,Figure,Footer,Form,Gnome,H1,H2,H3,H4,H5,H6,Header,I,IFrame,Img,Input,Ins,Kbd,Keygen,Label,Legend,Li,Link,Map,Mark,Menu,Meter,Nav,\
-Noscript,Object,Ol,Optgroup,Option,Output,P,Pre,Progress,Ruby,Rt,Rp,S,Samp,Script,Section,Select,Small,Span,Strong,Style,Sub,Summary,Sup,\
-Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr';
     var ENCODE_HTML_MATCH = /&(?!#?\w+;)|<|>|"|'|\//g;
     var ENCODE_HTML_PAIRS = { "<": "&#60;", ">": "&#62;", '"': '&#34;', "'": '&#39;', "&": "&#38;", "/": '&#47;' };
     var DECODE_HTML_MATCH = /&#(\d{1,8});/g;
@@ -118,26 +114,13 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr';
         controls[alias.toLowerCase()] = { __type: __type, parameters: parameters, isAlias: true };
     };
     
-    //
-    controls.createTemplatedControl = function(__type, outer_template, inner_template) {
-        var name = __type,
-            dotpos = name.indexOf('.');
-        if (dotpos >= 0)
-            name = __type.substr(dotpos + 1);
-        outer_template = (typeof(outer_template) === "string") ? doT.template(outer_template) : outer_template;
-        inner_template = (typeof(inner_template) === "string") ? doT.template(inner_template) : inner_template;
-        var gencode =
-'var __type = __type;\
-function ' + name + '(p, a)\
-{\
-    controls.controlInitialize(this, __type, p, a, outer_template, inner_template);\
-};\
-' + name + '.prototype = controls.control_prototype;\
-controls.typeRegister(__type, ' + name + ');';
-        Function('controls, __type, outer_template, inner_template', gencode) (controls, __type, outer_template, inner_template);
+    controls.parse = function(text) {
+        try {
+            return JSON.parse(text) || {};
+        } catch(e) { console.log(e); }
+        return {};
     };
-  
-
+    
     
 // >> Events
     
@@ -379,6 +362,12 @@ controls.typeRegister(__type, ' + name + ');';
 // >> Controls prototype
     
     controls.control_prototype = new function() {
+        
+        this.initialize = function(__type, parameters, _attributes, outer_template, inner_template) {
+            controls.controlInitialize(this, __type, parameters, _attributes, outer_template, inner_template);
+        };
+        
+        // todo del:
         Object.defineProperty(this, "$", {
             enumerable: true, 
             get: function() { return (this._element) ? $(this._element) : $('#' + this.id); }
@@ -476,46 +465,50 @@ controls.typeRegister(__type, ' + name + ');';
                 this.raise('parent', value);
             }
         }
-        Object.defineProperty(this, "parent", {
-            enumerable: true,
-            get: function() { return this._parent; },
-            set: setParent
-        });
         
-        Object.defineProperty(this, 'wrapper', {
-            enumerable: true,
-            get: function() { return this._wrapper; },
-            set: function(value) {
-                var wrapper = this._wrapper;
-                if (value !== wrapper) {
-                    this._wrapper = value;
+        Object.defineProperties(this, {
+            parent: {
+                enumerable: true,
+                get: function() { return this._parent; },
+                set: setParent
+            },
+        
+            wrapper: {
+                enumerable: true,
+                get: function() { return this._wrapper; },
+                set: function(value) {
+                    var wrapper = this._wrapper;
+                    if (value !== wrapper) {
+                        this._wrapper = value;
 
-                    if (wrapper) {
-                        var wrapper_controls = wrapper.controls;
-                        var index = wrapper_controls.indexOf(this);
-                        if (index >= 0)
-                            wrapper_controls.splice(index, 1);
-                    }
+                        if (wrapper) {
+                            var wrapper_controls = wrapper.controls;
+                            var index = wrapper_controls.indexOf(this);
+                            if (index >= 0)
+                                wrapper_controls.splice(index, 1);
+                        }
 
-                    if (value) {
-                        var value_controls = value.controls;
+                        if (value) {
+                            var value_controls = value.controls;
 
-    // profiling: indexOf very expensive operation
-    //                    var index = value_controls.indexOf(this);
-    //                    if (index >= 0)
-    //                        wrapper_controls.splice(index, 1);
+        // profiling: indexOf very expensive operation
+        //                    var index = value_controls.indexOf(this);
+        //                    if (index >= 0)
+        //                        wrapper_controls.splice(index, 1);
 
-                        value_controls.push(this);
+                            value_controls.push(this);
 
-                        // TODO value.refresh();
+                            // TODO value.refresh();
+                        }
                     }
                 }
-            }
-        });
+            },
         
-        Object.defineProperty(this, 'length', { enumerable: true, get: function() { return this.controls.length; } });
-        Object.defineProperty(this, 'first',  { enumerable: true, get: function() { return this.controls[0]; } });
-        Object.defineProperty(this, 'last',   { enumerable: true, get: function() { return this.controls[this.controls.length-1]; } });
+        
+            length: { enumerable: true, get: function() { return this.controls.length; } },
+            first:  { enumerable: true, get: function() { return this.controls[0]; } },
+            last:   { enumerable: true, get: function() { return this.controls[this.controls.length-1]; } }
+        });
         
         // default html template
         this.outer_template = function(it) { return '<div' + it.printAttributes() + '>' + (it.attributes.$text || '') + it.printControls() + '</div>'; };
@@ -1834,17 +1827,6 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         controls.defCommand('$$' + tag, function(text,id,_class,style) { if(id)id=id.replace(/ /g,'-'); this.$$C(tag, {$text:text, id:id, class:_class, style:style}); });
     });
     
-    controls.$test = function(control, callback) {
-        if (!this.$move)
-            return new controls.$test(control, callback);
-        
-        this.$default = 'controls.';
-        this.$context = control;
-        this.$context_stack = [];
-        
-        callback.call(this);
-    };
-    controls.$test.prototype = controls.$builder.prototype;
     
     // controls.reviverJSON()
     // 
@@ -1938,26 +1920,27 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     };
     
     
-    (function(){
-        
-        // Elementals //////////////////////////////////////////////////////////////
-        
-        function getgentemplate(tagname) {
-            return 'function c' + tagname + '(p, a) { controls.controlInitialize(this, \'controls.' + tagname + '\', p, a, c' + tagname + '.outer_template); }\
-c' + tagname + '.prototype = controls.control_prototype;\
-c' + tagname + '.outer_template = function(it) { return \'<' + tagname + '\' + it.printAttributes() + \'>\' + (it.attributes.$text || \'\') + it.printControls() + \'</' + tagname + '>\'; };\
-controls.typeRegister(\'controls.' + tagname + '\', c' + tagname + ');';
-        }
-        Function('controls', HTML_TAGS.split(',').map(function(tagname) { return getgentemplate(tagname.toLowerCase()); }).join(''))(controls);
+    // Elementals //////////////////////////////////////////////////////////////
     
-        // Templated ///////////////////////////////////////////////////////////////
-
-        controls.createTemplatedControl('controls.Area',    function(it){ return '<area'    + it.printAttributes() + '>'; });
-        controls.createTemplatedControl('controls.Hr',      function(it){ return '<hr'      + it.printAttributes() + '>'; });
-        controls.createTemplatedControl('controls.Meta',    function(it){ return '<meta'    + it.printAttributes() + '>'; });
-        controls.createTemplatedControl('controls.Param',   function(it){ return '<param'   + it.printAttributes() + '>'; });
-        controls.createTemplatedControl('controls.Source',  function(it){ return '<source'  + it.printAttributes() + '>'; });
-        controls.createTemplatedControl('controls.Track',   function(it){ return '<track'   + it.printAttributes() + '>'; });
+    
+    (function(){
+        function gencode(tagname, closetag) {
+            return 'function c' + tagname + '(p, a) { controls.controlInitialize(this, \'controls.' + tagname + '\', p, a, c' + tagname + '.outer_template); }\
+c' + tagname + '.prototype = controls.control_prototype;'
++ (closetag
+    ? 'c' + tagname + '.outer_template = function(it) { return \'<' + tagname + '\' + it.printAttributes() + \'>\' + (it.attributes.$text || \'\') + it.printControls() + \'</' + tagname + '>\'; };'
+    : 'c' + tagname + '.outer_template = function(it) { return \'<' + tagname + '\' + it.printAttributes() + \'>\'; };')
++ 'controls.typeRegister(\'controls.' + tagname + '\', c' + tagname + ');';
+        }
+        
+        Function('controls', 'A,Abbr,Address,Article,Aside,B,Base,Bdi,Bdo,Blockquote,Button,Canvas,Cite,Code,Col,Colgroup,Command,Datalist,Dd,Del,Details,\
+Dfn,Div,Dl,Dt,Em,Embed,Fieldset,Figcaption,Figure,Footer,Form,Gnome,H1,H2,H3,H4,H5,H6,Header,I,IFrame,Img,Ins,Kbd,Keygen,Label,Legend,Li,Link,Map,Mark,Menu,Meter,Nav,\
+Noscript,Object,Ol,Optgroup,Option,Output,P,Pre,Progress,Ruby,Rt,Rp,S,Samp,Script,Section,Small,Span,Strong,Style,Sub,Summary,Sup,\
+Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr'
+            .split(',').map(function(tagname) { return gencode(tagname.toLowerCase(), true); }).join(''))(controls);
+    
+        Function('controls', 'Area,Hr,Meta,Param,Source,Track'
+            .split(',').map(function(tagname) { return gencode(tagname.toLowerCase(), false); }).join(''))(controls);
     })();
     
     
@@ -2048,20 +2031,22 @@ controls.typeRegister(\'controls.' + tagname + '\', c' + tagname + ');';
     
     // Head
     function Head(parameters, attributes) {
-        controls.controlInitialize(this, 'controls.head', parameters, attributes, function(it) { return '<head>' + (it.attributes.$text || '') + it.printControls() + '</head>'; });
+        controls.controlInitialize(this, 'controls.head', parameters, attributes, Head.template);
         this.attach    = function() { Head.prototype.attach.call(this, document.head); };
         this.attachAll = function() { Head.prototype.attach.call(this, document.head); Head.prototype.attachAll.call(this); };
     };
     Head.prototype = controls.control_prototype;
+    Head.template = function(it) { return '<head>' + (it.attributes.$text || '') + it.printControls() + '</head>'; };
     controls.typeRegister('controls.head', Head);
     
     // Body
     function Body(parameters, attributes) {
-        controls.controlInitialize(this, 'controls.body', parameters, attributes, function(it) { return '<body' + it.printAttributes('-id') + '>' + (it.attributes.$text || '') + it.printControls() + '</body>'; });
+        controls.controlInitialize(this, 'controls.body', parameters, attributes, Body.template);
         this.attach    = function() { Body.prototype.attach.call(this, document.body); };
         this.attachAll = function() { Body.prototype.attach.call(this, document.body); Body.prototype.attachAll.call(this); };
     };
     Body.prototype = controls.control_prototype;
+    Body.template = function(it) { return '<body' + it.printAttributes('-id') + '>' + (it.attributes.$text || '') + it.printControls() + '</body>'; };
     controls.typeRegister('controls.body', Body);
     
 
@@ -2149,9 +2134,78 @@ controls.typeRegister(\'controls.' + tagname + '\', c' + tagname + ');';
 </ul>');
     controls.typeRegister('controls.List', List);
     
-   
-};
+    
+    // Input
+    // 
+    function Input(parameters, attributes) {
+        this.initialize('controls.Input', parameters, attributes, Input.template);
+        
+        Object.defineProperty(this, 'value', {
+            get: function() { return this.attributes.value; },
+            set: function(value) {
+                var element = this._element;
+                if (element)
+                    element.value = value;
+                else
+                    this.attributes.value = value;
+            }
+        });
+        
+        this.listen('change', function() {
+            this.attributes.value = this.element.value;
+        });
+        
+        this.listen('element', function(element) {
+            if (element)
+                element.value = this.attributes.value || '';
+        });
+    };
+    Input.prototype = controls.control_prototype;
+    Input.template = function(it) { return '<input' + it.printAttributes() + '>' + (it.attributes.$text || '') + '</input>'; };
+    controls.typeRegister('controls.Input', Input);
+    
+    
+    // Select
+    // 
+    // Attributes:
+    //  $data {DataArray}
+    //
+    function Select(parameters, attributes) {
+        this.initialize('controls.Select', parameters, attributes, Select.template, Select.inner_template);
 
+        this.bind(attributes.hasOwnProperty('$data')
+            ? controls.create('DataArray', {$data: attributes.$data})
+            : controls.create('DataArray'));
+        
+        // chenge event routed from data object
+        this.listen('data', this.refreshInner);
+        
+        Object.defineProperty(this, 'value', {
+            get: function() { return this.attributes.value; },
+            set: function(value) {
+                var element = this._element;
+                if (element)
+                    element.value = value;
+                else
+                    this.attributes.value = value;
+            }
+        });
+        
+        this.listen('change', function() {
+            this.attributes.value = this.element.value;
+        });
+        
+        this.listen('element', function(element) {
+            if (element)
+                element.value = this.attributes.value;
+        });
+    };
+    Select.prototype = controls.control_prototype;
+    Select.template = function(it) { return '<select' + it.printAttributes() + '>' + (it.attributes.$text || '') + it.data.map(function(item){ return '<option value=' + item + '>' + item + '</option>'; }).join('') + '</select>'; };
+    Select.inner_template = function(it) { return (it.attributes.$text || '') + it.data.map(function(item){ return '<option value=' + item + '>' + item + '</option>'; }).join(''); };
+    controls.typeRegister('controls.Select', Select);
+
+};
 
 // A known set of crutches
 if (typeof module !== 'undefined' && typeof require === 'function' && module.exports) {
@@ -2167,6 +2221,4 @@ else if (!this.controls || this.controls.VERSION < VERSION) {
     if (typeof doT === 'undefined') throw new TypeError('controls.js: doT.js not found!');
     this.controls = new Controls(doT);
 }
-}).call(this);
-
-
+}).call(function() { return this || (typeof window !== 'undefined' ? window : global); }());

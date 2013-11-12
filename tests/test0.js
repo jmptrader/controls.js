@@ -72,7 +72,8 @@ test( "type resolving", function()
     
     // check default 'controls.'
     var defcontrols = control.add('div');
-    ok(defcontrols.type() === 'controls.Div', '"test.Div".add("Div"); - check default controls. namespace');
+    if (defcontrols.type() !== 'controls.div')
+        ok(0, '"test.Div".add("Div"); - check default controls. namespace');
     
     var start = performance.now();
     control = controls.create('Div/blue');
@@ -134,11 +135,10 @@ test( "serialize-deserialize controls", function()
         
         // check deserialized object
         if (deserialized.parameters['/test'] !== '1' || deserialized.parameters['test'] !== '2')
-        {
-            console.log('!');
-        }
-        ok(deserialized.parameters['/test'] === '1' && deserialized.parameters['test'] === '2', type + " check deserialized parameters" );
-        ok(deserialized.attr('xtest') === 'xvalue', type + " check deserialized attributes" );
+            ok(0, type + " check deserialized parameters" );
+        if (deserialized.attr('xtest') !== 'xvalue')
+            ok(0, type + " check deserialized attributes" );
+        
 //        ok(deserialized.events['#click'], type + " check deserialized listeners" );
         
         if (type === 'controls.frame')
