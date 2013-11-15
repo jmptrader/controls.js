@@ -298,7 +298,7 @@ function Controls(doT) {
     controls.VERSION = VERSION;
     controls.id_generator = 53504; // use it only as per session elements id generator in controls constructors
     
-    var IDENTIFIERS = ',add,attach,attributes,class,data,element,first,id,__type,controls,last,name,forEach,parameters,parent,remove,style,';
+    var IDENTIFIERS = ',add,attach,attributes,class,data,element,first,id,__type,controls,last,name,each,forEach,parameters,parent,remove,style,';
     var ENCODE_HTML_MATCH = /&(?!#?\w+;)|<|>|"|'|\//g;
     var ENCODE_HTML_PAIRS = { "<": "&#60;", ">": "&#62;", '"': '&#34;', "'": '&#39;', "&": "&#38;", "/": '&#47;' };
     var DECODE_HTML_MATCH = /&#(\d{1,8});/g;
@@ -1406,7 +1406,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             // normalize arguments
             
-            if (typeof repeats !== 'number') {
+            if ('object function'.indexOf(typeof repeats) >= 0) {
                 this_arg = callback;
                 callback = attributes;
                 attributes = repeats;
@@ -1425,8 +1425,8 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 // collection detected
                 var result;
                 
-                for(var i = 0, c = type.length; i < c; i++)
-                    result = this.add(type[i], repeats, attributes, callback, this_arg);
+                for(var i = index, c = index + type.length; i < c; i++)
+                    result = this.insert(i, type[i], repeats, attributes, callback, this_arg);
                 
                 return result;
             }
@@ -1482,11 +1482,11 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             // loop for create control(s)
             
-            for(var i = 0; i < repeats; i++) {
+            for(var i = 0, c = repeats || 1; i < c; i++) {
                 // prepare parameters and attributes
                 
-                var params = {};
-                var attrs = {class:''};
+                var params = {},
+                    attrs = {class:''};
                 
                 for(var prop in parameters) {
                     params[prop] = parameters[prop];
@@ -1527,6 +1527,50 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         
         this.unshift = function(type, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
             return this.insert(0, type, repeats, attributes, callback, this_arg);
+        };
+        
+        this._add = function(type, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+            this.add(type, repeats, attributes, callback, this_arg);
+            return this;
+        };
+        
+        this._text = function(text, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+            if (typeof repeats === 'object') {
+                this_arg = callback;
+                callback = attributes;
+                attributes = repeats;
+                repeats = 1;
+            }
+            attributes = attributes || {};
+            attributes.$text = text;
+            this.add('controls.container', repeats, attributes, callback, this_arg);
+            return this;
+        };
+        
+        this._p = function(text, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+            if (typeof repeats === 'object') {
+                this_arg = callback;
+                callback = attributes;
+                attributes = repeats;
+                repeats = 1;
+            }
+            attributes = attributes || {};
+            attributes.$text = text;
+            this.add('controls.p', repeats, attributes, callback, this_arg);
+            return this;
+        };
+        
+        this._templ = function(template, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+            if (typeof repeats === 'object') {
+                this_arg = callback;
+                callback = attributes;
+                attributes = repeats;
+                repeats = 1;
+            }
+            attributes = attributes || {};
+            attributes.$template = template;
+            this.add('controls.custom', repeats, attributes, callback, this_arg);
+            return this;
         };
         
         // Remove subcontrol from .controls collection
@@ -1576,14 +1620,12 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             }
         };
     
-        this.$builder = function () { return controls.$builder(this); };
-        
         this.every      = function(delegate, thisArg)   { return this.controls.every(delegate,   thisArg || this); };
         this.filter     = function(delegate, thisArg)   { return this.controls.filter(delegate,  thisArg || this); };
-        this.forEach    = function(delegate, thisArg)   { return this.controls.forEach(delegate, thisArg || this); };
+        this.each       = function(delegate, thisArg)   { return this.controls.forEach(delegate, thisArg || this); };
+        this.forEach    = this.each;
         this.map        = function(delegate, thisArg)   { return this.controls.map(delegate,     thisArg || this); };
         this.some       = function(delegate, thisArg)   { return this.controls.some(delegate,    thisArg || this); };
-    
     };
     
     function extract_func_code(func) {
@@ -1843,273 +1885,25 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         
         return new_control;
     };
-    
-    controls.$builder = function(control) {
-        if (!this.$move)
-            return new controls.$builder(control);
-        
-        this.$default = 'controls.';
-        this.$context = control;
-        this.$context_stack = [];
-    };
-    function check_type(builder, type) {
-        if (typeof type !== 'string')
-            return type;
-        
-        var colonpos = type.indexOf(':'),
-            dotpos = type.indexOf('.'),
-            slashpos = type.indexOf('/'),
-            numberpos = type.indexOf('#');
-        
-        if ((~dotpos && colonpos > dotpos) || (~slashpos && colonpos > slashpos) || (~numberpos && colonpos > numberpos))
-            colonpos = -1;
-        if ((~slashpos && dotpos > slashpos) || (~numberpos && dotpos > numberpos))
-            dotpos = -1;
-        
-        if (dotpos < 0) {
-            if (colonpos >= 0)
-                type = type.substr(0, colonpos + 1) + builder.$default + type.substr(colonpos + 1);
-            else
-                type = builder.$default + type;
-        }
-        
-        return type;
-    }
-    // $builder commands executed in the context of the control, avoid name conflicts.
-    // Naming convention: $ command does not change the context. $$ command - changing context.
-    controls.$builder.prototype = {
-        // move the $builder context to
-        $move: function(control) {
-            this.$context = control;
-        },
-        // set default namespace
-        $namespace : function(namespace) {
-            if (namespace.indexOf('.') < 0)
-                namespace = namespace + '.';
-            
-            this.$default = namespace;
-        },
-        // add [C]ontrol
-        $C: function(type, repeats, attributes, callback, this_arg) {
-            var context = this.$context;
-            if (!context)
-                throw new TypeError('$C: context undefined! ' + type);
 
-            return context.add(check_type(this, type), repeats, attributes, callback, this_arg);
-        },
-        $$C: function(type, repeats, attributes, callback, this_arg) {
-            if (typeof(repeats) !== 'number') {
-                this_arg = callback;
-                callback = attributes;
-                attributes = repeats;
-                repeats = 1;
-            }
-            
-            if (typeof(attributes) === 'function') {
-                this_arg = callback;
-                callback = attributes;
-                attributes = undefined;
-            }
-            
-            var context = this.$context;
-            if (!context)
-                throw new TypeError('$builder $$C: context undefined! ' + type);
-            
-            var control;
-            
-            if (callback) {
-                this.$context_stack.push(this.$context);
-                
-                control = context.add(check_type(this, type), repeats, attributes, function(control) {
-                    this.$context = control;
-                    callback.call(this_arg || control, control);
-                }, this);
-                
-                this.$context = this.$context_stack.pop();
-            }
-            else {
-                control = context.add(check_type(this, type), repeats, attributes);
-                this.$context = control;
-            }
-            
-            return control;
-        },
-        
-        // add [T]emplate
-        $T: function(template, repeats, attributes, callback, this_arg) {
-            if (typeof(repeats) !== 'number') {
-                this_arg = callback;
-                callback = attributes;
-                attributes = repeats;
-                repeats = 1;
-            }
-            
-            if (typeof(attributes) === 'function') {
-                this_arg = callback;
-                callback = attributes;
-                attributes = undefined;
-            }
-            
-            var context = this.$context;
-            if (!context)
-                throw new TypeError('$T: context undefined!');
-            
-            var attrs = attributes || {};
-            attrs.$template = template;
-            
-            return context.add('controls.Custom', repeats, attrs, callback, this_arg);
-        },
-        $$T: function(template, repeats, attributes, callback, this_arg) {
-            if (typeof(repeats) !== 'number') {
-                this_arg = callback;
-                callback = attributes;
-                attributes = repeats;
-                repeats = 1;
-            }
-            
-            if (typeof(attributes) === 'function') {
-                this_arg = callback;
-                callback = attributes;
-                attributes = undefined;
-            }
-            
-            var context = this.$context;
-            if (!context)
-                throw new TypeError('$$T: context undefined! ');
-            
-            var attrs = attributes || {};
-            attrs.$template = template;
-            
-            var control;
-            
-            if (callback) {
-                this.$context_stack.push(this.$context);
-                
-                control = context.add('controls.Custom', repeats, attrs, function(control) {
-                    this.$context = control;
-                    callback.call(this_arg || control, control);
-                }, this);
-                
-                this.$context = this.$context_stack.pop();
-            }
-            else {
-                control = context.add('controls.Custom', repeats, attrs);
-                this.$context = control;
-            }
-            
-            return control;
-        },
-        
-        // add te[X]t
-        $X: function(text, repeats, attributes, callback, this_arg) {
-            if (typeof(repeats) !== 'number') {
-                this_arg = callback;
-                callback = attributes;
-                attributes = repeats;
-                repeats = 1;
-            }
-            
-            if (typeof(attributes) === 'function') {
-                this_arg = callback;
-                callback = attributes;
-                attributes = undefined;
-            }
-            
-            var context = this.$context;
-            if (!context)
-                throw new TypeError('$X: context undefined!');
-            
-            var attrs = attributes || {};
-            attrs.$text = text;
-            
-            return context.add('controls.Container', repeats, attrs, callback, this_arg);
-        },
-        $$X: function(text, repeats, attributes, callback, this_arg) {
-            if (typeof(repeats) !== 'number') {
-                this_arg = callback;
-                callback = attributes;
-                attributes = repeats;
-                repeats = 1;
-            }
-            
-            if (typeof(attributes) === 'function') {
-                this_arg = callback;
-                callback = attributes;
-                attributes = undefined;
-            }
-            
-            var context = this.$context;
-            if (!context)
-                throw new TypeError('$$X: context undefined!');
-            
-            var attrs = attributes || {};
-            attrs.$text = text;
-            
-            var control;
-            
-            if (callback) {
-                this.$context_stack.push(this.$context);
-                
-                control = context.add('controls.Container', repeats, attrs, function(control) {
-                    this.$context = control;
-                    callback.call(this_arg || control, control);
-                }, this);
-                
-                this.$context = this.$context_stack.pop();
-            }
-            else {
-                control = context.add('controls.Container', repeats, attrs);
-                this.$context = control;
-            }
-            
-            return control;
-        },
-        
-        // [E]ncode text
-        $E: function(text, repeats, attributes, callback, this_arg) {
-            return this.$X(controls.encodeHTML(text), repeats, attributes, callback, this_arg);
-        },
-        $$E: function(text, repeats, attributes, callback, this_arg) {
-            return this.$$X(controls.encodeHTML(text), repeats, attributes, callback, this_arg);
-        },
-        $encode: function(text) { return controls.encodeHTML(text); },
-        
-        forEach: function(callback, this_arg) {
-            var control = this.$context;
-            if (control)
-                control.controls.forEach(callback, this_arg || this);
-        },
-        $$forEach: function(callback, this_arg) {
-            var control = this.$context;
-            if (control) {
-                this.$context_stack.push(this.$context);
-                
-                var controls = control.controls;
-                for(var prop in controls) {
-                    var control = controls[prop];
-                    this.$context = control;
-                    callback.call(this_arg || this, control);
-                }
-                
-                this.$context = this.$context_stack.pop();
-            }
-        }
+    controls.text = function(text, /*optional*/ parameters, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+        attributes = attributes || {};
+        attributes.$text = text;
+        return controls.create('controls.container', parameters, attributes, callback, this_arg);
     };
-    
-    controls.defCommand = function(command, func) {
-        controls.$builder.prototype[command] = func;
+
+    controls.p = function(text, /*optional*/ parameters, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+        attributes = attributes || {};
+        attributes.$text = text;
+        return controls.create('controls.container', parameters, attributes, callback, this_arg);
     };
-    
-    'p'.split(',').forEach(function(tag) {
-        controls.defCommand('$' + tag, function(text,_class,style) { this.$C(tag, {$text:text, class:_class, style:style}); });
-        controls.defCommand('$$' + tag, function(text,_class,style) { this.$$C(tag, {$text:text, class:_class, style:style}); });
-    });
-    
-    'h1,h2,h3,h4,h5,h6'.split(',').forEach(function(tag) {
-        controls.defCommand('$' + tag, function(text,id,_class,style) { if(id)id=id.replace(/ /g,'-'); this.$C(tag, {$text:text, id:id, class:_class, style:style}); });
-        controls.defCommand('$$' + tag, function(text,id,_class,style) { if(id)id=id.replace(/ /g,'-'); this.$$C(tag, {$text:text, id:id, class:_class, style:style}); });
-    });
-    
+
+    controls.templ = function(template, /*optional*/ parameters, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+        attributes = attributes || {};
+        attributes.$template = template;
+        return controls.create('controls.custom', parameters, attributes, callback, this_arg);
+    };
+        
     
     // controls.reviverJSON()
     // 
@@ -2216,13 +2010,13 @@ c' + tagname + '.prototype = controls.control_prototype;'
 + 'controls.typeRegister(\'controls.' + tagname + '\', c' + tagname + ');';
         }
         
-        Function('controls', 'A,Abbr,Address,Article,Aside,B,Base,Bdi,Bdo,Blockquote,Button,Canvas,Cite,Code,Col,Colgroup,Command,Datalist,Dd,Del,Details,\
-Dfn,Div,Dl,Dt,Em,Embed,Fieldset,Figcaption,Figure,Footer,Form,Gnome,H1,H2,H3,H4,H5,H6,Header,I,IFrame,Img,Ins,Kbd,Keygen,Label,Legend,Li,Link,Map,Mark,Menu,Meter,Nav,\
-Noscript,Object,Ol,Optgroup,Option,Output,P,Pre,Progress,Ruby,Rt,Rp,S,Samp,Script,Section,Small,Span,Strong,Style,Sub,Summary,Sup,\
-Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr'
+        Function('controls', 'a,abbr,address,article,aside,b,base,bdi,bdo,blockquote,button,canvas,cite,code,col,colgroup,command,datalist,dd,del,details,\
+dfn,div,dl,dt,em,embed,fieldset,figcaption,figure,footer,form,gnome,h1,h2,h3,h4,h5,h6,header,i,iframe,img,ins,kbd,keygen,label,legend,li,link,map,mark,menu,meter,nav,\
+noscript,object,ol,optgroup,option,output,p,pre,progress,ruby,rt,rp,s,samp,script,section,small,span,strong,style,sub,summary,sup,\
+table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
             .split(',').map(function(tagname) { return gencode(tagname.toLowerCase(), true); }).join(''))(controls);
     
-        Function('controls', 'Area,Hr,Meta,Param,Source,Track'
+        Function('controls', 'area,hr,meta,param,source,track'
             .split(',').map(function(tagname) { return gencode(tagname.toLowerCase(), false); }).join(''))(controls);
     })();
     
@@ -2235,22 +2029,22 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr'
     // without own html
     // 
     function Container(parameters, attributes) {
-        controls.controlInitialize(this, 'controls.Container', parameters, attributes, controls.default_inner_template);
+        controls.controlInitialize(this, 'controls.container', parameters, attributes, controls.default_inner_template);
     };
     Container.prototype = controls.control_prototype;
-    controls.typeRegister('controls.Container', Container);
+    controls.typeRegister('controls.container', Container);
     
     // Custom
     // 
     // set template after creating the control
     // 
     function Custom(parameters, attributes) {
-        controls.controlInitialize(this, 'controls.Custom', parameters, attributes,
+        controls.controlInitialize(this, 'controls.custom', parameters, attributes,
             attributes.$template || attributes.$outer_template,
             attributes.$inner_template);
     };
     Custom.prototype = controls.control_prototype;
-    controls.typeRegister('controls.Custom', Custom);
+    controls.typeRegister('controls.custom', Custom);
 
     // Stub
     // 
@@ -2272,8 +2066,7 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr'
 //        if (attributes.hasOwnProperty(prop))
 //            save_attributes[prop] = attributes[prop];
         
-        controls.controlInitialize(this, 'controls.Stub', parameters, attributes, function(it) { return '<div' + it.printAttributes() + '>' + it.printControls() + '</div>'; } );
-        
+        controls.controlInitialize(this, 'controls.stub', parameters, attributes, function(it) { return '<div' + it.printAttributes() + '>' + it.printControls() + '</div>'; } );
         this.class('stub');
         
         var state = 0; // 0 - stub, > 0 - resources loaded, < 0 - load error
@@ -2297,20 +2090,29 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr'
         
         // try create control and replace stub on success
         this.tryReplace = function() {
-            var params = controls.extend({}, this.parameters),
-                attrs = controls.extend({}, this.attributes);
-            for(var prop in this.parameters)
-            if (prop.substr(0,2) === '#{')
-                delete params[prop];
+            var parameters = this.parameters,
+                params = {},
+                attrs = {},
+                attributes = this.attributes;
+        
+            for(var prop in parameters)
+            if (prop[0] !== '#' && prop[1] !== '{')
+                params[prop] = parameters[prop];
+            
+            for(var prop in attributes)
+                attrs[prop] = attributes[prop];
+        
             var control = controls.create(parameters['#{type}'], params, attrs);
             if (control) {
                 control.class(null, 'stub stub-loading stub-error');
                 this.replaceItself(control);
+                // raise event
+                this.raise('control', control);
             }
         };
     };
     Stub.prototype = controls.control_prototype;
-    controls.typeRegister('controls.Stub', Stub);
+    controls.typeRegister('controls.stub', Stub);
     
     // Head
     function Head(parameters, attributes) {
@@ -2344,7 +2146,7 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr'
     // layout.cellSet.class(...);
     // 
     function Layout(parameters, attributes) {
-        controls.controlInitialize(this, 'controls.Layout', parameters, attributes, Layout.template);
+        controls.controlInitialize(this, 'controls.layout', parameters, attributes, Layout.template);
         var clearfix = false; // use clearfix if float
         
         this.cellSet = new Container();
@@ -2385,11 +2187,11 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr'
 '<div{{=it.printAttributes()}}>\
 {{~it.controls :value:index}}<div data-type="layout-item"{{=it.cellSet.printAttributes("-id")}}>{{=value.wrappedHTML()}}</div>{{~}}\
 {{?it.clearfix}}<div style="clear:both;"></div>{{?}}</div>');
-    controls.typeRegister('controls.Layout', Layout);
+    controls.typeRegister('controls.layout', Layout);
 
     
     function List(parameters, attributes) {
-        controls.controlInitialize(this, 'controls.List', parameters, attributes, List.template);
+        controls.controlInitialize(this, 'controls.list', parameters, attributes, List.template);
         
         this.itemSet = new Container();
         this.itemSet.listen('attributes', this, function(event) {
@@ -2415,13 +2217,13 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr'
 '<ul{{=it.printAttributes()}}>\
 {{~it.controls :value:index}}<li{{=it.itemSet.printAttributes("-id")}}>{{=value.wrappedHTML()}}</li>{{~}}\
 </ul>');
-    controls.typeRegister('controls.List', List);
+    controls.typeRegister('controls.list', List);
     
     
     // Input
     // 
     function Input(parameters, attributes) {
-        this.initialize('controls.Input', parameters, attributes, Input.template);
+        this.initialize('controls.input', parameters, attributes, Input.template);
         
         Object.defineProperty(this, 'value', {
             get: function() { return this.attributes.value; },
@@ -2445,7 +2247,7 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr'
     };
     Input.prototype = controls.control_prototype;
     Input.template = function(it) { return '<input' + it.printAttributes() + '>' + (it.attributes.$text || '') + '</input>'; };
-    controls.typeRegister('controls.Input', Input);
+    controls.typeRegister('controls.input', Input);
     
     
     // Select
@@ -2454,7 +2256,7 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr'
     //  $data {DataArray}
     //
     function Select(parameters, attributes) {
-        this.initialize('controls.Select', parameters, attributes, Select.template, Select.inner_template);
+        this.initialize('controls.select', parameters, attributes, Select.template, Select.inner_template);
 
         this.bind(attributes.hasOwnProperty('$data')
             ? controls.create('DataArray', {$data: attributes.$data})
@@ -2486,7 +2288,7 @@ Table,TBody,Td,Textarea,Tfoot,Th,Thead,Time,Title,Tr,U,Ul,Var,Video,Wbr'
     Select.prototype = controls.control_prototype;
     Select.template = function(it) { return '<select' + it.printAttributes() + '>' + (it.attributes.$text || '') + it.data.map(function(item){ return '<option value=' + item + '>' + item + '</option>'; }).join('') + '</select>'; };
     Select.inner_template = function(it) { return (it.attributes.$text || '') + it.data.map(function(item){ return '<option value=' + item + '>' + item + '</option>'; }).join(''); };
-    controls.typeRegister('controls.Select', Select);
+    controls.typeRegister('controls.select', Select);
 
 };
 

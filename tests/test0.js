@@ -4,9 +4,9 @@ test( "construction, passing the parameters and attributes", function()
 {
     // must be case-insensitive
     var custom = controls.create('Custom');
-    ok(custom.id && custom.controls && custom.__type === 'controls.Custom', '.create() "Custom"');
+    ok(custom.id && custom.controls && custom.__type === 'controls.custom', '.create() "Custom"');
     custom = controls.create('custom');
-    ok(custom.id && custom.controls && custom.__type === 'controls.Custom', '.create() "Custom" from "custom"');
+    ok(custom.id && custom.controls && custom.__type === 'controls.custom', '.create() "Custom" from "custom"');
     
     // bulk creation, naming, passing the params & attribs
     custom.add(['label:bootstrap.Label', 'layout:Layout#float=left']);

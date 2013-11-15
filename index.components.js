@@ -1,66 +1,58 @@
 
-// define $builder commands
+function h1Ref(text, href) {
+    return controls.create('a', {href:href})
+        ._add('h1', {$text:text, class:'btn-primary', style:'border-radius:4px; padding:12px; display:inline-block;'});
+}
 
-controls.defCommand('$h1ref', function(text, href)
-{
-    this.$C( 'header:a', {href:href} )
-    .add( 'h1', {$text:text, class:'btn-primary', style:'border-radius:4px; padding:12px; display:inline-block;'} );
-});
-
-controls.defCommand('$reflabels', function(refs)
-{
+function refLabels(refs) {
     var html = '';
     for(var i = 0, c = refs.length; i < c; i+=3)
         html += '<a href="' + refs[i+2] + '" class="label label-' + refs[i+1] + '">' + refs[i] + '</a>&nbsp;&nbsp;';
-    this.$X(html);
-});
+    return controls.text(html);
+}
 
-controls.defCommand('$codebox', function(content, _class)
-{
-    return this.$X('<div class="codebox ' + (_class || 'box') +'"><pre><code>' + this.$encode(content) + '</code></pre></div>');
-});
+function codebox(content, _class) {
+    return controls.text('<div class="codebox ' + (_class || 'box') +'"><pre><code>' + controls.encodeHTML(content) + '</code></pre></div>');
+}
+
 
 
 // typical document layout
-function createDocumentStructure()
-{
-    var body = controls.create('body');
-    body.add(['top:Container', 'header:Container', 'left:Container', 'fill:Container', 'right:Container', 'footer:Container', 'bottom:Container']);
-    body.header.add('header_pane:div', {class:'header-pane'});
-    body.left.add('nav_wrapper:div', {class:'nav-pane col-sm-3'});
-    body.fill.add('content_pane:div', {class:'content-pane col-sm-9'});
-    return body;
+function createDocumentStructure() {
+    var cbody = controls.create('body');
+    cbody.add(['top:Container', 'header:Container', 'left:Container', 'fill:Container', 'right:Container', 'footer:Container', 'bottom:Container']);
+    cbody.header.add('header_pane:div', {class:'header-pane'});
+    cbody.left.add('nav_wrapper:div', {class:'nav-pane col-sm-3'});
+    cbody.fill.add('content_pane:div', {class:'content-pane col-sm-9'});
+    return cbody;
 }
 
 // Create left side navigation panel
-function createNavigationPanel(content_pane) {
-with(body.left.nav_wrapper.$builder())
-{
-    // nav list:
-    $$C('nav_list:List', {class:'nav navlist'})
-    .listen('element', function(element)
-    {
-        if (element)
-            this.$.affix({ offset: this.$.offset() });
+function createNavigationPanel(cbody, content_pane) {
+
+    var navlist = cbody.left.nav_wrapper.add('navlist:List', {class:'nav navlist'});
+    navlist.listen('element', function(element) {
+        if (element) {
+            var q = $(element);
+            q.affix({ offset: q.offset() });
+        }
     });
     
     if (content_pane.nodeType) // from dom
     {
-        $(content_pane).children('h1,h2,h3').each(function(i,header)
-        {
-            $C('a', {href:'#' + header.id, $text:header.innerHTML});
+        $(content_pane).children('h1,h2,h3').each(function(i,header) {
+            navlist.add('a', {href:'#' + header.id, $text:header.innerHTML});
         });
         
-        body.left.nav_wrapper.refresh();
+        navlist.refresh();
     }
     else // from om
     {
         // nav elements:
-        content_pane.forEach(function(header)
-        {
-            if (header.__type === 'controls.Heading' && header.parameter('level') === '3')
-                $C('a', {href:'#' + header.id, $text:header.text()});
+        content_pane.each(function(header) {
+            if (header.__type === 'controls.h3')
+                navlist.add('a', {href:'#' + header.id, $text:header.text()});
         });
     }
-}}
+}
 
