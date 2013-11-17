@@ -12,7 +12,7 @@
 function Bootstrap(controls) {
     var bootstrap = this;
     var doT = controls.doT;
-    bootstrap.VERSION = '0.6.10';
+    bootstrap.VERSION = '0.6.11';
     controls.bootstrap = bootstrap;
     
     var control_prototype = (function() {
