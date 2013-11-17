@@ -461,8 +461,7 @@ function Controls(doT) {
 //                        
 //            // Serialize listeners
 //            
-//            for(var i = 0, c = listeners.length; i < c; i+=2)
-//            {
+//            for(var i = 0, c = listeners.length; i < c; i+=2) {
 //                var event_func = listeners[i];
 //                json.push(extract_func_code(event_func));
 //                json.push(listeners[i+1]);
@@ -481,7 +480,7 @@ function Controls(doT) {
             try {
                 post_events[i].post_event.raise();
             }
-            catch (e) { console.log(e); }
+            catch(e) { console.log(e); }
             
             post_events.length = 0;
         };
@@ -997,12 +996,10 @@ function Controls(doT) {
                 else {
                     // insertAdjacentHTML not implemented
                     
-                    var fragment = document.createDocumentFragment();
-                    var el = document.createElement('div');
+                    var fragment = document.createDocumentFragment(),
+                        el = document.createElement('div');
                     el.innerHTML = this.outerHTML();
-                    var nodes = el.childNodes, buf = [];
-                    for(var i = 0, c = nodes.length; i < c; i++)
-                        buf.push(nodes[i]);
+                    var buf = Array.prototype.slice.call(el.childNodes);
                     for(var i = 0, c = buf.length; i < c; i++)
                         fragment.appendChild(buf[i]);
                     
@@ -1049,10 +1046,8 @@ function Controls(doT) {
         
         this.deleteAll = function() {
             this.deleteElement();
-            
-            var subcontrols = this.controls;
-            for(var i = subcontrols.length - 1; i >= 0; i--)
-                subcontrols[i].deleteAll();
+            for(var ctrls = this.controls, i = ctrls.length - 1; i >= 0; i--)
+                ctrls[i].deleteAll();
         };
         
         var dom_events =
@@ -1208,25 +1203,21 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             // >> get type
             
             if (arguments.length === 0) {
-                var inheritable = [];
-                var unheritable = [];
-                var parameters = this.parameters;
+                var inheritable, unheritable, parameters = this.parameters;
                 for(var prop in parameters) {
-                    if (prop[0] !== '/') {
+                    if (prop[0] !== '/')
                         // not inheritable parameters
-                        unheritable.push(prop + '=' + parameters[prop]);
-                    }
-                    else {
+                        unheritable += prop + '=' + parameters[prop];
+                    else
                         // inheritable parameters
-                        inheritable.push(prop.substr(1) + '=' + parameters[prop]);
-                    }
+                        inheritable += prop.substr(1) + '=' + parameters[prop];
                 }
                 
                 var type = this.__type;
-                if (inheritable.length > 0)
-                    type += '/' + inheritable.join(';');
+                if (inheritable)
+                    type += '/' + inheritable;
                 if (unheritable.length > 0)
-                    type += '#' + unheritable.join(';');
+                    type += '#' + unheritable;
 
                 return type;
             }
@@ -1267,8 +1258,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         // example: it.printAttributes("-id") - result attributes all exclude id
         //
         this.printAttributes = function(filter) {
-            var result = [];
-            var attributes = this.attributes;
+            var result = '', attributes = this.attributes;
             
             if (filter) {
                 // TODO: temporary inserted this checking:
@@ -1277,13 +1267,12 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 
                 if (filter[0] === '-') {
                     // exclusion defined
-
                     var exclude = filter.substr(1).split(' ');
-                    for(var prop in this.attributes)
+                    for(var prop in attributes)
                     if (prop[0] !== '$' && exclude.indexOf(prop) < 0) {
                         var value = attributes[prop];
                         if (value)
-                            result.push(prop + '="' + value + '"');
+                            result += ' ' + prop + '="' + value + '"';
                     }
                 }
                 else {
@@ -1291,10 +1280,10 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                     
                     var attrs = filter.split(' ');
                     for(var i = 0, c = attrs.length; i < c; i++) {
-                        var key = attrs[i];
-                        var value = attributes[key];
+                        var key = attrs[i],
+                            value = attributes[key];
                         if (value)
-                            result.push(key + '="' + value + '"');
+                            result += ' ' + key + '="' + value + '"';
                     }
                 }
             }
@@ -1304,18 +1293,18 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 if (prop[0] !== '$') {
                     var value = attributes[prop];
                     if (value)
-                        result.push(prop + '="' + value + '"');
+                        result += ' ' + prop + '="' + value + '"';
                 }
             }
             
-            return (result.length) ? (' '+ result.join(' ')) : '';
+            return result;
         };
         
         this.printControls = function() {
-            var result = [];
-            for(var ctrls = this.controls, i = 0, c = ctrls.length; i < c; i++)
-                result.push(ctrls[i].wrappedHTML());
-            return result.join('');
+            var result = '', ctrls = this.controls;
+            for(var i = 0, c = ctrls.length; i < c; i++)
+                result += ctrls[i].wrappedHTML();
+            return result;
         };
         
         // Set .$text attribute on this object and refresh DOM element.outerHTML
