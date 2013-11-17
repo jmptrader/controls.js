@@ -8,7 +8,7 @@
 //
 // require doT.js
 
-(function() { "use strict"; var VERSION = '0.6.10';
+(function() { "use strict"; var VERSION = '0.6.11';
 
 function Controls(doT) {
     var controls = this;
