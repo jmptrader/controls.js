@@ -912,14 +912,17 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             // >> get type
             
             if (arguments.length === 0) {
-                var inheritable, unheritable, parameters = this.parameters;
+                var inheritable = '', unheritable = '', parameters = this.parameters;
                 for(var prop in parameters) {
-                    if (prop[0] !== '/')
+                    if (prop[0] !== '/') {
                         // not inheritable parameters
+                        if (unheritable) unheritable += ';';
                         unheritable += prop + '=' + parameters[prop];
-                    else
+                    } else {
                         // inheritable parameters
+                        if (inheritable) inheritable += ';';
                         inheritable += prop.substr(1) + '=' + parameters[prop];
+                    }
                 }
                 
                 var type = this.__type;
@@ -1329,11 +1332,10 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     function extract_func_code(func) {
         if (typeof func === 'function') {
             func = func.toString();
-            var first_par = func.indexOf('{');
-            var last_par = func.lastIndexOf('}');
+            var first_par = func.indexOf('{'),
+                last_par = func.lastIndexOf('}');
             return func.substr(first_par + 1, last_par - first_par - 1);
         }
-
         return func;
     }
     
