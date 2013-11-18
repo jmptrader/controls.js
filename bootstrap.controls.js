@@ -12,7 +12,7 @@
 function Bootstrap(controls) {
     var bootstrap = this;
     var doT = controls.doT;
-    bootstrap.VERSION = '0.6.11';
+    bootstrap.VERSION = '0.6.12';
     controls.bootstrap = bootstrap;
     
     var control_prototype = (function() {
@@ -242,23 +242,10 @@ out = '<div' + it.printAttributes() + '>\
 <button type="button" class="' + it.btn_class + ' dropdown-toggle" data-toggle="dropdown"><span class="caret"></span>\
 </button>';
 if (it.controls.length)
-out += '<ul class="dropdown-menu">' + it.printControls() + '</ul>\
-</div>';
+out += '<ul class="dropdown-menu">' + it.printControls() + '</ul>';
+out += '</div>';
 return out;
 };
-//    Splitbutton.template = doT.template(
-//'<div id="{{=it.id}}" class="btn-group">\
-//<button type="button" class="btn btn-primary {{=it.attributes.class}}"{{=it.printAttributes("style")}}>{{=it.attributes.$text}}\
-//{{? it.attributes.$icon}}<b class="glyphicon glyphicon-{{=it.attributes.$icon}}"> </b>{{?}}\
-//</button>\
-//<button type="button" class="btn btn-primary {{=it.attributes.class}} dropdown-toggle" data-toggle="dropdown">\
-//<span class="caret"></span>\
-//</button>\
-//{{? (it.controls && it.controls.length > 0) }}\
-//<ul class="dropdown-menu">\
-//{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}\
-//</ul>{{?}}\
-//</div>');
     controls.typeRegister('bootstrap.Splitbutton', Splitbutton);
     
     
