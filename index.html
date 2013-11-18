@@ -13,16 +13,17 @@
     <link rel="stylesheet" href="index.css">
     <script src="index.components.js"></script>
 </head>
-
+<body><script>
+    
 // user control example
 
 function UserControl(parameters, attributes) {
-    this.initialize('UserControl', parameters, attributes);
-    this.style('width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#' + (Math.random().toString(16).substr(2,3)));
-    this.add('button:bootstrap.Button#style=default', {$text:'OK'})
-        .listen('click', function() {
-            alert('Button-click!');
-        });
+    this.initialize('UserControl', parameters, attributes)
+        ._style('width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#' + (Math.random().toString(16).substr(2,3)))
+        .add('button:bootstrap.Button#style=default', {$text:'OK'})
+            .listen('click', function() {
+                alert('Button-click!');
+            });
 }
 UserControl.prototype = controls.control_prototype;
 controls.typeRegister('UserControl', UserControl);
@@ -89,12 +90,12 @@ body.refresh();\n'))
     
     ._add(codebox(
 'function UserControl(parameters, attributes) {\n\
-    this.initialize("UserControl", parameters, attributes);\n\
-    this.style("background-color:#" + (Math.random().toString(16).substr(2,3)));\n\
-    this.add("OK:bootstrap.Button", {$text:"OK"})\n\
-        .listen("click", function() {\n\
-            alert("Button-click!");\n\
-        });\n\
+    this.initialize("UserControl", parameters, attributes)\n\
+        ._style("background-color:#" + (Math.random().toString(16).substr(2,3)))\n\
+        .add("OK:bootstrap.Button", {$text:"OK"})\n\
+            .listen("click", function() {\n\
+                alert("Button-click!");\n\
+            });\n\
 }'))
 
     
@@ -111,10 +112,10 @@ body.refresh();\n'))
  components in the design, switching visual themes at runtime or unbreakable changes at service.');
 
 
-
 createNavigationPanel(cbody, cbody.fill.content_pane);
 document.write(cbody.innerHTML());
 cbody.attachAll();
+
 </script>
 </body>
 </html>

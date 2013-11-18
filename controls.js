@@ -62,6 +62,8 @@ function Controls(doT) {
             enumerable: true, writable: true,
             value: (typeof(inner_template) === 'string') ? doT.template(inner_template) : inner_template
         });
+    
+        return object;
     };
     
     // plug in control constructor to the controls infrastructure
@@ -355,14 +357,8 @@ function Controls(doT) {
     controls.control_prototype = new function() {
         
         this.initialize = function(__type, parameters, _attributes, outer_template, inner_template) {
-            controls.controlInitialize(this, __type, parameters, _attributes, outer_template, inner_template);
+            return controls.controlInitialize(this, __type, parameters, _attributes, outer_template, inner_template);
         };
-        
-        // todo del:
-        Object.defineProperty(this, "$", {
-            enumerable: true, 
-            get: function() { return (this._element) ? $(this._element) : $('#' + this.id); }
-        });
         
         Object.defineProperty(this, "name", {
             enumerable: true, 
@@ -885,6 +881,11 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             }
         };
         
+        this._attr = function(name, value) {
+            this.attr(name, value);
+            return this;
+        };
+        
         // set attributes
         this.attrs = function(_attributes) {
             var attributes = this.attributes;
@@ -1049,6 +1050,11 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             return this.attributes.style;
         };
         
+        this._style = function(style) {
+            this.style(style);
+            return this;
+        };
+        
         this.class = function(set, remove) {
             var attributes = this.attributes;
             
@@ -1088,6 +1094,11 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             }
             
             return attributes.class;
+        };
+        
+        this._class = function(set, remove) {
+            this.class(set, remove);
+            return this;
         };
         
         // Create control and insert to the .controls collection

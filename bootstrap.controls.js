@@ -36,33 +36,33 @@ function Bootstrap(controls) {
     };
     
     var CONTROL_STYLE = ' default info link success primary warning danger ';
-    control_prototype.getControlStyle = function(parameters, style_enum) {
-        parameters = parameters || this.parameters;
-        style_enum = style_enum || CONTROL_STYLE;
-        var cstyle = parameters.style || parameters['/style'];
+    control_prototype.getControlStyle = function() {
+        var parameters = this.parameters,
+            cstyle = parameters.style || parameters['/style'];
         
         if (!cstyle)
-        for(var prop in parameters) {
-            var lowercase = prop.toLowerCase();
-            if (style_enum.indexOf(lowercase) > 0 && parameters[prop] === true)
-                cstyle = lowercase;
-        }
+        for(var prop in parameters)
+        if (parameters[prop])
+            cstyle = prop;
         
         return cstyle || 'default';
     };
     
-    var CONTROL_SIZE = ' large small ';
-    control_prototype.getControlSize = function(parameters, size_enum) {
-        parameters = parameters || this.parameters;
-        size_enum = size_enum || CONTROL_SIZE;
-        var csize = parameters.size || parameters['/size'];
+    var CONTROL_SIZE = {
+        'xtra-small':'xtra-small', 'xs':'xtra-small', 'btn-xs':'xtra-small', '-2':'xtra-small',
+        'small':'small', 'sm':'small', 'btn-sm':'small', '-1':'small',
+        'default':'', '':'', '0':'',
+        'large':'large', 'lg':'large', 'btn-lg':'large', '1':'large',
+        'xtra-large':'xtra-large', 'xl':'xtra-large', '2':'xtra-large'
+    };
+    control_prototype.getControlSize = function() {
+        var parameters = this.parameters,
+            csize = CONTROL_SIZE[parameters.size || parameters['/size']];
         
         if (!csize)
-        for(var prop in parameters) {
-            var lowercase = prop.toLowerCase();
-            if (size_enum.indexOf(lowercase) > 0 && parameters[prop] === true)
-                csize = lowercase;
-        }
+        for(var prop in parameters)
+        if (!csize)
+            csize = CONTROL_SIZE[prop];
         
         return csize || '';
     };
@@ -71,11 +71,10 @@ function Bootstrap(controls) {
     // Label
     // 
     function Label(parameters, attributes) {
-        this.initialize('bootstrap.Label', parameters, attributes, Label.template);
-         
-        this.listen('type', function() {
-            this.class('label label-' + this.getControlStyle(), 'label-default label-link label-primary label-success label-info label-warning label-danger');
-        });
+        this.initialize('bootstrap.Label', parameters, attributes, Label.template)
+            .listen('type', function() {
+                this.class('label label-' + this.getControlStyle(), 'label-default label-link label-primary label-success label-info label-warning label-danger');
+            });
     };
     Label.prototype = control_prototype;
     Label.template = doT.template(
@@ -138,7 +137,7 @@ function Bootstrap(controls) {
     DropdownItem.prototype = control_prototype;
     DropdownItem.template = doT.template(
 '<li id="{{=it.id}}">\
-<a data-toggle="tab"{{=it.printAttributes("-id")}}>\
+<a{{=it.printAttributes("-id")}}>\
 {{? it.attributes.$icon }}<span class="glyphicon glyphicon-{{=it.attributes.$icon}}"></span>&nbsp;{{?}}\
 {{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}\
 </a></li>\n');
@@ -149,8 +148,8 @@ function Bootstrap(controls) {
     // 
     //
     function DividerItem(parameters, attributes) {
-        this.initialize('bootstrap.DividerItem', parameters, attributes, DividerItem.template);
-        this.class('divider');
+        this.initialize('bootstrap.DividerItem', parameters, attributes, DividerItem.template)
+            .class('divider');
     };
     DividerItem.prototype = control_prototype;
     DividerItem.template = doT.template('<li{{=it.printAttributes()}}></li>');
@@ -161,8 +160,8 @@ function Bootstrap(controls) {
     // 
     // 
     function DropdownLink(parameters, attributes) {
-        this.initialize('bootstrap.DropdownLink', parameters, attributes, DropdownLink.template);
-        this.class('dropdown');
+        this.initialize('bootstrap.DropdownLink', parameters, attributes, DropdownLink.template)
+            .class('dropdown');
     };
     DropdownLink.prototype = control_prototype;
     DropdownLink.template = doT.template(
@@ -180,8 +179,8 @@ function Bootstrap(controls) {
 
     //
     function ToggleBtn(parameters, attributes) {
-        this.initialize('bootstrap.ToggleBtn', parameters, attributes, ToggleBtn.template);
-        this.class('btn dropdown-toggle');
+        this.initialize('bootstrap.ToggleBtn', parameters, attributes, ToggleBtn.template)
+            .class('btn dropdown-toggle');
     };
     ToggleBtn.prototype = control_prototype;
     ToggleBtn.template = doT.template(
@@ -204,39 +203,19 @@ function Bootstrap(controls) {
     // Example:
     //  controls.create('bootstrap.Button/style=success', {$icon: "glass"});
     //
-    bootstrap.BUTTON_SIZES = {
-        '0':'btn-xs', 'btn-xs':'btn-xs', 'xtra-small':'btn-xs',
-        '1':'btn-sm', 'btn-sm':'btn-sm', 'small':'btn-sm',
-        '2':'',       'default':'',
-        '3':'btn-lg', 'btn-lg':'btn-lg', 'large':'btn-lg'
-    };
+    var BUTTON_SIZES = { 'xtra-small':'btn-xs', small:'btn-sm', large:'btn-lg' };
+    function buttonTypeHandler() {
+        this.class('btn btn-' + ((this.getControlStyle() || '') + ' ' + (BUTTON_SIZES[this.getControlSize()] || '')).trim(),
+            this.attributes.class ? 'btn-default btn-primary btn-success btn-info btn-warning btn-danger btn-link btn-xs btn-sm btn-lg' : null);
+    }
     function Button(parameters, attributes) {
-        this.initialize('bootstrap.Button', parameters, attributes, Button.template);
-        
-        this.listen('type', function() {
-            var style = this.parameter('style') || 'default';
-            Object.keys(parameters).some(function(param) { if (CONTROL_STYLE.indexOf(param) >= 0) style = param; });
-            
-            this.class('btn btn-' + style, 'btn-default btn-primary btn-success btn-info btn-warning btn-danger btn-link');
-            
-            var size = bootstrap.BUTTON_SIZES['' + this.parameter('size') || '2'];
-            this.class(size, 'btn-xs btn-sm btn-lg');
-        });
-        
-        // get/set size
-        this.size = function(size) {
-            if (arguments.length > 0) {
-                this.parameters.size = size;
-                this.raise('type');
-            }
-            
-            return this.parameter('size');
-        };
+        this.initialize('bootstrap.Button', parameters, attributes, Button.template)
+            .listen('type', this, buttonTypeHandler);
     };
     Button.prototype = control_prototype;
     Button.template = function(it) {
         var attrs = it.attributes;
-        return '<button' + it.printAttributes() + '>'
+        return '<button type="button"' + it.printAttributes() + '>'
             + (attrs.$icon ? ('<b class="glyphicon glyphicon-' + attrs.$icon + '"></b>') : '')
             + ((attrs.$icon && attrs.$text) ? '&nbsp;' : '')
             + (attrs.$text || '')
@@ -248,22 +227,38 @@ function Bootstrap(controls) {
     // Splitbutton
     //
     function Splitbutton(parameters, attributes) {
-        this.initialize('bootstrap.Splitbutton', parameters, attributes, Splitbutton.template);
+        this.initialize('bootstrap.Splitbutton', parameters, attributes, Splitbutton.template)
+            .class('btn-group');
+         this.btn_class = 'btn btn-' + ((this.getControlStyle() || '') + ' ' + (BUTTON_SIZES[this.getControlStyle()] || '')).trim();
     };
     Splitbutton.prototype = control_prototype;
-    Splitbutton.template = doT.template(
-'<div id="{{=it.id}}" class="btn-group">\
-<button type="button" class="btn btn-primary {{=it.attributes.class}}"{{=it.printAttributes("style")}}>{{=it.attributes.$text}}\
-{{? it.attributes.$icon}}<b class="glyphicon glyphicon-{{=it.attributes.$icon}}"> </b>{{?}}\
-</button>\
-<button type="button" class="btn btn-primary {{=it.attributes.class}} dropdown-toggle" data-toggle="dropdown">\
-<span class="caret"></span>\
-</button>\
-{{? (it.controls && it.controls.length > 0) }}\
-<ul class="dropdown-menu">\
-{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}\
-</ul>{{?}}\
-</div>');
+    Splitbutton.template = function(it) {
+var attributes = it.attributes,
+out = '<div' + it.printAttributes() + '>\
+<button type="button" class="' + it.btn_class + '">'
+ + (attributes.$icon ? ('<b class="glyphicon glyphicon-' + attributes.$icon + '"> </b>') : '')
+ + (attributes.$text || '')
+ + '</button>\
+<button type="button" class="' + it.btn_class + ' dropdown-toggle" data-toggle="dropdown"><span class="caret"></span>\
+</button>';
+if (it.controls.length)
+out += '<ul class="dropdown-menu">' + it.printControls() + '</ul>\
+</div>';
+return out;
+};
+//    Splitbutton.template = doT.template(
+//'<div id="{{=it.id}}" class="btn-group">\
+//<button type="button" class="btn btn-primary {{=it.attributes.class}}"{{=it.printAttributes("style")}}>{{=it.attributes.$text}}\
+//{{? it.attributes.$icon}}<b class="glyphicon glyphicon-{{=it.attributes.$icon}}"> </b>{{?}}\
+//</button>\
+//<button type="button" class="btn btn-primary {{=it.attributes.class}} dropdown-toggle" data-toggle="dropdown">\
+//<span class="caret"></span>\
+//</button>\
+//{{? (it.controls && it.controls.length > 0) }}\
+//<ul class="dropdown-menu">\
+//{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}\
+//</ul>{{?}}\
+//</div>');
     controls.typeRegister('bootstrap.Splitbutton', Splitbutton);
     
     
@@ -271,10 +266,8 @@ function Bootstrap(controls) {
     // 
     //
     function BtnGroup(parameters, attributes) {
-        this.initialize('bootstrap.BtnGroup', parameters, attributes, BtnGroup.template);
-        
-        if (!this.attributes.class || this.attributes.class.indexOf('btn-group') < 0)
-            this.class('btn-group');
+        this.initialize('bootstrap.BtnGroup', parameters, attributes, BtnGroup.template)
+            .class('btn-group');
     };
     BtnGroup.prototype = control_prototype;
     controls.typeRegister('bootstrap.BtnGroup', BtnGroup);
@@ -283,8 +276,8 @@ function Bootstrap(controls) {
     // TabPanelHeader
     // 
     function TabPanelHeader(parameters, attributes) {
-        this.initialize('bootstrap.TabPanelHeader', parameters, attributes, TabPanelHeader.template);
-        this.class('nav nav-tabs tabpanel-header');
+        this.initialize('bootstrap.TabPanelHeader', parameters, attributes, TabPanelHeader.template)
+            .class('nav nav-tabs tabpanel-header');
     };
     TabPanelHeader.prototype = control_prototype;
     TabPanelHeader.template = function(it) { return '<ul' + it.printAttributes() + '>' + (it.attributes.$text || '') + it.printControls() + '</ul>'; };
@@ -294,8 +287,8 @@ function Bootstrap(controls) {
     // TabHeader
     // 
     function TabHeader(parameters, attributes) {
-        this.initialize('bootstrap.TabHeader', parameters, attributes, TabHeader.template);
-        this.class('tab-header');
+        this.initialize('bootstrap.TabHeader', parameters, attributes, TabHeader.template)
+            .class('tab-header');
     };
     TabHeader.prototype = control_prototype;
     TabHeader.template = doT.template(
@@ -309,8 +302,8 @@ function Bootstrap(controls) {
     // TabPanelBody
     // 
     function TabPanelBody(parameters, attributes) {
-        this.initialize('bootstrap.TabPanelBody', parameters, attributes);
-        this.class('tab-content tabpanel-body');
+        this.initialize('bootstrap.TabPanelBody', parameters, attributes)
+            .class('tab-content tabpanel-body');
     };
     TabPanelBody.prototype = control_prototype;
     controls.typeRegister('bootstrap.TabPanelBody', TabPanelBody);
@@ -319,8 +312,8 @@ function Bootstrap(controls) {
     // TabPage
     // 
     function TabPage(parameters, attributes) {
-        this.initialize('bootstrap.TabPage', parameters, attributes);
-        this.class('tab-pane fade');
+        this.initialize('bootstrap.TabPage', parameters, attributes)
+            .class('tab-pane fade');
     };
     TabPage.prototype = control_prototype;
     controls.typeRegister('bootstrap.TabPage', TabPage);
@@ -329,8 +322,8 @@ function Bootstrap(controls) {
     // Form
     // 
     function Form(parameters, attributes) {
-        this.initialize('bootstrap.Form', parameters, attributes, Form.template);
-        attributes.role = 'form';
+        this.initialize('bootstrap.Form', parameters, attributes, Form.template)
+            .attr('role', 'form');
     };
     Form.prototype = control_prototype;
     Form.template = function(it) { return '<form' + it.printAttributes() + '>' + it.printControls() + '</form>'; };
@@ -340,8 +333,8 @@ function Bootstrap(controls) {
     // FormGroup
     // 
     function FormGroup(parameters, attributes) {
-        this.initialize('bootstrap.FormGroup', parameters, attributes);
-        this.class('form-group');
+        this.initialize('bootstrap.FormGroup', parameters, attributes)
+            .class('form-group');
     };
     FormGroup.prototype = control_prototype;
     controls.typeRegister('bootstrap.FormGroup', FormGroup);
@@ -350,8 +343,8 @@ function Bootstrap(controls) {
     // ControlLabel
     // 
     function ControlLabel(parameters, attributes) {
-        this.initialize('bootstrap.ControlLabel', parameters, attributes, ControlLabel.template);
-        this.class('control-label');
+        this.initialize('bootstrap.ControlLabel', parameters, attributes, ControlLabel.template)
+            .class('control-label');
     };
     ControlLabel.prototype = control_prototype;
     ControlLabel.template = function(it) { return '<label' + it.printAttributes() + '>' + (it.attributes.$text || '') + '</label>'; };
@@ -361,9 +354,9 @@ function Bootstrap(controls) {
     // ControlInput
     // 
     function ControlInput(parameters, attributes) {
-        var control = new controls['controls.input'](parameters, attributes);
+        var control = new controls['controls.input'](parameters, attributes)
+            ._class('form-control');
         control.__type = 'bootstrap.ControlInput';
-        control.class('form-control');
         return control;
     };
     controls.factoryRegister('bootstrap.ControlInput', ControlInput);
@@ -375,10 +368,10 @@ function Bootstrap(controls) {
     //  $data {DataArray}
     //
     function ControlSelect(parameters, attributes) {
-        var control = new controls['controls.select'](parameters, attributes);
+        var control = new controls['controls.select'](parameters, attributes)
+            ._class('form-control')
+            ._style('display:inline-block;');
         control.__type = 'bootstrap.ControlSelect';
-        control.class('form-control');
-        control.style('display:inline-block;');
         return control;
     };
     controls.factoryRegister('bootstrap.ControlSelect', ControlSelect);

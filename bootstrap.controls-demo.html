@@ -42,26 +42,30 @@ cbody.fill.content_pane
         // button group
         example._add('btngroup:bootstrap.BtnGroup', function(btngroup) {
             
-            var btn_size = 2;
+            var btn_size = 0;
             
             // button chevron-left
 
-            btngroup._add('btn_prev:bootstrap.Button#size=2;style=success',  {$icon:'chevron-left'}, function(btn) {
+            btngroup._add('btn_prev:bootstrap.Button#style=success',  {$icon:'chevron-left'}, function(btn) {
                 btn.listen('click', function() {
-                    if (btn_size > 0)
+                    if (btn_size > -2)
                         btn_size--;
 
-                    this.parent.each(function(button) { button.size(btn_size); });
+                    this.parent.each(function(button) {
+                        button.type('bootstrap.Button#size=' + btn_size + ';style=' + button.parameters.style);
+                    });
                 });
             })
             // button chevron-right
 
-            .add('btn_next:bootstrap.Button#size=2;style=default', {$icon:'chevron-right'})
+            .add('btn_next:bootstrap.Button', {$icon:'chevron-right'})
                 .listen('click', function() {
-                    if (btn_size < 3)
+                    if (btn_size < 1)
                         btn_size++;
 
-                    this.parent.each(function(button) { button.size(btn_size); });
+                    this.parent.each(function(button) {
+                        button.type('bootstrap.Button#size=' + btn_size + ';style=' + button.parameters.style);
+                    });
                 });
 
             // other styled buttons
