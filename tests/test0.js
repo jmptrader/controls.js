@@ -63,8 +63,10 @@ test( "type resolving", function()
     
     // check preserve namespace
     control.type('Div#test=5');
-    ok(control.__type === 'test.Div', '.type("Div#test=5"); - check preserve namespace');
-    ok(control.type() === 'test.Div#test=5', 'control.type(); - get type');
+    if (control.__type !== 'test.Div')
+        ok(0, '.type("Div#test=5"); - check preserve namespace');
+    if (control.type() !== 'test.Div#test=5')
+        ok(0, 'control.type(); - get type');
     
     // check preserve __type
     control.type('#test=777');
@@ -147,7 +149,8 @@ test( "serialize-deserialize controls", function()
         }
         else if (type === 'controls.custom')
         {
-            ok(deserialized.outerHTML() === custom_rendered, type + ' check deserialized outerHTML(). Expected "' + custom_rendered + '", in fact "' + deserialized.outerHTML() + '"');
+            if (deserialized.outerHTML() !== custom_rendered)
+                ok(0, type + ' check deserialized outerHTML(). Expected "' + custom_rendered + '", in fact "' + deserialized.outerHTML() + '"');
         }
         else if (type !== 'controls.container')
         {
