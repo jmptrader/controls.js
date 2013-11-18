@@ -5,8 +5,7 @@
         <script src="controls.browserify.js"></script>
         <!-- non-content script scripts allowed in the header -->
         <script type="text/javascript">
-            window.addEventListener('load', function()
-            {
+            window.addEventListener('load', function() {
                 var body = controls.create('body');
                 body.add('h1', {$text: 'Hello World!'});
                 body.attach();

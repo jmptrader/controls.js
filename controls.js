@@ -610,17 +610,20 @@ function Controls(doT) {
                     this._element = undefined;
                 }
             }
+            return this;
         };
         
         this.refreshInner = function() {
             var element = this._element;
             if (element)
                 element.innerHTML = this.innerHTML();
+            return this;
         };
         
         // Attach to DOM element
-        this.attach = function(something) {
-            this.element = (typeof(something) === 'object') ? (something._element || something) : document.getElementById(something || this.id);
+        this.attach = function(some) {
+            this.element = (typeof(some) === 'object') ? (some._element || some) : document.getElementById(some || this.id);
+            return this;
         };
         
         // Attach this and all nested controls to DOM by id
@@ -630,11 +633,14 @@ function Controls(doT) {
             
             for(var ctrls = this.controls, i = 0, c = ctrls.length; i < c; i++)
                 ctrls[i].attachAll();
+            
+            return this;
         };
         
         // Detach from DOM
         this.detach = function() {
             this.element = undefined;
+            return this;
         };
         
         // Detach this and all nested from DOM
@@ -642,6 +648,7 @@ function Controls(doT) {
             this.element = undefined;
             for(var ctrls = this.controls, i = 0, c = ctrls.length; i < c; i++)
                 ctrls[i].detachAll();
+            return this;
         };
         
         // Replace control in the hierarchy tree
@@ -737,6 +744,7 @@ function Controls(doT) {
             }
             
             this.attachAll();
+            return this;
         };
         
         this.deleteElement = function() {
@@ -747,12 +755,14 @@ function Controls(doT) {
                     parent_node.removeChild(element);
                 this._element = undefined;
             }
+            return this;
         };
         
         this.deleteAll = function() {
             this.deleteElement();
             for(var ctrls = this.controls, i = ctrls.length - 1; i >= 0; i--)
                 ctrls[i].deleteAll();
+            return this;
         };
         
         var dom_events =

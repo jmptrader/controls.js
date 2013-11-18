@@ -1,5 +1,5 @@
 # controls.js
-#### framework for dynamic html documents and UI solutions
+#### framework for dynamic html documents and UI solutions, javascript templating
 [![NPM version](https://badge.fury.io/js/controlsjs.png)](http://badge.fury.io/js/controlsjs)
 
 controls.js - framework for a visual and data components  
@@ -42,8 +42,7 @@ controls.browserify.min.js - compressed
         <script src="controls.browserify.js"></script>
         <!-- non-content scripts allowed in the header -->
         <script type="text/javascript">
-            window.addEventListener('load', function()
-            {
+            window.addEventListener('load', function() {
                 var body = controls.create('body');
                 body.add('h1', {$text: 'Hello World!'});
                 body.attach();
