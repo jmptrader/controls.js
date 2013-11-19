@@ -21,7 +21,7 @@ var cbody = createDocumentStructure();
 // header panel
 cbody.header.header_pane
     ._add(h1Ref('bootstrap + controls.js', 'bootstrap.controls-demo.html'))
-    ._p('under development')
+    ._add_p('under development')
     ._add(refLabels([
             'GitHub', 'default', 'https://github.com/aplib/controls.js',
             'controls.js Intro', 'default', 'index.html']));
@@ -136,7 +136,7 @@ cbody.fill.content_pane
             ._add('bootstrap.FormGroup', function(group) {
                 group._add('label', {$text:'File input', for:'exampleInputFile'})
                 ._add('input', {type:'file', id:'exampleInputFile'})
-                ._p('Example block-level help text here.', {class:"help-block"});
+                ._add_p('Example block-level help text here.', {class:"help-block"});
             })
             ._add('bootstrap.Button', {type:'submit', $text:'Submit', onclick:'return false;'});
     })

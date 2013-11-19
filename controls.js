@@ -8,7 +8,7 @@
 //
 // require doT.js
 
-(function() { "use strict"; var VERSION = '0.6.11';
+(function() { "use strict"; var VERSION = '0.6.12';
 
 function Controls(doT) {
     var controls = this;
@@ -610,17 +610,20 @@ function Controls(doT) {
                     this._element = undefined;
                 }
             }
+            return this;
         };
         
         this.refreshInner = function() {
             var element = this._element;
             if (element)
                 element.innerHTML = this.innerHTML();
+            return this;
         };
         
         // Attach to DOM element
-        this.attach = function(something) {
-            this.element = (typeof(something) === 'object') ? (something._element || something) : document.getElementById(something || this.id);
+        this.attach = function(some) {
+            this.element = (typeof(some) === 'object') ? (some._element || some) : document.getElementById(some || this.id);
+            return this;
         };
         
         // Attach this and all nested controls to DOM by id
@@ -630,11 +633,14 @@ function Controls(doT) {
             
             for(var ctrls = this.controls, i = 0, c = ctrls.length; i < c; i++)
                 ctrls[i].attachAll();
+            
+            return this;
         };
         
         // Detach from DOM
         this.detach = function() {
             this.element = undefined;
+            return this;
         };
         
         // Detach this and all nested from DOM
@@ -642,6 +648,7 @@ function Controls(doT) {
             this.element = undefined;
             for(var ctrls = this.controls, i = 0, c = ctrls.length; i < c; i++)
                 ctrls[i].detachAll();
+            return this;
         };
         
         // Replace control in the hierarchy tree
@@ -737,6 +744,7 @@ function Controls(doT) {
             }
             
             this.attachAll();
+            return this;
         };
         
         this.deleteElement = function() {
@@ -747,12 +755,14 @@ function Controls(doT) {
                     parent_node.removeChild(element);
                 this._element = undefined;
             }
+            return this;
         };
         
         this.deleteAll = function() {
             this.deleteElement();
             for(var ctrls = this.controls, i = ctrls.length - 1; i >= 0; i--)
                 ctrls[i].deleteAll();
+            return this;
         };
         
         var dom_events =
@@ -848,6 +858,8 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 if (event)
                     event.raise.apply(this, args);
             }
+            
+            return this;
         };
         
         this.parameter = function(name, value) {
@@ -861,6 +873,11 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             }
             else
                 return parameters[name] || parameters['/'+name];
+        };
+        
+        this._parameter = function(name, value) {
+            this.parameter(name, value);
+            return this;
         };
         
         // set attribute value
@@ -906,6 +923,11 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             }
             
             return attributes;
+        };
+        
+        this._attrs = function(_attributes) {
+            this.attrs(_attributes);
+            return this;
         };
         
         // get/set path.type/parameters
@@ -961,6 +983,11 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             // no automatic refresh() calls
             
             // << set type and parameters
+        };
+        
+        this._type = function(type, apply_inherited) {
+            this.type(type, apply_inherited);
+            return this;
         };
         
         // Get html code of the selected attributes
@@ -1021,33 +1048,39 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         };
         
         // Set .$text attribute on this object and refresh DOM element.outerHTML
-        this.text = function(_text) {
+        this.text = function(text) {
             var attributes = this.attributes;
             if (arguments.length) {
-                if (_text !== attributes.$text) {
-                    attributes.$text = _text;
+                if (text !== attributes.$text) {
+                    attributes.$text = text;
                     this.refresh();
                 }
             }
             return attributes.$text;
         };
         
-        this.style = function(_style) {
+        this._text = function(text) {
+            this.text(text);
+            return this;
+        };
+        
+        this.style = function(style) {
+            var attributes = this.attributes;
+            
             if (arguments.length) {
-                var attributes = this.attributes, style = attributes.style;
-
-                if (_style !== style) {
-                    attributes.style = _style;
+                if (style !== attributes.style) {
+                    attributes.style = style;
                     
                     var element = this._element;
                     if (element)
-                        element.style = _style;
+                        element.style = style;
                     
-                    this.raise('attributes', 'style', _style);
+                    this.raise('attributes', 'style', style);
                 };
+                return style;
             }
             
-            return this.attributes.style;
+            return attributes.style;
         };
         
         this._style = function(style) {
@@ -1237,16 +1270,21 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             return this.insert(this.controls.length, type, repeats, attributes, callback, this_arg);
         };
         
+        this._add = function(type, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+            this.insert(this.controls.length, type, repeats, attributes, callback, this_arg);
+            return this;
+        };
+        
         this.unshift = function(type, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
             return this.insert(0, type, repeats, attributes, callback, this_arg);
         };
         
-        this._add = function(type, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
-            this.add(type, repeats, attributes, callback, this_arg);
+        this._unshift = function(type, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+            this.insert(0, type, repeats, attributes, callback, this_arg);
             return this;
         };
         
-        this._text = function(text, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+        this.add_text = function(text, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
             if (typeof repeats === 'object') {
                 this_arg = callback;
                 callback = attributes;
@@ -1255,11 +1293,15 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             }
             attributes = attributes || {};
             attributes.$text = text;
-            this.add('controls.container', repeats, attributes, callback, this_arg);
+            return this.add('controls.container', repeats, attributes, callback, this_arg);
+        };
+        
+        this._add_text = function(text, repeats, attributes, callback, this_arg) {
+            this.add_text(text, repeats, attributes, callback, this_arg);
             return this;
         };
         
-        this._p = function(text, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+        this.add_p = function(text, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
             if (typeof repeats === 'object') {
                 this_arg = callback;
                 callback = attributes;
@@ -1268,11 +1310,15 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             }
             attributes = attributes || {};
             attributes.$text = text;
-            this.add('controls.p', repeats, attributes, callback, this_arg);
+            return this.add('p', repeats, attributes, callback, this_arg);
+        };
+        
+        this._add_p = function(text, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+            this.add_p(text, repeats, attributes, callback, this_arg);
             return this;
         };
         
-        this._templ = function(template, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+        this.add_templ = function(template, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
             if (typeof repeats === 'object') {
                 this_arg = callback;
                 callback = attributes;
@@ -1281,7 +1327,11 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             }
             attributes = attributes || {};
             attributes.$template = template;
-            this.add('controls.custom', repeats, attributes, callback, this_arg);
+            return this.add('controls.custom', repeats, attributes, callback, this_arg);
+        };
+        
+        this._add_templ = function(template, repeats, attributes, callback, this_arg) {
+            this.add_templ(template, repeats, attributes, callback, this_arg);
             return this;
         };
         
@@ -1296,6 +1346,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             if (control)
                 control.parent = undefined;
+            return this;
         };
         
         // Remove all subcontrols from .controls collection
@@ -1303,6 +1354,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         this.removeAll = function() {
             for(var ctrls = this.controls, i = ctrls.length - 1; i >= 0; i--)
                 this.remove(ctrls[i]);
+            return this;
         };
         
         function route_data_event() {
@@ -1330,6 +1382,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 
                 route_data_event.call(this);
             }
+            return this;
         };
     
         this.every      = function(delegate, thisArg)   { return this.controls.every(delegate,   thisArg || this); };
@@ -1597,25 +1650,40 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         return new_control;
     };
 
-    controls.text = function(text, /*optional*/ parameters, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+    controls.text = function(text, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+        if (typeof repeats === 'object') {
+            this_arg = callback;
+            callback = attributes;
+            attributes = repeats;
+            repeats = 1;
+        }
         attributes = attributes || {};
         attributes.$text = text;
-        return controls.create('controls.container', parameters, attributes, callback, this_arg);
+        return controls.create('controls.container', repeats, attributes, callback, this_arg);
     };
 
-    controls.p = function(text, /*optional*/ parameters, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
-        attributes = attributes || {};
-        attributes.$text = text;
-        return controls.create('controls.container', parameters, attributes, callback, this_arg);
+    controls.p = function(text, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+        if (typeof repeats === 'object') {
+            this_arg = callback;
+            callback = attributes;
+            attributes = repeats;
+            repeats = 1;
+        }
+        return controls.create('controls.p', repeats, controls.extend({}, attributes), callback, this_arg);
     };
 
-    controls.templ = function(template, /*optional*/ parameters, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+    controls.templ = function(template, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+        if (typeof repeats === 'object') {
+            this_arg = callback;
+            callback = attributes;
+            attributes = repeats;
+            repeats = 1;
+        }
         attributes = attributes || {};
         attributes.$template = template;
-        return controls.create('controls.custom', parameters, attributes, callback, this_arg);
+        return controls.create('controls.custom', repeats, attributes, callback, this_arg);
     };
         
-    
     // controls.reviverJSON()
     // 
     // use with JSON.parse(json, controls.reviverJSON), this function restores controls
@@ -1828,8 +1896,8 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     // Head
     function Head(parameters, attributes) {
         controls.controlInitialize(this, 'controls.head', parameters, attributes, Head.template);
-        this.attach    = function() { Head.prototype.attach.call(this, document.head); };
-        this.attachAll = function() { Head.prototype.attach.call(this, document.head); Head.prototype.attachAll.call(this); };
+        this.attach    = function() { return Head.prototype.attach.call(this, document.head); };
+        this.attachAll = function() { return Head.prototype.attachAll.call(this); };
     };
     Head.prototype = controls.control_prototype;
     Head.template = function(it) { return '<head>' + (it.attributes.$text || '') + it.printControls() + '</head>'; };
@@ -1838,8 +1906,8 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     // Body
     function Body(parameters, attributes) {
         controls.controlInitialize(this, 'controls.body', parameters, attributes, Body.template);
-        this.attach    = function() { Body.prototype.attach.call(this, document.body); };
-        this.attachAll = function() { Body.prototype.attach.call(this, document.body); Body.prototype.attachAll.call(this); };
+        this.attach    = function() { return Body.prototype.attach.call(this, document.body); };
+        this.attachAll = function() { return Body.prototype.attachAll.call(this); };
     };
     Body.prototype = controls.control_prototype;
     Body.template = function(it) { return '<body' + it.printAttributes('-id') + '>' + (it.attributes.$text || '') + it.printControls() + '</body>'; };

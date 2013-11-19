@@ -12,7 +12,7 @@
 function Bootstrap(controls) {
     var bootstrap = this;
     var doT = controls.doT;
-    bootstrap.VERSION = '0.6.11';
+    bootstrap.VERSION = '0.6.12';
     controls.bootstrap = bootstrap;
     
     var control_prototype = (function() {
@@ -228,24 +228,17 @@ function Bootstrap(controls) {
     //
     function Splitbutton(parameters, attributes) {
         this.initialize('bootstrap.Splitbutton', parameters, attributes, Splitbutton.template)
-            .class('btn-group');
-         this.btn_class = 'btn btn-' + ((this.getControlStyle() || '') + ' ' + (BUTTON_SIZES[this.getControlStyle()] || '')).trim();
+            ._class('btn-group')
+            ._add('button:bootstrap.Button', {$icon:attributes.$icon})
+            ._add('toggle:bootstrap.Button', {class:'dropdown-toggle', 'data-toggle':'dropdown', $text:'<span class="caret"></span>'})
+            ._add('items:ul', {class:'dropdown-menu'})
+            .listen('type', function() {
+                var btn_class = 'btn btn-' + ((this.getControlStyle() || '') + ' ' + (BUTTON_SIZES[this.getControlStyle()] || '')).trim();
+                this.button.class(btn_class);
+                this.toggle.class(btn_class);
+            });
     };
     Splitbutton.prototype = control_prototype;
-    Splitbutton.template = function(it) {
-var attributes = it.attributes,
-out = '<div' + it.printAttributes() + '>\
-<button type="button" class="' + it.btn_class + '">'
- + (attributes.$icon ? ('<b class="glyphicon glyphicon-' + attributes.$icon + '"> </b>') : '')
- + (attributes.$text || '')
- + '</button>\
-<button type="button" class="' + it.btn_class + ' dropdown-toggle" data-toggle="dropdown"><span class="caret"></span>\
-</button>';
-if (it.controls.length)
-out += '<ul class="dropdown-menu">' + it.printControls() + '</ul>';
-out += '</div>';
-return out;
-};
     controls.typeRegister('bootstrap.Splitbutton', Splitbutton);
     
     

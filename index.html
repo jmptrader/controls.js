@@ -35,7 +35,7 @@ var cbody = createDocumentStructure();
 // header panel
 cbody.header.header_pane
     ._add(h1Ref('controls.js', 'http://aplib.github.io/controls.js/'))
-    ._p('framework for dynamic html documents and UI solutions')
+    ._add_p('framework for dynamic html documents and UI solutions')
     ._add(refLabels([
         'GitHub',           'default', 'https://github.com/aplib/controls.js',
         'Download',         'default', 'https://github.com/aplib/controls.js/archive/master.zip',
@@ -64,8 +64,8 @@ body.add(["top:Container", "left:Container", "fill:Container"]);\n\
 body.fill\n\
     .add("content_pane:div", {class:"content-pane col-sm-9"})\n\
         ._add("h2", {id: "lorem-ipsum-group", $text: "Lorem ipsum"})\n\
-        ._text("<p>Lorem ipsum dolor sit amet</p>")\n\
-        ._p("Lorem ipsum dolor sit amet");\n\
+        ._add_text("<p>Lorem ipsum dolor sit amet</p>")\n\
+        ._add_p("Lorem ipsum dolor sit amet");\n\
 \n\
 body.attach();\n\
 body.refresh();\n'))
@@ -107,7 +107,7 @@ body.refresh();\n'))
 '\controls.typeRegister("bootstrap.Button#style=success", CustomBtnControl);\n\
 ...\n\
 > var button = example.add("bootstrap.Button#size=2;style=success");'))
-    ._p('The combination of type name and parameters (where parameters may be inheritable) resoves to the specific type of the object in the runtime. IoC allows to\
+    ._add_p('The combination of type name and parameters (where parameters may be inheritable) resoves to the specific type of the object in the runtime. IoC allows to\
  override the details of the behavior of existing systems without modifying their code. For example, it will organize a versioning\
  components in the design, switching visual themes at runtime or unbreakable changes at service.');
 
