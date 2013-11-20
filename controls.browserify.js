@@ -2245,10 +2245,13 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
         });
     };
     Layout.prototype = controls.control_prototype;
-    Layout.template = doT.template(
-'<div{{=it.printAttributes()}}>\
-{{~it.controls :value:index}}<div data-type="layout-item"{{=it.cellSet.printAttributes("-id")}}>{{=value.wrappedHTML()}}</div>{{~}}\
-{{?it.clearfix}}<div style="clear:both;"></div>{{?}}</div>');
+    Layout.template = function(it) {
+        var out = '<div' + it.printAttributes() + '>',
+            ctrls = it.controls, cell = '<div data-type="layout-item"' + it.cellSet.printAttributes("-id") + '>';
+        for(var i = 0, c = ctrls.length; i < c; i++)
+            out += cell + ctrls[i].wrappedHTML() + '</div>';
+        return out + (it.clearfix) ? '<div style="clear:both;"></div></div>' : '</div>';
+    };
     controls.typeRegister('controls.layout', Layout);
 
     
@@ -2275,10 +2278,13 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
         });
     };
     List.prototype = controls.control_prototype;
-    List.template = doT.template(
-'<ul{{=it.printAttributes()}}>\
-{{~it.controls :value:index}}<li{{=it.itemSet.printAttributes("-id")}}>{{=value.wrappedHTML()}}</li>{{~}}\
-</ul>');
+    List.template = function(it) {
+        var out ='<ul' + it.printAttributes() + '>',
+            ctrls = it.controls, item = '<li' + it.itemSet.printAttributes("-id") + '>';
+        for(var i = 0, c = ctrls.length; i < c; i++)
+            out += item + ctrls[i].wrappedHTML() + '</li>';
+        return out + '</ul>';
+    };
     controls.typeRegister('controls.list', List);
     
     

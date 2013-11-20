@@ -4,14 +4,13 @@
 //     (c) 2013 vadim b.
 //     License: MIT
 //
-// require doT.js, controls.js
+// require controls.js
 
 
 (function() { "use strict";
 
 function Bootstrap(controls) {
     var bootstrap = this;
-    var doT = controls.doT;
     bootstrap.VERSION = '0.6.12';
     controls.bootstrap = bootstrap;
     
@@ -35,17 +34,10 @@ function Bootstrap(controls) {
         return icon_class;
     };
     
-    var CONTROL_STYLE = ' default info link success primary warning danger ';
     control_prototype.getControlStyle = function() {
-        var parameters = this.parameters,
-            cstyle = parameters.style || parameters['/style'];
-        
-        if (!cstyle)
-        for(var prop in parameters)
-        if (parameters[prop])
-            cstyle = prop;
-        
-        return cstyle || 'default';
+        var parameters = this.parameters;
+        return parameters.style || parameters['/style'] || (parameters.info && 'info') || (parameters.link && 'link') || (parameters.success && 'success')
+            || (parameters.primary && 'primary') || (parameters.warning && 'warning') || (parameters.danger && 'danger') || 'default';
     };
     
     var CONTROL_SIZE = {
@@ -77,8 +69,7 @@ function Bootstrap(controls) {
             });
     };
     Label.prototype = control_prototype;
-    Label.template = doT.template(
-'<span{{=it.printAttributes()}}>{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}</span>');
+    Label.template = function(it) { return '<span' + it.printAttributes() + '>' + (it.attributes.$text || '') + '</span>'; };
     controls.typeRegister('bootstrap.Label', Label);
     
     
@@ -135,12 +126,12 @@ function Bootstrap(controls) {
         this.initialize('bootstrap.DropdownItem', parameters, attributes, DropdownItem.template);
     };
     DropdownItem.prototype = control_prototype;
-    DropdownItem.template = doT.template(
-'<li id="{{=it.id}}">\
-<a{{=it.printAttributes("-id")}}>\
-{{? it.attributes.$icon }}<span class="glyphicon glyphicon-{{=it.attributes.$icon}}"></span>&nbsp;{{?}}\
-{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}\
-</a></li>\n');
+    DropdownItem.template = function(it) {
+        var out = '<li id="' + it.id + '"><a' + it.printAttributes('-id') + '>',
+            attrs = it.attributes;
+        if (attrs.$icon) out += '<span class="glyphicon glyphicon-' + attrs.$icon + '"></span>&nbsp;';
+        return (it.attributes.$text || '') + '</a></li>';
+    };
     controls.typeRegister('bootstrap.DropdownItem', DropdownItem);
     
     
@@ -152,7 +143,7 @@ function Bootstrap(controls) {
             .class('divider');
     };
     DividerItem.prototype = control_prototype;
-    DividerItem.template = doT.template('<li{{=it.printAttributes()}}></li>');
+    DividerItem.template = function(it) { return '<li' + it.printAttributes() + '></li>'; };
     controls.typeRegister('bootstrap.DividerItem', DividerItem);
     
     
@@ -164,16 +155,19 @@ function Bootstrap(controls) {
             .class('dropdown');
     };
     DropdownLink.prototype = control_prototype;
-    DropdownLink.template = doT.template(
-'<div{{=it.printAttributes()}}>\
-<a class="dropdown-toggle" data-toggle="dropdown" href="#">\
-{{? it.attributes.$icon }}<b class="glyphicon glyphicon-{{=it.attributes.$icon}}"> </b>{{?}}\
-{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}\
-</a>\n\
-{{? (it.controls && it.controls.length > 0) }}\
-<ul class="dropdown-menu">\n\
-{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}\
-</ul>{{?}}</div>\n');
+    DropdownLink.template = function(it) {
+        var out = '<div' + it.printAttributes() + '><a class="dropdown-toggle" data-toggle="dropdown" href="#">',
+            attrs = it.attributes, ctrls = it.controls;
+        if (attrs.$icon) out += '<span class="glyphicon glyphicon-' + attrs.$icon + '"></span>&nbsp;';
+        out += (it.attributes.$text || '') + '</a>';
+        if (ctrls.length) {
+            out += '<ul class="dropdown-menu">';
+            for (var i = 0, c = ctrls.length; i < c; i++)
+                out += ctrls[i].wrappedHTML();
+            out += '</ul>';
+        }
+        return out + '</div>';
+    };
     controls.typeRegister('bootstrap.DropdownLink', DropdownLink);
 
 
@@ -183,12 +177,20 @@ function Bootstrap(controls) {
             .class('btn dropdown-toggle');
     };
     ToggleBtn.prototype = control_prototype;
-    ToggleBtn.template = doT.template(
-'<a{{=it.printAttributes()}} data-toggle="dropdown" href="#">{{? it.attributes.$icon }}<b class="glyphicon glyphicon-{{=it.attributes.$icon}}"> </b>{{?}}{{? it.attributes.Caret }}<span class="caret"></span>{{?}}{{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}</a>\n\
-{{? (it.controls && it.controls.length > 0) }}\n\
-<ul class="dropdown-menu">\n\
-{{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}\n\
-</ul>{{?}}\n');
+    ToggleBtn.template = function(it) {
+        var out = '<a' + it.printAttributes() + ' data-toggle="dropdown" href="#">',
+            attrs = it.attributes, ctrls = it.controls;
+        if (attrs.$icon) out += '<span class="glyphicon glyphicon-' + attrs.$icon + '"></span>&nbsp;';
+        if (attrs.caret || attrs.Caret) out += '<span class="caret"></span>';
+        out += (it.attributes.$text || '') + '</a>';
+        if (ctrls.length) {
+            out += '<ul class="dropdown-menu">';
+            for (var i = 0, c = ctrls.length; i < c; i++)
+                out += ctrls[i].wrappedHTML();
+            out += '</ul>';
+        }
+        return out;
+    };
     controls.typeRegister('bootstrap.ToggleBtn', ToggleBtn);
     
     
@@ -216,7 +218,7 @@ function Bootstrap(controls) {
     Button.template = function(it) {
         var attrs = it.attributes;
         return '<button type="button"' + it.printAttributes() + '>'
-            + (attrs.$icon ? ('<b class="glyphicon glyphicon-' + attrs.$icon + '"></b>') : '')
+            + (attrs.$icon ? ('<span class="glyphicon glyphicon-' + attrs.$icon + '"></span>') : '')
             + ((attrs.$icon && attrs.$text) ? '&nbsp;' : '')
             + (attrs.$text || '')
             + '</button>';
@@ -271,11 +273,14 @@ function Bootstrap(controls) {
             .class('tab-header');
     };
     TabHeader.prototype = control_prototype;
-    TabHeader.template = doT.template(
-'<li{{=it.printAttributes()}}>\
-<a href={{=it.attributes.$href}} data-toggle="tab">\
-{{? it.attributes.$icon}}<b class="glyphicon glyphicon-{{=it.attributes.$icon}}"> </b>{{?}}\
-{{? it.attributes.$text}}{{=it.attributes.$text}}{{?}}</a></li>');
+    TabHeader.template = function(it) {
+        var attrs = it.attributes;
+        return '<li' + it.printAttributes() + '><a href="' + (attrs.$href || '') + '" data-toggle="tab">'
+            + (attrs.$icon ? ('<span class="glyphicon glyphicon-' + attrs.$icon + '"></span>') : '')
+            + ((attrs.$icon && attrs.$text) ? '&nbsp;' : '')
+            + (attrs.$text || '')
+            + '</a></li>';
+    };
     controls.typeRegister('bootstrap.TabHeader', TabHeader);
     
     
