@@ -1,314 +1,26 @@
 ;(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-// doT.js
-// 2011, Laura Doktorova, https://github.com/olado/doT
-// Licensed under the MIT license.
-
-(function() {
-	"use strict";
-
-	var doT = {
-		version: '1.0.1',
-		templateSettings: {
-			evaluate:    /\{\{([\s\S]+?(\}?)+)\}\}/g,
-			interpolate: /\{\{=([\s\S]+?)\}\}/g,
-			encode:      /\{\{!([\s\S]+?)\}\}/g,
-			use:         /\{\{#([\s\S]+?)\}\}/g,
-			useParams:   /(^|[^\w$])def(?:\.|\[[\'\"])([\w$\.]+)(?:[\'\"]\])?\s*\:\s*([\w$\.]+|\"[^\"]+\"|\'[^\']+\'|\{[^\}]+\})/g,
-			define:      /\{\{##\s*([\w\.$]+)\s*(\:|=)([\s\S]+?)#\}\}/g,
-			defineParams:/^\s*([\w$]+):([\s\S]+)/,
-			conditional: /\{\{\?(\?)?\s*([\s\S]*?)\s*\}\}/g,
-			iterate:     /\{\{~\s*(?:\}\}|([\s\S]+?)\s*\:\s*([\w$]+)\s*(?:\:\s*([\w$]+))?\s*\}\})/g,
-			varname:	'it',
-			strip:		true,
-			append:		true,
-			selfcontained: false
-		},
-		template: undefined, //fn, compile template
-		compile:  undefined  //fn, for express
-	};
-
-	if (typeof module !== 'undefined' && module.exports) {
-		module.exports = doT;
-	} else if (typeof define === 'function' && define.amd) {
-		define(function(){return doT;});
-	} else {
-		(function(){ return this || (0,eval)('this'); }()).doT = doT;
-	}
-
-	function encodeHTMLSource() {
-		var encodeHTMLRules = { "&": "&#38;", "<": "&#60;", ">": "&#62;", '"': '&#34;', "'": '&#39;', "/": '&#47;' },
-			matchHTML = /&(?!#?\w+;)|<|>|"|'|\//g;
-		return function() {
-			return this ? this.replace(matchHTML, function(m) {return encodeHTMLRules[m] || m;}) : this;
-		};
-	}
-	String.prototype.encodeHTML = encodeHTMLSource();
-
-	var startend = {
-		append: { start: "'+(",      end: ")+'",      endencode: "||'').toString().encodeHTML()+'" },
-		split:  { start: "';out+=(", end: ");out+='", endencode: "||'').toString().encodeHTML();out+='"}
-	}, skip = /$^/;
-
-	function resolveDefs(c, block, def) {
-		return ((typeof block === 'string') ? block : block.toString())
-		.replace(c.define || skip, function(m, code, assign, value) {
-			if (code.indexOf('def.') === 0) {
-				code = code.substring(4);
-			}
-			if (!(code in def)) {
-				if (assign === ':') {
-					if (c.defineParams) value.replace(c.defineParams, function(m, param, v) {
-						def[code] = {arg: param, text: v};
-					});
-					if (!(code in def)) def[code]= value;
-				} else {
-					new Function("def", "def['"+code+"']=" + value)(def);
-				}
-			}
-			return '';
-		})
-		.replace(c.use || skip, function(m, code) {
-			if (c.useParams) code = code.replace(c.useParams, function(m, s, d, param) {
-				if (def[d] && def[d].arg && param) {
-					var rw = (d+":"+param).replace(/'|\\/g, '_');
-					def.__exp = def.__exp || {};
-					def.__exp[rw] = def[d].text.replace(new RegExp("(^|[^\\w$])" + def[d].arg + "([^\\w$])", "g"), "$1" + param + "$2");
-					return s + "def.__exp['"+rw+"']";
-				}
-			});
-			var v = new Function("def", "return " + code)(def);
-			return v ? resolveDefs(c, v, def) : v;
-		});
-	}
-
-	function unescape(code) {
-		return code.replace(/\\('|\\)/g, "$1").replace(/[\r\t\n]/g, ' ');
-	}
-
-	doT.template = function(tmpl, c, def) {
-		c = c || doT.templateSettings;
-		var cse = c.append ? startend.append : startend.split, needhtmlencode, sid = 0, indv,
-			str  = (c.use || c.define) ? resolveDefs(c, tmpl, def || {}) : tmpl;
-
-		str = ("var out='" + (c.strip ? str.replace(/(^|\r|\n)\t* +| +\t*(\r|\n|$)/g,' ')
-					.replace(/\r|\n|\t|\/\*[\s\S]*?\*\//g,''): str)
-			.replace(/'|\\/g, '\\$&')
-			.replace(c.interpolate || skip, function(m, code) {
-				return cse.start + unescape(code) + cse.end;
-			})
-			.replace(c.encode || skip, function(m, code) {
-				needhtmlencode = true;
-				return cse.start + unescape(code) + cse.endencode;
-			})
-			.replace(c.conditional || skip, function(m, elsecase, code) {
-				return elsecase ?
-					(code ? "';}else if(" + unescape(code) + "){out+='" : "';}else{out+='") :
-					(code ? "';if(" + unescape(code) + "){out+='" : "';}out+='");
-			})
-			.replace(c.iterate || skip, function(m, iterate, vname, iname) {
-				if (!iterate) return "';} } out+='";
-				sid+=1; indv=iname || "i"+sid; iterate=unescape(iterate);
-				return "';var arr"+sid+"="+iterate+";if(arr"+sid+"){var "+vname+","+indv+"=-1,l"+sid+"=arr"+sid+".length-1;while("+indv+"<l"+sid+"){"
-					+vname+"=arr"+sid+"["+indv+"+=1];out+='";
-			})
-			.replace(c.evaluate || skip, function(m, code) {
-				return "';" + unescape(code) + "out+='";
-			})
-			+ "';return out;")
-			.replace(/\n/g, '\\n').replace(/\t/g, '\\t').replace(/\r/g, '\\r')
-			.replace(/(\s|;|\}|^|\{)out\+='';/g, '$1').replace(/\+''/g, '')
-			.replace(/(\s|;|\}|^|\{)out\+=''\+/g,'$1out+=');
-
-		if (needhtmlencode && c.selfcontained) {
-			str = "String.prototype.encodeHTML=(" + encodeHTMLSource.toString() + "());" + str;
-		}
-		try {
-			return new Function(c.varname, str);
-		} catch (e) {
-			if (typeof console !== 'undefined') console.log("Could not create a template function: " + str);
-			throw e;
-		}
-	};
-
-	doT.compile = function(tmpl, def) {
-		return doT.template(tmpl, null, def);
-	};
-}());
-
-},{}],2:[function(require,module,exports){
-/* doT + auto-compilation of doT templates
- *
- * 2012, Laura Doktorova, https://github.com/olado/doT
- * Licensed under the MIT license
- *
- * Compiles .def, .dot, .jst files found under the specified path.
- * It ignores sub-directories.
- * Template files can have multiple extensions at the same time.
- * Files with .def extension can be included in other files via {{#def.name}}
- * Files with .dot extension are compiled into functions with the same name and
- * can be accessed as renderer.filename
- * Files with .jst extension are compiled into .js files. Produced .js file can be
- * loaded as a commonJS, AMD module, or just installed into a global variable
- * (default is set to window.render).
- * All inline defines defined in the .jst file are
- * compiled into separate functions and are available via _render.filename.definename
- *
- * Basic usage:
- * var dots = require("dot").process({path: "./views"});
- * dots.mytemplate({foo:"hello world"});
- *
- * The above snippet will:
- * 1. Compile all templates in views folder (.dot, .def, .jst)
- * 2. Place .js files compiled from .jst templates into the same folder.
- *    These files can be used with require, i.e. require("./views/mytemplate").
- * 3. Return an object with functions compiled from .dot templates as its properties.
- * 4. Render mytemplate template.
- */
-
-var fs = require("fs"),
-	doT = module.exports = require("./doT");
-
-doT.process = function(options) {
-	//path, destination, global, rendermodule, templateSettings
-	return new InstallDots(options).compileAll();
-};
-
-function InstallDots(o) {
-	this.__path 		= o.path || "./";
-	if (this.__path[this.__path.length-1] !== '/') this.__path += '/';
-	this.__destination	= o.destination || this.__path;
-	if (this.__destination[this.__destination.length-1] !== '/') this.__destination += '/';
-	this.__global		= o.global || "window.render";
-	this.__rendermodule	= o.rendermodule || {};
-	this.__settings 	= o.templateSettings ? copy(o.templateSettings, copy(doT.templateSettings)) : undefined;
-	this.__includes		= {};
-}
-
-InstallDots.prototype.compileToFile = function(path, template, def) {
-	def = def || {};
-	var modulename = path.substring(path.lastIndexOf("/")+1, path.lastIndexOf("."))
-		, defs = copy(this.__includes, copy(def))
-		, settings = this.__settings || doT.templateSettings
-		, compileoptions = copy(settings)
-		, defaultcompiled = doT.template(template, settings, defs)
-		, exports = []
-		, compiled = ""
-		, fn;
-
-	for (var property in defs) {
-		if (defs[property] !== def[property] && defs[property] !== this.__includes[property]) {
-			fn = undefined;
-			if (typeof defs[property] === 'string') {
-				fn = doT.template(defs[property], settings, defs);
-			} else if (typeof defs[property] === 'function') {
-				fn = defs[property];
-			} else if (defs[property].arg) {
-				compileoptions.varname = defs[property].arg;
-				fn = doT.template(defs[property].text, compileoptions, defs);
-			}
-			if (fn) {
-				compiled += fn.toString().replace('anonymous', property);
-				exports.push(property);
-			}
-		}
-	}
-	compiled += defaultcompiled.toString().replace('anonymous', modulename);
-	fs.writeFileSync(path, "(function(){" + compiled
-		+ "var itself=" + modulename + ";"
-		+ addexports(exports)
-		+ "if(typeof module!=='undefined' && module.exports) module.exports=itself;else if(typeof define==='function')define(function(){return itself;});else {"
-		+ this.__global + "=" + this.__global + "||{};" + this.__global + "['" + modulename + "']=itself;}}());");
-};
-
-function addexports(exports) {
-	for (var ret ='', i=0; i< exports.length; i++) {
-		ret += "itself." + exports[i]+ "=" + exports[i]+";";
-	}
-	return ret;
-}
-
-function copy(o, to) {
-	to = to || {};
-	for (var property in o) {
-		to[property] = o[property];
-	}
-	return to;
-}
-
-function readdata(path) {
-	var data = fs.readFileSync(path);
-	if (data) return data.toString();
-	console.log("problems with " + path);
-}
-
-InstallDots.prototype.compilePath = function(path) {
-	var data = readdata(path);
-	if (data) {
-		return doT.template(data,
-					this.__settings || doT.templateSettings,
-					copy(this.__includes));
-	}
-};
-
-InstallDots.prototype.compileAll = function() {
-	console.log("Compiling all doT templates...");
-
-	var defFolder = this.__path,
-		sources = fs.readdirSync(defFolder),
-		k, l, name;
-
-	for( k = 0, l = sources.length; k < l; k++) {
-		name = sources[k];
-		if (/\.def(\.dot|\.jst)?$/.test(name)) {
-			console.log("Loaded def " + name);
-			this.__includes[name.substring(0, name.indexOf('.'))] = readdata(defFolder + name);
-		}
-	}
-
-	for( k = 0, l = sources.length; k < l; k++) {
-		name = sources[k];
-		if (/\.dot(\.def|\.jst)?$/.test(name)) {
-			console.log("Compiling " + name + " to function");
-			this.__rendermodule[name.substring(0, name.indexOf('.'))] = this.compilePath(defFolder + name);
-		}
-		if (/\.jst(\.dot|\.def)?$/.test(name)) {
-			console.log("Compiling " + name + " to file");
-			this.compileToFile(this.__destination + name.substring(0, name.indexOf('.')) + '.js',
-					readdata(defFolder + name));
-		}
-	}
-	return this.__rendermodule;
-};
-
-},{"./doT":1,"fs":4}],3:[function(require,module,exports){
-var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};//     controls.js
+//     controls.js
 //     purpose: UI framework, code generation tool
 //     status: proposal, example, valid prototype, under development
 //     demo:   http://aplib.github.io/controls.js/
 //     issues: https://github.com/aplib/markdown-site-template/issues
 //     (c) 2013 vadim b.
 //     License: MIT
-//
-// require doT.js
 
-(function() { "use strict"; var VERSION = '0.6.12';
+(function() { "use strict";
 
-function Controls(doT) {
-    var controls = this;
-    controls.VERSION = VERSION;
-    controls.id_generator = 53504; // use it only as per session elements id generator in controls constructors
+    var controls = {
+        VERSION: '0.6.12'/*#.#.##*/,
+        id_generator: 53504,
+        // assignable default template engine
+        template: function(templ) { return new Function('return \'' + templ.replace(/'/g, "\\'") + '\'')(); },
+        subtypes: {} // Registered subtypes
+    };
     
     var IDENTIFIERS = ',add,attach,attributes,class,data,element,first,id,__type,controls,last,name,each,forEach,parameters,parent,remove,style,';
     var ENCODE_HTML_MATCH = /&(?!#?\w+;)|<|>|"|'|\//g;
     var ENCODE_HTML_PAIRS = { "<": "&#60;", ">": "&#62;", '"': '&#34;', "'": '&#39;', "&": "&#38;", "/": '&#47;' };
-    var DECODE_HTML_MATCH = /&#(\d{1,8});/g;
-    controls.subtypes = {}; // Registered subtypes
-    controls.doT = doT; // reexport need for gencodes
-    // BUG doT strip modifies the pattern incorrectly assuming that it is composed entirely of HTML code, FIX:
-    try { doT.templateSettings.strip = 0; } catch(e){}
-    // BUG2 Safari throw error on fix this bug, FIX2 place this condition:
-    if (doT.templateSettings.strip)
-        throw new SyntaxError('Due to bugs and the inability to cross-browser fix them, please remove strip option in doT library! #112');
+    var DECODE_HTML_MATCH = /&#(\d{1,8});/g;    
     
     // Initialize control object
     // 
@@ -337,13 +49,13 @@ function Controls(doT) {
         if (outer_template)
         Object.defineProperty(object, "outer_template", {
             enumerable: true, writable: true,
-            value: (typeof(outer_template) === 'string') ? doT.template(outer_template) : outer_template
+            value: outer_template
         });
 
         if (inner_template)
         Object.defineProperty(object, "inner_template", {
             enumerable: true, writable: true,
-            value: (typeof(inner_template) === 'string') ? doT.template(inner_template) : inner_template
+            value: (typeof(inner_template) === 'string') ? controls.template(inner_template) : inner_template
         });
     
         return object;
@@ -684,17 +396,13 @@ function Controls(doT) {
                         var event = events[event_type];
                         if (event.is_dom_event) {
                             // remove event raiser from detached element
-
                             if (element)
                                 element.removeEventListener(event.event, event.raise, event.capture);
-
                             // add event raiser as listener for attached element
-
                             if (attach_to_element)
                                 attach_to_element.addEventListener(event.event, event.raise, event.capture);
                         }
                     }
-
                     this.raise('element', attach_to_element);
                 }
             }
@@ -820,7 +528,7 @@ function Controls(doT) {
                 
                 var type = typeof(outer_template);
                 if (type === 'string') {
-                    this.outer_template = doT.template(outer_template);        // template function
+                    this.outer_template = controls.template(outer_template);        // template function
                     this.outer_template_text = outer_template;                 // save template text for serialization
                 }
                 else if (type === 'function') {
@@ -835,7 +543,7 @@ function Controls(doT) {
             
                 type = typeof(inner_template);
                 if (type === 'string') {
-                    this.inner_template = doT.template(inner_template);        // template function
+                    this.inner_template = controls.template(inner_template);        // template function
                     this.inner_template_text = inner_template;                 // save template text for serialization
                 }
                 else if (type === 'function') {
@@ -971,26 +679,18 @@ function Controls(doT) {
             }
             
             if (node) {
-                var insertAdjacentHTML = node.insertAdjacentHTML;
-                if (insertAdjacentHTML) {
+                if (node.insertAdjacentHTML) {
+                    var pos;
                     switch(opcode) {
-                        case 1:
-                            insertAdjacentHTML.call(node, 'afterbegin', this.outerHTML());
-                            break;
-                        case 2:
-                            insertAdjacentHTML.call(node, 'beforebegin', this.outerHTML());
-                            break;
-                        case 3:
-                            insertAdjacentHTML.call(node, 'afterend', this.outerHTML());
-                            break;
-                        default:
-                            // illegal invocation on call this method brfore element completed
-                            insertAdjacentHTML.call(node, 'beforeend', this.outerHTML());
+                        case 1: pos = 'afterbegin'; break;
+                        case 2: pos = 'beforebegin'; break;
+                        case 3: pos = 'afterend'; break;
+                        default: pos = 'beforeend';
                     }
-                }
-                else {
-                    // insertAdjacentHTML not implemented
-                    
+                    // illegal invocation on call this method before element completed
+                    node.insertAdjacentHTML(pos, this.outerHTML());
+                } else {
+                   
                     var fragment = document.createDocumentFragment(),
                         el = document.createElement('div');
                     el.innerHTML = this.outerHTML();
@@ -1026,8 +726,7 @@ function Controls(doT) {
                 }
             }
             
-            this.attachAll();
-            return this;
+            return this.attachAll();
         };
         
         this.deleteElement = function() {
@@ -1065,7 +764,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             if (!event) {
                 event = new controls.Event();
                 event.event = type;         // "event"
-                event.is_dom_event = !!(dom_events.indexOf(',' + type + ',') >= 0);         // "event"
+                event.is_dom_event = !!(dom_events.indexOf(',' + type + ',') >= 0); // "event"
                 event.capture = capture;    // "capture"
                 events[key] = event;
                 
@@ -1077,7 +776,6 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                         element.addEventListener(type, event.raise, capture);
                 }
             }
-            
             return event;
         };
         
@@ -1094,17 +792,10 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 listener = call_this;
                 call_this = this;
             }
-            
-            if (!type || !listener)
-                return this;
-            
-            var event = force_event(this, type, capture);
-            
+            if (type && listener)
             // listener as string acceptable:
-            var listener_func = (typeof listener === 'function') ? listener : Function('event', listener);
-            
-            event.addListener(call_this, listener_func);
-            
+                force_event(this, type, capture)
+                    .addListener(call_this, (typeof listener === 'function') ? listener : Function('event', listener));
             return this;
         };
         
@@ -1114,23 +805,14 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         };
         
         this.removeListener = function(type, listener, capture) {
-            if (!type || !listener)
-                return this;
-            
-            var event = force_event(this, type, capture);
-            
-            // listener as string inacceptable!
-            event.removeListener(listener);
-            
+            if (type && listener)
+                force_event(this, type, capture).removeListener(listener);
             return this;
         };
         
         this.raise = function(type) {
-            if (!type)
-                return false;
-
             var events = this.events;
-            if (events) {
+            if (type && events) {
                 var capture_event = events['#' + type],
                     event = events[type],
                     args = Array.prototype.slice.call(arguments, 1);
@@ -1141,7 +823,6 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 if (event)
                     event.raise.apply(this, args);
             }
-            
             return this;
         };
         
@@ -1801,7 +1482,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         // after parse and before ctr resolve apply alias
         
         var constructor;
-            __type = __type.toLowerCase();
+        __type = __type.toLowerCase();
         
         // map __type -> subtypes array
         var subtypes_array = controls.subtypes[__type]; 
@@ -2208,7 +1889,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     // layout.cellSet.class(...);
     // 
     function Layout(parameters, attributes) {
-        controls.controlInitialize(this, 'controls.layout', parameters, attributes, Layout.template);
+        this.initialize('controls.layout', parameters, attributes, Layout.template);
         var clearfix = false; // use clearfix if float
         
         this.cellSet = new Container();
@@ -2256,7 +1937,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
 
     
     function List(parameters, attributes) {
-        controls.controlInitialize(this, 'controls.list', parameters, attributes, List.template);
+        this.initialize('controls.list', parameters, attributes, List.template);
         
         this.itemSet = new Container();
         this.itemSet.listen('attributes', this, function(event) {
@@ -2291,8 +1972,14 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     // Input
     // 
     function Input(parameters, attributes) {
-        this.initialize('controls.input', parameters, attributes, Input.template);
-        
+        this.initialize('controls.input', parameters, attributes, Input.template)
+        .listen('change', function() {
+            this.attributes.value = this.element.value;
+        })
+        .listen('element', function(element) {
+            if (element)
+                element.value = this.attributes.value || '';
+        });
         Object.defineProperty(this, 'value', {
             get: function() { return this.attributes.value; },
             set: function(value) {
@@ -2302,15 +1989,6 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
                 else
                     this.attributes.value = value;
             }
-        });
-        
-        this.listen('change', function() {
-            this.attributes.value = this.element.value;
-        });
-        
-        this.listen('element', function(element) {
-            if (element)
-                element.value = this.attributes.value || '';
         });
     };
     Input.prototype = controls.control_prototype;
@@ -2324,14 +2002,18 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     //  $data {DataArray}
     //
     function Select(parameters, attributes) {
-        this.initialize('controls.select', parameters, attributes, Select.template, Select.inner_template);
-
-        this.bind(attributes.hasOwnProperty('$data')
+        this.initialize('controls.select', parameters, attributes, Select.template, Select.inner_template)
+        .bind(attributes.hasOwnProperty('$data')
             ? controls.create('DataArray', {$data: attributes.$data})
-            : controls.create('DataArray'));
-        
-        // chenge event routed from data object
-        this.listen('data', this.refreshInner);
+            : controls.create('DataArray'))
+        .listen('data', this.refreshInner) // event routed from data object
+        .listen('change', function() {
+            this.attributes.value = this.element.value;
+        })
+        .listen('element', function(element) {
+            if (element)
+                element.value = this.attributes.value;
+        });
         
         Object.defineProperty(this, 'value', {
             get: function() { return this.attributes.value; },
@@ -2343,44 +2025,19 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
                     this.attributes.value = value;
             }
         });
-        
-        this.listen('change', function() {
-            this.attributes.value = this.element.value;
-        });
-        
-        this.listen('element', function(element) {
-            if (element)
-                element.value = this.attributes.value;
-        });
     };
     Select.prototype = controls.control_prototype;
     Select.template = function(it) { return '<select' + it.printAttributes() + '>' + (it.attributes.$text || '') + it.data.map(function(item){ return '<option value=' + item + '>' + item + '</option>'; }).join('') + '</select>'; };
     Select.inner_template = function(it) { return (it.attributes.$text || '') + it.data.map(function(item){ return '<option value=' + item + '>' + item + '</option>'; }).join(''); };
     controls.typeRegister('controls.select', Select);
 
-};
 
-// A known set of crutches
-if (typeof module !== 'undefined' && typeof require === 'function' && module.exports) {
-    module.exports = new Controls(require('dot'));
-    // browserify support:
-    if (typeof window !== 'undefined') window.controls = module.exports;
-}
-else if (typeof define === 'function' && define.amd) {
-    var instance;
-    define(['doT'], function(doT) { if (!instance) instance = new Controls(doT); return instance; });
-}
-else if (!this.controls || this.controls.VERSION < VERSION) {
-    if (typeof doT === 'undefined') throw new TypeError('controls.js: doT.js not found!');
-    this.controls = new Controls(doT);
-}
-}).call(function() { return this || (typeof window !== 'undefined' ? window : global); }());
+    // exports
+    if (typeof module !== 'undefined' && module.exports) module.exports = controls;
+    if (typeof define === 'function' && define.amd) define(controls);
+    if (typeof window !== 'undefined' && (!window.controls || window.controls.VERSION < controls.VERSION))
+        window.controls = controls;
+})();
 
-},{"dot":2}],4:[function(require,module,exports){
-
-// not implemented
-// The reason for having an empty file and not throwing is to allow
-// untraditional implementation of this module.
-
-},{}]},{},[3])
+},{}]},{},[1])
 ;

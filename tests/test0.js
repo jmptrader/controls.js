@@ -47,7 +47,7 @@ test( "type resolving", function()
         this.test_method = function() { return true; };
     };
     DivBlue.prototype = controls.control_prototype;
-    DivBlue.template = controls.doT.template('<div style="background-color:blue;width:50px;height:50px"></div>');
+    DivBlue.template = controls.template('<div style="background-color:blue;width:50px;height:50px"></div>');
     controls.typeRegister('controls.div/blue', DivBlue);
     
     // test

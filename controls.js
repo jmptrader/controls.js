@@ -5,27 +5,21 @@
 //     issues: https://github.com/aplib/markdown-site-template/issues
 //     (c) 2013 vadim b.
 //     License: MIT
-//
-// require doT.js
 
-(function() { "use strict"; var VERSION = '0.6.12';
+(function() { "use strict";
 
-function Controls(doT) {
-    var controls = this;
-    controls.VERSION = VERSION;
-    controls.id_generator = 53504; // use it only as per session elements id generator in controls constructors
+    var controls = {
+        VERSION: '0.6.12'/*#.#.##*/,
+        id_generator: 53504,
+        // assignable default template engine
+        template: function(templ) { return new Function('return \'' + templ.replace(/'/g, "\\'") + '\'')(); },
+        subtypes: {} // Registered subtypes
+    };
     
     var IDENTIFIERS = ',add,attach,attributes,class,data,element,first,id,__type,controls,last,name,each,forEach,parameters,parent,remove,style,';
     var ENCODE_HTML_MATCH = /&(?!#?\w+;)|<|>|"|'|\//g;
     var ENCODE_HTML_PAIRS = { "<": "&#60;", ">": "&#62;", '"': '&#34;', "'": '&#39;', "&": "&#38;", "/": '&#47;' };
-    var DECODE_HTML_MATCH = /&#(\d{1,8});/g;
-    controls.subtypes = {}; // Registered subtypes
-    controls.doT = doT; // reexport need for gencodes
-    // BUG doT strip modifies the pattern incorrectly assuming that it is composed entirely of HTML code, FIX:
-    try { doT.templateSettings.strip = 0; } catch(e){}
-    // BUG2 Safari throw error on fix this bug, FIX2 place this condition:
-    if (doT.templateSettings.strip)
-        throw new SyntaxError('Due to bugs and the inability to cross-browser fix them, please remove strip option in doT library! #112');
+    var DECODE_HTML_MATCH = /&#(\d{1,8});/g;    
     
     // Initialize control object
     // 
@@ -54,13 +48,13 @@ function Controls(doT) {
         if (outer_template)
         Object.defineProperty(object, "outer_template", {
             enumerable: true, writable: true,
-            value: (typeof(outer_template) === 'string') ? doT.template(outer_template) : outer_template
+            value: outer_template
         });
 
         if (inner_template)
         Object.defineProperty(object, "inner_template", {
             enumerable: true, writable: true,
-            value: (typeof(inner_template) === 'string') ? doT.template(inner_template) : inner_template
+            value: (typeof(inner_template) === 'string') ? controls.template(inner_template) : inner_template
         });
     
         return object;
@@ -401,17 +395,13 @@ function Controls(doT) {
                         var event = events[event_type];
                         if (event.is_dom_event) {
                             // remove event raiser from detached element
-
                             if (element)
                                 element.removeEventListener(event.event, event.raise, event.capture);
-
                             // add event raiser as listener for attached element
-
                             if (attach_to_element)
                                 attach_to_element.addEventListener(event.event, event.raise, event.capture);
                         }
                     }
-
                     this.raise('element', attach_to_element);
                 }
             }
@@ -537,7 +527,7 @@ function Controls(doT) {
                 
                 var type = typeof(outer_template);
                 if (type === 'string') {
-                    this.outer_template = doT.template(outer_template);        // template function
+                    this.outer_template = controls.template(outer_template);        // template function
                     this.outer_template_text = outer_template;                 // save template text for serialization
                 }
                 else if (type === 'function') {
@@ -552,7 +542,7 @@ function Controls(doT) {
             
                 type = typeof(inner_template);
                 if (type === 'string') {
-                    this.inner_template = doT.template(inner_template);        // template function
+                    this.inner_template = controls.template(inner_template);        // template function
                     this.inner_template_text = inner_template;                 // save template text for serialization
                 }
                 else if (type === 'function') {
@@ -688,26 +678,18 @@ function Controls(doT) {
             }
             
             if (node) {
-                var insertAdjacentHTML = node.insertAdjacentHTML;
-                if (insertAdjacentHTML) {
+                if (node.insertAdjacentHTML) {
+                    var pos;
                     switch(opcode) {
-                        case 1:
-                            insertAdjacentHTML.call(node, 'afterbegin', this.outerHTML());
-                            break;
-                        case 2:
-                            insertAdjacentHTML.call(node, 'beforebegin', this.outerHTML());
-                            break;
-                        case 3:
-                            insertAdjacentHTML.call(node, 'afterend', this.outerHTML());
-                            break;
-                        default:
-                            // illegal invocation on call this method brfore element completed
-                            insertAdjacentHTML.call(node, 'beforeend', this.outerHTML());
+                        case 1: pos = 'afterbegin'; break;
+                        case 2: pos = 'beforebegin'; break;
+                        case 3: pos = 'afterend'; break;
+                        default: pos = 'beforeend';
                     }
-                }
-                else {
-                    // insertAdjacentHTML not implemented
-                    
+                    // illegal invocation on call this method before element completed
+                    node.insertAdjacentHTML(pos, this.outerHTML());
+                } else {
+                   
                     var fragment = document.createDocumentFragment(),
                         el = document.createElement('div');
                     el.innerHTML = this.outerHTML();
@@ -743,8 +725,7 @@ function Controls(doT) {
                 }
             }
             
-            this.attachAll();
-            return this;
+            return this.attachAll();
         };
         
         this.deleteElement = function() {
@@ -782,7 +763,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             if (!event) {
                 event = new controls.Event();
                 event.event = type;         // "event"
-                event.is_dom_event = !!(dom_events.indexOf(',' + type + ',') >= 0);         // "event"
+                event.is_dom_event = !!(dom_events.indexOf(',' + type + ',') >= 0); // "event"
                 event.capture = capture;    // "capture"
                 events[key] = event;
                 
@@ -794,7 +775,6 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                         element.addEventListener(type, event.raise, capture);
                 }
             }
-            
             return event;
         };
         
@@ -811,17 +791,10 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 listener = call_this;
                 call_this = this;
             }
-            
-            if (!type || !listener)
-                return this;
-            
-            var event = force_event(this, type, capture);
-            
+            if (type && listener)
             // listener as string acceptable:
-            var listener_func = (typeof listener === 'function') ? listener : Function('event', listener);
-            
-            event.addListener(call_this, listener_func);
-            
+                force_event(this, type, capture)
+                    .addListener(call_this, (typeof listener === 'function') ? listener : Function('event', listener));
             return this;
         };
         
@@ -831,23 +804,14 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         };
         
         this.removeListener = function(type, listener, capture) {
-            if (!type || !listener)
-                return this;
-            
-            var event = force_event(this, type, capture);
-            
-            // listener as string inacceptable!
-            event.removeListener(listener);
-            
+            if (type && listener)
+                force_event(this, type, capture).removeListener(listener);
             return this;
         };
         
         this.raise = function(type) {
-            if (!type)
-                return false;
-
             var events = this.events;
-            if (events) {
+            if (type && events) {
                 var capture_event = events['#' + type],
                     event = events[type],
                     args = Array.prototype.slice.call(arguments, 1);
@@ -858,7 +822,6 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 if (event)
                     event.raise.apply(this, args);
             }
-            
             return this;
         };
         
@@ -1518,7 +1481,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         // after parse and before ctr resolve apply alias
         
         var constructor;
-            __type = __type.toLowerCase();
+        __type = __type.toLowerCase();
         
         // map __type -> subtypes array
         var subtypes_array = controls.subtypes[__type]; 
@@ -1925,7 +1888,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     // layout.cellSet.class(...);
     // 
     function Layout(parameters, attributes) {
-        controls.controlInitialize(this, 'controls.layout', parameters, attributes, Layout.template);
+        this.initialize('controls.layout', parameters, attributes, Layout.template);
         var clearfix = false; // use clearfix if float
         
         this.cellSet = new Container();
@@ -1973,7 +1936,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
 
     
     function List(parameters, attributes) {
-        controls.controlInitialize(this, 'controls.list', parameters, attributes, List.template);
+        this.initialize('controls.list', parameters, attributes, List.template);
         
         this.itemSet = new Container();
         this.itemSet.listen('attributes', this, function(event) {
@@ -2008,8 +1971,14 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     // Input
     // 
     function Input(parameters, attributes) {
-        this.initialize('controls.input', parameters, attributes, Input.template);
-        
+        this.initialize('controls.input', parameters, attributes, Input.template)
+        .listen('change', function() {
+            this.attributes.value = this.element.value;
+        })
+        .listen('element', function(element) {
+            if (element)
+                element.value = this.attributes.value || '';
+        });
         Object.defineProperty(this, 'value', {
             get: function() { return this.attributes.value; },
             set: function(value) {
@@ -2019,15 +1988,6 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
                 else
                     this.attributes.value = value;
             }
-        });
-        
-        this.listen('change', function() {
-            this.attributes.value = this.element.value;
-        });
-        
-        this.listen('element', function(element) {
-            if (element)
-                element.value = this.attributes.value || '';
         });
     };
     Input.prototype = controls.control_prototype;
@@ -2041,14 +2001,18 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     //  $data {DataArray}
     //
     function Select(parameters, attributes) {
-        this.initialize('controls.select', parameters, attributes, Select.template, Select.inner_template);
-
-        this.bind(attributes.hasOwnProperty('$data')
+        this.initialize('controls.select', parameters, attributes, Select.template, Select.inner_template)
+        .bind(attributes.hasOwnProperty('$data')
             ? controls.create('DataArray', {$data: attributes.$data})
-            : controls.create('DataArray'));
-        
-        // chenge event routed from data object
-        this.listen('data', this.refreshInner);
+            : controls.create('DataArray'))
+        .listen('data', this.refreshInner) // event routed from data object
+        .listen('change', function() {
+            this.attributes.value = this.element.value;
+        })
+        .listen('element', function(element) {
+            if (element)
+                element.value = this.attributes.value;
+        });
         
         Object.defineProperty(this, 'value', {
             get: function() { return this.attributes.value; },
@@ -2060,35 +2024,16 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
                     this.attributes.value = value;
             }
         });
-        
-        this.listen('change', function() {
-            this.attributes.value = this.element.value;
-        });
-        
-        this.listen('element', function(element) {
-            if (element)
-                element.value = this.attributes.value;
-        });
     };
     Select.prototype = controls.control_prototype;
     Select.template = function(it) { return '<select' + it.printAttributes() + '>' + (it.attributes.$text || '') + it.data.map(function(item){ return '<option value=' + item + '>' + item + '</option>'; }).join('') + '</select>'; };
     Select.inner_template = function(it) { return (it.attributes.$text || '') + it.data.map(function(item){ return '<option value=' + item + '>' + item + '</option>'; }).join(''); };
     controls.typeRegister('controls.select', Select);
 
-};
 
-// A known set of crutches
-if (typeof module !== 'undefined' && typeof require === 'function' && module.exports) {
-    module.exports = new Controls(require('dot'));
-    // browserify support:
-    if (typeof window !== 'undefined') window.controls = module.exports;
-}
-else if (typeof define === 'function' && define.amd) {
-    var instance;
-    define(['doT'], function(doT) { if (!instance) instance = new Controls(doT); return instance; });
-}
-else if (!this.controls || this.controls.VERSION < VERSION) {
-    if (typeof doT === 'undefined') throw new TypeError('controls.js: doT.js not found!');
-    this.controls = new Controls(doT);
-}
-}).call(function() { return this || (typeof window !== 'undefined' ? window : global); }());
+    // exports
+    if (typeof module !== 'undefined' && module.exports) module.exports = controls;
+    if (typeof define === 'function' && define.amd) define(controls);
+    if (typeof window !== 'undefined' && (!window.controls || window.controls.VERSION < controls.VERSION))
+        window.controls = controls;
+})();
