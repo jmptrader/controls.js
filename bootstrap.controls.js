@@ -11,8 +11,12 @@
 
 function Bootstrap(controls) {
     var bootstrap = this;
-    bootstrap.VERSION = '0.6.12';
-    controls.bootstrap = bootstrap;
+    bootstrap.VERSION = '0.6.12'/*#.#.##*/;
+    if (!controls)
+        throw new TypeError('controls.bootstrap.js: controls.js not found!');
+    if (controls.bootstrap && controls.bootstrap.VERSION >= bootstrap.VERSION)
+        return controls.bootstrap;
+    controls.bootstrap = this;
     
     var control_prototype = (function() {
         function bootstrap_proto() { }
@@ -32,6 +36,11 @@ function Bootstrap(controls) {
             this.refresh();
         
         return icon_class;
+    };
+    
+    control_prototype._icon = function(icon_class) {
+        this.icon(icon_class);
+        return this;
     };
     
     control_prototype.getControlStyle = function() {
@@ -363,15 +372,8 @@ function Bootstrap(controls) {
 };
 
 
-// A known set of crutches
-if (typeof module !== 'undefined' && typeof require === 'function' && module.exports)
-    module.exports = new Bootstrap(require('controls'));
-else if (typeof define === 'function' && define.amd) {
-    var instance;
-    define(['controls'], function(controls) { if (!instance) instance = new Bootstrap(controls); return instance; });
-}
-else {
-    if (typeof controls === 'undefined') throw new TypeError('controls.bootstrap.js: controls.js not found!');
-    this.bootstrap = new Bootstrap(controls);
-}
-}).call(function() { return this || (typeof window !== 'undefined' ? window : global); }());
+    // exports
+    if (typeof module !== 'undefined' && module.exports) module.exports = new Bootstrap(require('controls'));
+    if (typeof define === 'function' && define.amd) define(['controls'], function(c) { return new Bootstrap(c); });
+    if (typeof window !== 'undefined') new Bootstrap(window.controls);
+})();
