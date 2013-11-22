@@ -139,7 +139,7 @@ function Bootstrap(controls) {
         var out = '<li id="' + it.id + '"><a' + it.printAttributes('-id') + '>',
             attrs = it.attributes;
         if (attrs.$icon) out += '<span class="glyphicon glyphicon-' + attrs.$icon + '"></span>&nbsp;';
-        return (it.attributes.$text || '') + '</a></li>';
+        return out + (it.attributes.$text || '') + '</a></li>';
     };
     controls.typeRegister('bootstrap.DropdownItem', DropdownItem);
     
