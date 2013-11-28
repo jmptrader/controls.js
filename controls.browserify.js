@@ -1,6 +1,6 @@
 ;(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 //     controls.js
-//     purpose: UI framework, code generation tool
+//     UI framework, code generation tool
 //     status: proposal, example, valid prototype, under development
 //     demo:   http://aplib.github.io/controls.js/
 //     issues: https://github.com/aplib/markdown-site-template/issues
@@ -13,7 +13,7 @@
         VERSION: '0.6.12'/*#.#.##*/,
         id_generator: 53504,
         // assignable default template engine
-        template: function(templ) { return new Function('return \'' + templ.replace(/'/g, "\\'") + '\'')(); },
+        template: function(templ) { return new Function('return \'' + templ.replace(/'/g, "\\'") + '\''); },
         subtypes: {} // Registered subtypes
     };
     
@@ -55,7 +55,7 @@
         if (inner_template)
         Object.defineProperty(object, "inner_template", {
             enumerable: true, writable: true,
-            value: (typeof(inner_template) === 'string') ? controls.template(inner_template) : inner_template
+            value: inner_template
         });
     
         return object;
@@ -120,33 +120,60 @@
     
     
 // >> Events
+
+    function force_event(object, type, capture) {
+        var events = object.events;
+        if (!events)
+            object.events = events = {};
+
+        var key = (capture) ? ('#'/*capture*/ + type) : type;
+        var event = events[key];
+        if (!event) {
+            events[key] = event = new controls.Event(object, type, capture);
+
+            // add DOM listener if attached
+            if (event.is_dom_event) {
+                var element = object._element;
+                if (element)
+                    element.addEventListener(type, event.raise, capture);
+            }
+        }
+        return event;
+    };
+
+    var dom_events =
+',change,DOMActivate,load,unload,abort,error,select,resize,scroll,blur,DOMFocusIn,DOMFocusOut,focus,focusin,focusout,\
+click,dblclick,mousedown,mouseenter,mouseleave,mousemove,mouseover,mouseout,mouseup,wheel,keydown,keypress,keyup,oncontextmenu,\
+compositionstart,compositionupdate,compositionend,DOMAttrModified,DOMCharacterDataModified,DOMNodeInserted,\
+DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtreeModified,';
     
-    controls.Event = function(listeners_data) {
-        var listeners = this.listeners = new Array();
+    controls.Event = function(default_call_this, type, capture, listeners_data) {
+        var listeners = this.listeners = [],
+            call_this = this.call_this = default_call_this; // owner of the event object
+        this.type = type;
+        this.capture = capture;
+        this.is_dom_event = (dom_events.indexOf(',' + type + ',') >= 0);
+        
+        // revive from JSON data
+        if (listeners_data)
+        for(var i = 0, c = listeners_data.length; i < c; i+=2) {
+            var listener_ = listeners_data[i];
+            listeners.push((typeof listener_ === 'function') ? listener_ : Function('event', listener_));
+            var c_this =  listeners_data[i+1];
+            listeners.push((c_this === call_this) ? null : call_this);
+        }
 
         this.raise = function() {
             for(var i = 0, c = listeners.length; i < c; i+=2)
-                listeners[i].apply(listeners[i+1], arguments);
+                listeners[i].apply(listeners[i+1] || call_this, arguments);
         };
-        
-//        // revive JSON
-//        if (listeners_data)
-//        {
-//            for(var i = 0, c = listeners_data.length; i < c; i+=2)
-//            {
-//                var json_listener = listeners_data[i];
-//                var listener_func = (typeof json_listener === 'function') ? json_listener : Function('event', json_listener);
-//                listeners.push(listener_func);
-//                listeners.push(listeners_data[i+1]);
-//            }
-//        }
     };
     controls.Event.prototype = {
         addListener: function(call_this/*optional*/, listener) {
-            if (typeof(call_this) === 'function')
-                this.listeners.push(call_this, this);
+            if (arguments.length > 1)
+                this.listeners.push(listener, (call_this === this.call_this) ? null : call_this);
             else
-                this.listeners.push(listener, call_this);
+                this.listeners.push(call_this, null);
         },
 
         removeListener: function(listener) {
@@ -157,24 +184,23 @@
         },
         
         clear: function() {
-            this.listeners = [];
-        }
+            this.listeners.length = 0;
+        },
 
-//        toJSON: function()
-//        {
-//            var json = [];
-//            var listeners = this.listeners;
-//                        
-//            // Serialize listeners
-//            
-//            for(var i = 0, c = listeners.length; i < c; i+=2) {
-//                var event_func = listeners[i];
-//                json.push(extract_func_code(event_func));
-//                json.push(listeners[i+1]);
-//            }
-//            
-//            return json;
-//        }
+        toJSON: function() {
+            var jsonlisteners = [],
+                listeners = this.listeners;
+            // Serialize listeners
+            for(var i = 0, c = listeners.length; i < c; i+=2) {
+                var event_func = listeners[i],
+                    call_this = listeners[i+1];
+                if (!event_func.no_serialize) {
+                    jsonlisteners.push(extract_func_code(event_func));
+                    jsonlisteners.push();
+                }
+            }
+            return {type:this.type, capture:this.capture, listeners:jsonlisteners};
+        }
     };
     
     // Post processing
@@ -197,22 +223,15 @@
     
     var data_object_common = {
         listen: function(call_this/*optional*/, listener) {
-            if (typeof(call_this) === 'function') {
-                listener = call_this;
-                call_this = this;
-            }
-            
-            if (!listener)
-                return this;
-            
-            if (!this.event)
-                this.event = new controls.Event(this);
-            
-            this.event.addListener(call_this, listener);
-            
+            var event = this.event || (this.event = new controls.Event(this));
+            event.addListener.apply(event, arguments);
             return this;
         },
-                
+        listen_: function(call_this/*optional*/, listener) {
+            if (typeof listener === 'function') listener.no_serialize = true;
+            else call_this.no_serialize = true;
+            return this.listen.apply(this, arguments);
+        },
         removeListener: function(listener) {
             var event = this.event;
             if (event)
@@ -220,7 +239,6 @@
             
             return this;
         },
-        
         subscribe: function(call_this/*optional*/, listener) {
             if (typeof(call_this) === 'function') {
                 listener = call_this;
@@ -230,14 +248,11 @@
             if (!listener)
                 return this;
             
-            if (!this.post_event)
-                this.post_event = new controls.Event(this);
-            
-            this.post_event.addListener(call_this, listener);
+            var post_event = this.post_event || (this.post_event = new controls.Event(this));
+            post_event.addListener.apply(post_event, arguments);
             
             return this;
         },
-        
         unsubscribe: function(listener) {
             var post_event = this.post_event;
             if (post_event)
@@ -245,7 +260,6 @@
             
             return this;
         },
-                
         raise: function() {
             var event = this.event;
             if (event)
@@ -261,7 +275,6 @@
                 }
             }
         },
-        
         set: function(name, value) {
             this.state_id++;
             this[name] = value;
@@ -355,7 +368,7 @@
             return controls.controlInitialize(this, __type, parameters, _attributes, outer_template, inner_template);
         };
         
-        Object.defineProperty(this, "name", {
+        Object.defineProperty(this, 'name', {
             enumerable: true, 
             get: function() { return this._name; },
             set: function(value) {
@@ -379,7 +392,7 @@
         });
         
         // The associated element of control
-        Object.defineProperty(this, "element", {
+        Object.defineProperty(this, 'element', {
             enumerable: true,
             get: function() { return this._element; },
             set: function(attach_to_element) {
@@ -397,10 +410,10 @@
                         if (event.is_dom_event) {
                             // remove event raiser from detached element
                             if (element)
-                                element.removeEventListener(event.event, event.raise, event.capture);
+                                element.removeEventListener(event.type, event.raise, event.capture);
                             // add event raiser as listener for attached element
                             if (attach_to_element)
-                                attach_to_element.addEventListener(event.event, event.raise, event.capture);
+                                attach_to_element.addEventListener(event.type, event.raise, event.capture);
                         }
                     }
                     this.raise('element', attach_to_element);
@@ -482,7 +495,6 @@
                 }
             },
         
-        
             length: { enumerable: true, get: function() { return this.controls.length; } },
             first:  { enumerable: true, get: function() { return this.controls[0]; } },
             last:   { enumerable: true, get: function() { return this.controls[this.controls.length-1]; } }
@@ -523,54 +535,61 @@
         // set template text or template function
         this.template = function(outer_template, inner_template) {
             if (outer_template) {
+                if (typeof outer_template === 'string')
+                    outer_template = controls.template(outer_template);
                 if (!this.hasOwnProperty("outer_template"))
-                    Object.defineProperty(this, "outer_template", { configurable: true, enumerable: true, writable: true });
-                
-                var type = typeof(outer_template);
-                if (type === 'string') {
-                    this.outer_template = controls.template(outer_template);        // template function
-                    this.outer_template_text = outer_template;                 // save template text for serialization
-                }
-                else if (type === 'function') {
+                    Object.defineProperty(this, "outer_template", { configurable:true, enumerable:true, writable:true, value:outer_template });
+                else
                     this.outer_template = outer_template;
-                    this.outer_template_text = '@func';
-                }
             }
-            
             if (inner_template) {
+                if (typeof outer_template === 'string')
+                    inner_template = controls.template(inner_template);
                 if (!this.hasOwnProperty("inner_template"))
-                    Object.defineProperty(this, "inner_template", { configurable: true, enumerable: true, writable: true });
-            
-                type = typeof(inner_template);
-                if (type === 'string') {
-                    this.inner_template = controls.template(inner_template);        // template function
-                    this.inner_template_text = inner_template;                 // save template text for serialization
-                }
-                else if (type === 'function') {
+                    Object.defineProperty(this, "inner_template", { configurable:true, enumerable:true, writable:true, value:inner_template });
+                else
                     this.inner_template = inner_template;
-                    this.inner_template_text = '@func';
-                }
             }
-            
-            if (this._element)
-                this.refresh();
+            return this;
         };
         
         this.toJSON = function() {
-            var json = { __type: this.type(), id: this.id, name: this.name, attributes: this.attributes, controls: this.controls };
+            var json = {
+                __type: this.type(),
+                attributes: this.attributes
+            };
             
-            var outer_template_text = this.outer_template_text;
-            if (outer_template_text)
-                json.outer_template = (outer_template_text === '@func')
-                    ? '' + this.outer_template
-                    : this.outer_template_text;
-                    
-            var inner_template_text = this.inner_template_text;
-            if (inner_template_text)
-                json.inner_template = (inner_template_text === '@func')
-                    ? '' + this.inner_template
-                    : this.inner_template_text;
-                    
+            var name = this.name;
+            if (name)
+                json.name = name;
+            
+            var ctrls = this.controls;
+            if (ctrls.length)
+                json.controls = ctrls;
+            
+            if (this.hasOwnProperty('outer_template'))
+                json.outer_template = extract_func_code(this.outer_template);
+            if (this.hasOwnProperty('inner_template'))
+                json.inner_template = extract_func_code(this.inner_template);
+            
+            var events = this.events;
+            if (events) {
+                var jevents = [];
+                for(var prop in events) {
+                    var event = events[prop],
+                        listeners = event.listeners,
+                        serialize = false;
+                    for(var i = 0, c = listeners.length; i < c; i+=2)
+                        if (!listeners[i].no_serialize) {
+                            serialize = true;
+                            break;
+                        }
+                    if (serialize)
+                        jevents.push(event);
+                }
+                if (jevents.length)
+                    json.events = jevents;
+            }
             return json;
         };
         
@@ -613,7 +632,9 @@
         
         // Attach to DOM element
         this.attach = function(some) {
-            this.element = (typeof(some) === 'object') ? (some._element || some) : document.getElementById(some || this.id);
+            this.element = (!arguments.length)
+                ? document.getElementById(this.id)
+                : (typeof(some) === 'string') ? document.getElementById(some) : (some && (some._element || some));
             return this;
         };
         
@@ -621,10 +642,8 @@
         this.attachAll = function() {
             if (!this._element)
                 this.element = document.getElementById(this.id);
-            
             for(var ctrls = this.controls, i = 0, c = ctrls.length; i < c; i++)
                 ctrls[i].attachAll();
-            
             return this;
         };
         
@@ -669,63 +688,66 @@
         
         // opcode {number} - 0 - insert before end, 1 - insert after begin, 2 - insert before, 3 - insert after
         this.createElement = function(node, opcode) {
-            var element = this._element;
+            var element = this._element,
+                parent = this.parent;
+        
             if (element)
-                throw new TypeError('Already exists!');
+                throw new TypeError('Element already exists!');
             
-            if (!node && this.parent) {
-                node = this.parent.element;
+            if (!node && parent) {
+                node = parent.element;
                 opcode = 0;
             }
             
-            if (node) {
-                if (node.insertAdjacentHTML) {
-                    var pos;
-                    switch(opcode) {
-                        case 1: pos = 'afterbegin'; break;
-                        case 2: pos = 'beforebegin'; break;
-                        case 3: pos = 'afterend'; break;
-                        default: pos = 'beforeend';
-                    }
-                    // illegal invocation on call this method before element completed
-                    node.insertAdjacentHTML(pos, this.outerHTML());
-                } else {
-                   
-                    var fragment = document.createDocumentFragment(),
-                        el = document.createElement('div');
-                    el.innerHTML = this.outerHTML();
-                    var buf = Array.prototype.slice.call(el.childNodes);
-                    for(var i = 0, c = buf.length; i < c; i++)
-                        fragment.appendChild(buf[i]);
-                    
-                    switch(opcode) {
-                        case 1:
-                            if (node.childNodes.length === 0)
-                                node.appendChild(fragment);
-                            else
-                                node.insertBefore(node.firstChild, fragment);
-                            break;
-                        case 2:
-                            var nodeparent = node.parentNode;
-                            if (nodeparent)
-                                nodeparent.insertBefore(fragment, node);
-                            break;
-                        case 3:
-                            var nodeparent = node.parentNode;
-                            if (nodeparent) {
-                                var next_node = node.nextSibling;
-                                if (next_node)
-                                    nodeparent.insertBefore(fragment, next_node);
-                                else
-                                    nodeparent.appendChild(fragment);
-                            }
-                            break;
-                        default:
+            if (!node)
+                throw new TypeError('Failed to create element!');
+            
+            if (node.insertAdjacentHTML) {
+                var pos;
+                switch(opcode) {
+                    case 1: pos = 'afterbegin'; break;
+                    case 2: pos = 'beforebegin'; break;
+                    case 3: pos = 'afterend'; break;
+                    default: pos = 'beforeend';
+                }
+                // illegal invocation on call this method before element completed
+                node.insertAdjacentHTML(pos, this.outerHTML());
+                
+            } else {
+
+                var fragment = document.createDocumentFragment(),
+                    el = document.createElement('div');
+                el.innerHTML = this.outerHTML();
+                var buf = Array.prototype.slice.call(el.childNodes);
+                for(var i = 0, c = buf.length; i < c; i++)
+                    fragment.appendChild(buf[i]);
+
+                switch(opcode) {
+                    case 1:
+                        if (node.childNodes.length === 0)
                             node.appendChild(fragment);
-                    }
+                        else
+                            node.insertBefore(node.firstChild, fragment);
+                        break;
+                    case 2:
+                        var nodeparent = node.parentNode;
+                        if (nodeparent)
+                            nodeparent.insertBefore(fragment, node);
+                        break;
+                    case 3:
+                        var nodeparent = node.parentNode;
+                        if (nodeparent) {
+                            var next_node = node.nextSibling;
+                            if (next_node)
+                                nodeparent.insertBefore(fragment, next_node);
+                            else
+                                nodeparent.appendChild(fragment);
+                        }
+                        break;
+                    default:
+                        node.appendChild(fragment);
                 }
             }
-            
             return this.attachAll();
         };
         
@@ -747,38 +769,6 @@
             return this;
         };
         
-        var dom_events =
-',change,DOMActivate,load,unload,abort,error,select,resize,scroll,blur,DOMFocusIn,DOMFocusOut,focus,focusin,focusout,\
-click,dblclick,mousedown,mouseenter,mouseleave,mousemove,mouseover,mouseout,mouseup,wheel,keydown,keypress,keyup,oncontextmenu,\
-compositionstart,compositionupdate,compositionend,DOMAttrModified,DOMCharacterDataModified,DOMNodeInserted,\
-DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtreeModified,';
-        function force_event(_this, type, capture) {
-            var events = _this.events;
-            if (!events) {
-                events = {};
-                _this.events = events;
-            }
-            
-            var key = (capture) ? ('#'/*capture*/ + type) : type;
-            var event = events[key];
-            if (!event) {
-                event = new controls.Event();
-                event.event = type;         // "event"
-                event.is_dom_event = !!(dom_events.indexOf(',' + type + ',') >= 0); // "event"
-                event.capture = capture;    // "capture"
-                events[key] = event;
-                
-                // DOM listener if attached
-                
-                if (dom_events.indexOf(type) >= 0) {
-                    var element = _this._element;
-                    if (element)
-                        element.addEventListener(type, event.raise, capture);
-                }
-            }
-            return event;
-        };
-        
         // Set or remove event listener. Event type may be DOM event as "click" or special control event as "type"
         //
         // type {string} - a string representing the event type to listen for. (without "on") example: "click"
@@ -790,12 +780,26 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             if (typeof(call_this) === 'function') {
                 capture = listener;
                 listener = call_this;
-                call_this = this;
+                call_this = null;
             }
             if (type && listener)
-            // listener as string acceptable:
                 force_event(this, type, capture)
-                    .addListener(call_this, (typeof listener === 'function') ? listener : Function('event', listener));
+                    .addListener(call_this, listener);
+            return this;
+        };
+        
+        // set listener and check listener as no_serialize
+        this.listen_ = function(type, call_this, listener, capture) {
+            if (typeof(call_this) === 'function') {
+                capture = listener;
+                listener = call_this;
+                call_this = null;
+            }
+            if (type && listener) {
+                force_event(this, type, capture)
+                    .addListener(call_this, listener);
+                listener.no_serialize = true;
+            }
             return this;
         };
         
@@ -885,7 +889,6 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 if (updated && this._element)
                     this.refresh();
             }
-            
             return attributes;
         };
         
@@ -1133,10 +1136,8 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             if (Array.isArray(type)) {
                 // collection detected
                 var result;
-                
                 for(var i = index, c = index + type.length; i < c; i++)
                     result = this.insert(i, type[i], repeats, attributes, callback, this_arg);
-                
                 return result;
             }
             
@@ -1144,10 +1145,8 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 // it is a control?
                 var add_control = type;
                 if (add_control.hasOwnProperty('__type'))
-                    //add_control.parent = this;
                     setParent.call(type, this, index);
-                
-                return;
+                return add_control;
             }
             
             // parse name for new control
@@ -1183,7 +1182,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                     parameters['#{__type}'] = __type;
                     parameters['#{callback}'] = callback;
                     parameters['#{this_arg}'] = this_arg;
-                    constructor = resolve_ctr('controls.Stub', parameters);
+                    constructor = resolve_ctr('controls.stub', parameters);
                 }
             }
             
@@ -1341,7 +1340,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                     if (post_mode)
                         data_object.subscribe(this, route_data_event);
                     else
-                        data_object.listen(this, route_data_event);
+                        data_object.listen_(this, route_data_event);
                 }
                 
                 route_data_event.call(this);
@@ -1658,8 +1657,16 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 __type = parse_type(value.__type, parameters),
                 constructor = resolve_ctr(__type, parameters);
             
-            if (!constructor)
-                throw new TypeError('controls.reviverJSON(): ' + __type + ' constructor not registered!');
+            if (!constructor) {
+                //throw new TypeError('controls.reviverJSON(): ' + __type + ' constructor not registered!');
+                console.log('controls.reviverJSON(): ' + __type + ' constructor not registered!');
+                // route to Stub
+                parameters['#{type}'] = value.__type; // pass original type
+                parameters['#{__type}'] = __type;
+//                parameters['#{callback}'] = callback;
+//                parameters['#{this_arg}'] = this_arg;
+                constructor = resolve_ctr('controls.stub', parameters);
+            }
             
             var new_control;
             
@@ -1674,7 +1681,6 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
 
             return new_control;
         }
-
         return value;
     };
     
@@ -1692,31 +1698,33 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             if (typeof(json_object) === 'object' && json_object.hasOwnProperty('__type'))
                 json_object = reviverJSON(null, json_object);
         }
-        
         return json_object;
     };
     
-    // Typical control revive function
+    // Default control revive function
     controls.reviveControl = function(constructor, parameters, data) {
         if (data) {
-            var control = new constructor(parameters, data.attributes);
+            var control = constructor.is_constructor ? new constructor(parameters, data.attributes) : constructor(parameters, data.attributes);
             if (data.controls)
                 control.controls = data.controls;
-            if (data.template)
-                control.template(data.template);
-
+            
+            var outer_template = data.outer_template;
+            if (outer_template)
+                control.template(new Function('it', outer_template));
+            
+            var inner_template = data.inner_template;
+            if (inner_template)
+                control.template(null, new Function('it', inner_template));
+            
             // Restore events
-
-//            var data_events = data.events; // json object collection of serialized controls.Event
-//            if (data_events)
-//            {
-//                var events = {};
-//                for(var key in data_events)
-//                    events[key] = new controls.Event(data_events[key]);
-//                
-//                control.events = events;
-//            }
-
+            var data_events = data.events; // json object collection of serialized controls.Event
+            if (data_events) {
+                var events = control.events = {};
+                for(var i = 0, c = data_events.length; i < c; i++) {
+                    var item = data_events[i];
+                    events[item.capture ? ('#' + item.type) : item.type] = new controls.Event(control, item.type, item.capture, item.listeners);
+                }
+            }
             return control;
         }
     };
@@ -1745,12 +1753,12 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     
     (function(){
         function gencode(tagname, closetag) {
-            return 'function c' + tagname + '(p, a) { controls.controlInitialize(this, \'controls.' + tagname + '\', p, a, c' + tagname + '.outer_template); }\
-c' + tagname + '.prototype = controls.control_prototype;'
+            return '\nfunction c' + tagname + '(p, a) { controls.controlInitialize(this, \'controls.' + tagname + '\', p, a, c' + tagname + '.outer_template); }\n\
+c' + tagname + '.prototype = controls.control_prototype;\n'
 + (closetag
-    ? 'c' + tagname + '.outer_template = function(it) { return \'<' + tagname + '\' + it.printAttributes() + \'>\' + (it.attributes.$text || \'\') + it.printControls() + \'</' + tagname + '>\'; };'
-    : 'c' + tagname + '.outer_template = function(it) { return \'<' + tagname + '\' + it.printAttributes() + \'>\'; };')
-+ 'controls.typeRegister(\'controls.' + tagname + '\', c' + tagname + ');';
+    ? 'c' + tagname + '.outer_template = function(it) { return \'<' + tagname + '\' + it.printAttributes() + \'>\' + (it.attributes.$text || \'\') + it.printControls() + \'</' + tagname + '>\'; };\n'
+    : 'c' + tagname + '.outer_template = function(it) { return \'<' + tagname + '\' + it.printAttributes() + \'>\'; };\n')
++ 'controls.typeRegister(\'controls.' + tagname + '\', c' + tagname + ');\n';
         }
         
         Function('controls', 'a,abbr,address,article,aside,b,base,bdi,bdo,blockquote,button,canvas,cite,code,col,colgroup,command,datalist,dd,del,details,\
@@ -1860,8 +1868,8 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     // Head
     function Head(parameters, attributes) {
         controls.controlInitialize(this, 'controls.head', parameters, attributes, Head.template);
-        this.attach    = function() { return Head.prototype.attach.call(this, document.head); };
-        this.attachAll = function() { return Head.prototype.attachAll.call(this); };
+        this.attach    = function() { this.element = document.head; return this; };
+        this.attachAll = function() { this.element = document.head; return Head.prototype.attachAll.call(this); return this; };
     };
     Head.prototype = controls.control_prototype;
     Head.template = function(it) { return '<head>' + (it.attributes.$text || '') + it.printControls() + '</head>'; };
@@ -1870,8 +1878,8 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     // Body
     function Body(parameters, attributes) {
         controls.controlInitialize(this, 'controls.body', parameters, attributes, Body.template);
-        this.attach    = function() { return Body.prototype.attach.call(this, document.body); };
-        this.attachAll = function() { return Body.prototype.attachAll.call(this); };
+        this.attach    = function() { this.element = document.body; return this; };
+        this.attachAll = function() { this.element = document.body; return Body.prototype.attachAll.call(this); return this; };
     };
     Body.prototype = controls.control_prototype;
     Body.template = function(it) { return '<body' + it.printAttributes('-id') + '>' + (it.attributes.$text || '') + it.printControls() + '</body>'; };
@@ -1893,7 +1901,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
         var clearfix = false; // use clearfix if float
         
         this.cellSet = new Container();
-        this.cellSet.listen('attributes', this, function(event) {
+        this.cellSet.listen_('attributes', this, function(event) {
             var attr_name = event.name,
                 attr_value = event.value,
                 remove = (attr_value === undefined || attr_value === null);
@@ -1911,7 +1919,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
             }
         });
         
-        this.listen('type', function() {
+        this.listen_('type', function() {
             var parameters = this.parameters,
                 floatvalue;
             
@@ -1940,7 +1948,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
         this.initialize('controls.list', parameters, attributes, List.template);
         
         this.itemSet = new Container();
-        this.itemSet.listen('attributes', this, function(event) {
+        this.itemSet.listen_('attributes', this, function(event) {
             var attr_name = event.name;
             var attr_value = event.value;
             var remove = (attr_value === undefined || attr_value === null);
@@ -1973,10 +1981,10 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     // 
     function Input(parameters, attributes) {
         this.initialize('controls.input', parameters, attributes, Input.template)
-        .listen('change', function() {
+        .listen_('change', function() {
             this.attributes.value = this.element.value;
         })
-        .listen('element', function(element) {
+        .listen_('element', function(element) {
             if (element)
                 element.value = this.attributes.value || '';
         });
@@ -2006,11 +2014,11 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
         .bind(attributes.hasOwnProperty('$data')
             ? controls.create('DataArray', {$data: attributes.$data})
             : controls.create('DataArray'))
-        .listen('data', this.refreshInner) // event routed from data object
-        .listen('change', function() {
+        .listen_('data', this.refreshInner) // event routed from data object
+        .listen_('change', function() {
             this.attributes.value = this.element.value;
         })
-        .listen('element', function(element) {
+        .listen_('element', function(element) {
             if (element)
                 element.value = this.attributes.value;
         });

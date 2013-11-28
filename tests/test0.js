@@ -86,24 +86,18 @@ test( "type resolving", function()
 });
 
 // TODO actions ser/deser
-test( "serialize-deserialize controls", function()
-{
+// Test all controls, set custom parameters, attributes, template and listeners
+test( "serialize-deserialize controls", function() {
+    var control;
+    
     for(var type in controls)
-    if ((type.indexOf('controls.') === 0 || type.indexOf('bootstrap.') === 0))
-    {
-        // Test all controls, set custom parameters, attributes, template and listeners
-        
-        var control;
+    if ((type.indexOf('controls.') === 0 || type.indexOf('bootstrap.') === 0)) {
         
         if (type === 'controls.frame')
-        {
             // must be defined src
             control = controls.create(type + '/test=1#test=2', {src:'http://localhost/'});
-        }
         else
-        {
             control = controls.create(type + '/test=1;test4=4#test=2;test5=5');
-        }
         
         if (!control.attr)
             continue; // It is not control
@@ -111,25 +105,21 @@ test( "serialize-deserialize controls", function()
         control.attr('xtest', 'xvalue');
         control.listen('click', function(event) { return false; }, true);
         
-        var custom_rendered = control.outerHTML();
-        if (type === 'controls.custom')
-        {
+        if (type === 'controls.custom') {
             control.template('<div></div>');
+            var custom_rendered = control.outerHTML();
         }
-        
-        
         
         // serialization
         
-        try
-        {
+        try {
             var serialized = JSON.stringify(control);
         }
-        catch (e)
-        {
-            ok(false, type);
-            throw e;
+        catch (e) {
+            ok(false, 'cannot serialize ' + type + ' ' + e);
+            var serialized = JSON.stringify(control);
         }
+        
         
         // deserialization
         
@@ -141,21 +131,21 @@ test( "serialize-deserialize controls", function()
         if (deserialized.attr('xtest') !== 'xvalue')
             ok(0, type + " check deserialized attributes" );
         
-//        ok(deserialized.events['#click'], type + " check deserialized listeners" );
+        if (!deserialized.events['#click'])
+            ok(false, type + " check deserialized listeners" );
         
-        if (type === 'controls.frame')
-        {
+        if (type === 'controls.frame') {
             ok(deserialized.attr('src') === 'http://localhost/', type + ' check deserialized attribute src, value:"' + deserialized.attr('src') + '"');
         }
-        else if (type === 'controls.custom')
-        {
+        else if (type === 'controls.custom') {
             if (deserialized.outerHTML() !== custom_rendered)
                 ok(0, type + ' check deserialized outerHTML(). Expected "' + custom_rendered + '", in fact "' + deserialized.outerHTML() + '"');
         }
-        else if (type !== 'controls.container')
-        {
-            ok(!!deserialized.outerHTML() === true, type + ' check deserialized outerHTML() empty');
+        else if (type !== 'controls.container') {
+            if (!deserialized.outerHTML())
+                ok(false, type + ' check deserialized outerHTML() empty');
         }
         
+        ok(true, type + ' passed');
     }
 });

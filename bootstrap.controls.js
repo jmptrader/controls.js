@@ -73,7 +73,7 @@ function Bootstrap(controls) {
     // 
     function Label(parameters, attributes) {
         this.initialize('bootstrap.Label', parameters, attributes, Label.template)
-            .listen('type', function() {
+            .listen_('type', function() {
                 this.class('label label-' + this.getControlStyle(), 'label-default label-link label-primary label-success label-info label-warning label-danger');
             });
     };
@@ -106,7 +106,7 @@ function Bootstrap(controls) {
             return _footer;
         } });
     
-        this.listen('type', function() {
+        this.listen_('type', function() {
             this.class('panel panel-' + this.getControlStyle(), 'panel-default panel-link panel-primary panel-success panel-info panel-warning panel-danger');
         });
 
@@ -221,7 +221,7 @@ function Bootstrap(controls) {
     }
     function Button(parameters, attributes) {
         this.initialize('bootstrap.Button', parameters, attributes, Button.template)
-            .listen('type', this, buttonTypeHandler);
+            .listen_('type', buttonTypeHandler);
     };
     Button.prototype = control_prototype;
     Button.template = function(it) {
@@ -238,19 +238,19 @@ function Bootstrap(controls) {
     // Splitbutton
     //
     function Splitbutton(parameters, attributes) {
-        this.initialize('bootstrap.Splitbutton', parameters, attributes, Splitbutton.template)
+        this.initialize('bootstrap.SplitButton', parameters, attributes, Splitbutton.template)
             ._class('btn-group')
             ._add('button:bootstrap.Button', {$icon:attributes.$icon})
             ._add('toggle:bootstrap.Button', {class:'dropdown-toggle', 'data-toggle':'dropdown', $text:'<span class="caret"></span>'})
             ._add('items:ul', {class:'dropdown-menu'})
-            .listen('type', function() {
+            .listen_('type', function() {
                 var btn_class = 'btn btn-' + ((this.getControlStyle() || '') + ' ' + (BUTTON_SIZES[this.getControlStyle()] || '')).trim();
                 this.button.class(btn_class);
                 this.toggle.class(btn_class);
             });
     };
     Splitbutton.prototype = control_prototype;
-    controls.typeRegister('bootstrap.Splitbutton', Splitbutton);
+    controls.typeRegister('bootstrap.SplitButton', Splitbutton);
     
     
     // BtnGroup
@@ -332,6 +332,25 @@ function Bootstrap(controls) {
     };
     FormGroup.prototype = control_prototype;
     controls.typeRegister('bootstrap.FormGroup', FormGroup);
+    
+    
+    // Modal
+    // 
+    function Modal(parameters, attributes) {
+        this.initialize('bootstrap.Modal', parameters, attributes, Modal.template)
+            ._class('modal fade')
+            ._attr('role', 'dialog')
+            ._add('header:div', {class:'modal-header'})
+            ._add('body:div', {class:'modal-body'})
+            ._add('footer:div', {class:'modal-footer'});
+        if (!attributes.hasOwnProperty('tabindex'))    attributes.tabindex = -1;
+        if (!attributes.hasOwnProperty('aria-hidden')) attributes['aria-hidden'] = true;
+    };
+    Modal.prototype = control_prototype;
+    Modal.template = function(it) {
+        return '<div' + it.printAttributes() + '><div class="modal-dialog"><div class="modal-content">' + it.printControls() + '</div></div></div>';
+    };
+    controls.typeRegister('bootstrap.Modal', Modal);
     
     
     // ControlLabel
