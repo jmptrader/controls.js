@@ -61,17 +61,7 @@ test( "type resolving", function()
     ok(control.__type === 'test.Custom', '.type("test.Custom#test=5"); - change type');
     ok(control.parameters['test'] === '5', "check parameter value");
     
-    // check preserve namespace
-    control.type('Div#test=5');
-    if (control.__type !== 'test.Div')
-        ok(0, '.type("Div#test=5"); - check preserve namespace');
-    if (control.type() !== 'test.Div#test=5')
-        ok(0, 'control.type(); - get type');
-    
-    // check preserve __type
-    control.type('#test=777');
-    ok(control.type() === 'test.Div#test=777', '.type("#test=777"); - check preserve __type');
-    
+   
     // check default 'controls.'
     var defcontrols = control.add('div');
     if (defcontrols.type() !== 'controls.div')

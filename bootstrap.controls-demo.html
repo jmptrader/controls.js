@@ -21,7 +21,7 @@ var cbody = createDocumentStructure();
 // header panel
 cbody.header.header_pane
     ._add(h1Ref('bootstrap + controls.js', 'bootstrap.controls-demo.html'))
-    ._add_p('under development')
+    ._add('p', 'under development')
     ._add(refLabels([
             'GitHub', 'default', 'https://github.com/aplib/controls.js',
             'controls.js Intro', 'default', 'index.html']));
@@ -30,23 +30,22 @@ cbody.header.header_pane
 // document content
 cbody.fill.content_pane
 
-    ._add('h2', {id:'bootstrap-controls', $text:'Bootstrap controls'})
+    ._add('h2', 'Bootstrap controls', {id:'bootstrap-controls'})
     
     ////////////////////////////////////////////////////////////////////////////
     // Buttons
 
     // "Buttons, size and styles"
     
-    ._add('h3', {id:'buttons-size-and-styles', $text:'Buttons, size and styles'})
-    ._add('div', {class:'example top-box'}, function(example) {
+    ._add('h3', 'Buttons, size and styles', {id:'buttons-size-and-styles'})
+    ._add('div`example top-box', function(example) {
         // button group
         example._add('btngroup:bootstrap.BtnGroup', function(btngroup) {
             
             var btn_size = 0;
             
             // button chevron-left
-
-            btngroup._add('btn_prev:bootstrap.Button#style=success',  {$icon:'chevron-left'}, function(btn) {
+            btngroup._add('btn_prev:bootstrap.Button#style=success', {$icon:'chevron-left'}, function(btn) {
                 btn.listen('click', function() {
                     if (btn_size > -2)
                         btn_size--;
@@ -56,8 +55,8 @@ cbody.fill.content_pane
                     });
                 });
             })
+            
             // button chevron-right
-
             .add('btn_next:bootstrap.Button', {$icon:'chevron-right'})
                 .listen('click', function() {
                     if (btn_size < 1)
@@ -69,16 +68,15 @@ cbody.fill.content_pane
                 });
 
             // other styled buttons
-
             ['default','primary','success','info','warning','danger'].forEach(function(style) {
-                btngroup.add('btn_' + style + ':bootstrap.Button#size=2;style=' + style, {$text:style, $icon:'thumbs-up'})
+                btngroup.add('btn_' + style + ':bootstrap.Button#size=2;style=' + style, style, {$icon:'thumbs-up'})
                     .listen('click', function() {
                         alert('Button style: ' + style);
                     });
             });
         })
         
-        .add('btn_link:bootstrap.Button#size=2;style=link', {$text:'link', $icon:'thumbs-up', style:'float:none;'})
+        .add('btn_link:bootstrap.Button#size=2;style=link', 'link', {$icon:'thumbs-up', style:'float:none;'})
             .listen('click', function() {
                 alert('Button style: link');
             });
@@ -86,76 +84,85 @@ cbody.fill.content_pane
     ._add(codebox(
 'example.add("btn_prev:Button#size=2;style=success",  {$icon:"chevron-left"})\n\
     .listen("click", function() {\n\
-        if (btn_size > 0)\n\
+        if (btn_size > -2)\n\
             btn_size--;\n\
-    \n\
-        this.parent.each(function(button) { button.size(btn_size); });\n\
+        \n\
+        this.parent.each(function(button) {\n\
+            button.type("bootstrap.Button#size=" + btn_size + ";style=" + button.parameters.style);\n\
+        });\n\
     });'))
     
     // "Vertical button group"
     
-    ._add('h3', {id:'vertical-button-group', $text:'Vertical button group'})
-    ._add('div', {class:'example top-box'}, function(example) {
-        example.add('bootstrap.BtnGroup', {class:'btn-group-vertical'}, function(group) {
-            group.add('bootstrap.Button', 4, {$text: 'Button'});
-        });
+    ._add('h3', 'Vertical button group', {id:'vertical-button-group'})
+    ._add('div`example top-box', function(example) {
+        example.add('bootstrap.BtnGroup`btn-group-vertical')
+            ._add('bootstrap.Button', 'Button 1')
+            ._add('bootstrap.Button', 'Button 2')
+            ._add('bootstrap.Button', 'Button 3');
     })
     ._add(codebox(
-'example.add("bootstrap.BtnGroup", {class: "btn-group-vertical"}, function(group_vertical) {\n\
-    group_vertical.add("Button", 4, {$text: "Button"});\n\
+'example.add("bootstrap.BtnGroup`btn-group-vertical")\n\
+    ._add("bootstrap.Button", "Button 1")\n\
+    ._add("bootstrap.Button", "Button 2")\n\
+    ._add("bootstrap.Button", "Button 3");\n\
 });'))
 
 
     ////////////////////////////////////////////////////////////////////////////
     // Forms
     
-    ._add('h2', {id: 'forms', $text: 'Forms'})
+    ._add('h2', 'Forms', {id:'forms'})
     
     // Forms basic example
     
-    ._add('h3', {id: 'basic-example', $text: 'Forms basic example'})
-    ._add('div', {class:'example top-box'}, function(example) {
+    ._add('h3', 'Forms basic example', {id: 'basic-example'})
+    ._add('div`example top-box', function(example) {
         example.add('bootstrap.Form')
-            ._add('bootstrap.FormGroup', function(group) {
+            ._add('bootstrap.FormGroup', function(grp) {
                 var regexp = /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
-                group._add('label', {$text:'Email address', for:'exampleInputEmail1'})
-                .add('input:input', {type:'email', class:'form-control', id:'exampleInputEmail1', placeholder:'Enter email (validation)'})
-                    .listen('keyup', group.input, function() {
+                grp
+                ._add('label', 'Email address', {for:'exampleInputEmail1'})
+                .add('input:input`form-control', {type:'email', id:'exampleInputEmail1', placeholder:'Enter email (validation)'})
+                    .listen('keyup', grp.input, function() {
                         if (this._element) {
                             if (regexp.test(this._element.value))
-                                group.class('', 'has-error');
+                                grp.class('', 'has-error');
                             else
-                                group.class('has-error');
+                                grp.class('has-error');
                         }
                     });
             })
             ._add('bootstrap.FormGroup', function(group) {
-                group._add('label', {$text:'Password', for:'exampleInputPassword1'})
-                ._add('input', {type:'password', class:'form-control', id:'exampleInputPassword1', placeholder:'Password'});
+                group
+                ._add('label', 'Password', {for:'exampleInputPassword1'})
+                ._add('input`form-control', {type:'password', id:'exampleInputPassword1', placeholder:'Password'});
             })
             ._add('bootstrap.FormGroup', function(group) {
-                group._add('label', {$text:'File input', for:'exampleInputFile'})
+                group
+                ._add('label', 'File input', {for:'exampleInputFile'})
                 ._add('input', {type:'file', id:'exampleInputFile'})
-                ._add_p('Example block-level help text here.', {class:"help-block"});
+                ._add('p`help-block', 'Example block-level help text here.');
             })
-            ._add('bootstrap.Button', {type:'submit', $text:'Submit', onclick:'return false;'});
+            ._add('bootstrap.Button', 'Submit', {type:'submit', onclick:'return false;'});
     })
     ._add(codebox(
 'example.add("bootstrap.Form")\n\
-._add("bootstrap.FormGroup", function(group) {\n\
-    group._add("label", {$text:"Email address", for:"exampleInputEmail1"})\n\
-    .add("input:input", {type:"email", class:"form-control", id:"exampleInputEmail1", placeholder:"Enter email (validation)"})\n\
-\n\
-        // e-mail input validation:\n\
-        .listen("keyup", group.input, function() {\n\
-            if (this._element) {\n\
-                if (regexp.test(this._element.value))\n\
-                    group.class("", "has-error");\n\
-                else\n\
-                    group.class("has-error");\n\
-            }\n\
-        });\n\
-})'));
+    ._add("bootstrap.FormGroup", function(group) {\n\
+        group\n\
+        ._add("label", "Email address", {for:"exampleInputEmail1"})\n\
+        .add("input:input`form-control", {type:"email", id:"exampleInputEmail1", placeholder:"Enter email (validation)"})\n\
+        \n\
+            // e-mail input validation:\n\
+            .listen("keyup", group.input, function() {\n\
+                if (this._element) {\n\
+                    if (regexp.test(this._element.value))\n\
+                        group.class("", "has-error");\n\
+                    else\n\
+                        group.class("has-error");\n\
+                }\n\
+            });\n\
+    })'));
     
 
 

@@ -10,7 +10,7 @@
 (function() { "use strict";
 
     var controls = {
-        VERSION: '0.6.12'/*#.#.##*/,
+        VERSION: '0.6.13'/*#.#.##*/,
         id_generator: 53504,
         // assignable default template engine
         template: function(templ) { return new Function('return \'' + templ.replace(/'/g, "\\'") + '\''); },
@@ -33,27 +33,35 @@
     //  
     //  example: bootstrap.Button#size=2;style=info
     //  
-    controls.controlInitialize = function(object, __type, parameters, _attributes, outer_template, inner_template) {
-
-        var attributes = _attributes || {};
+    controls.controlInitialize = function(object, __type, parameters, attributes, outer_template, inner_template) {
         
-        if (!attributes.id)
-            attributes.id = (++controls.id_generator).toString(16); // set per session uid
+        if (attributes) {
+            object.name = attributes.$name;
+            object.id = (attributes.id) ? attributes.id : (attributes.id = (++controls.id_generator).toString(16)); // set per session uid
+            
+            // default move $prime to $text
+            if (attributes.hasOwnProperty('$prime')) {
+                attributes.$text = attributes.$prime;
+                delete attributes.$prime;
+            }
+            object.attributes = attributes;
+        } else {
+            var id = object.id = (++controls.id_generator).toString(16); // set per session uid
+            object.attributes = {id:id};
+        }
         
-        object.id           = attributes.id;    // This should be a unique identifier. Value  will be assigned to the 'id' attribute of DOM element.
         object.__type       = __type;
         object.parameters   = parameters || {};
-        object.attributes   = attributes;       // The object contains data to generate html code,  $icon, class, style, $text etc
         object.controls     = [];               // This is a collection of nested objects
         
         if (outer_template)
-        Object.defineProperty(object, "outer_template", {
+        Object.defineProperty(object, 'outer_template', {
             enumerable: true, writable: true,
             value: outer_template
         });
 
         if (inner_template)
-        Object.defineProperty(object, "inner_template", {
+        Object.defineProperty(object, 'inner_template', {
             enumerable: true, writable: true,
             value: inner_template
         });
@@ -901,7 +909,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         this.type = function(type, apply_inherited) {
             // >> get type
             
-            if (arguments.length === 0) {
+            if (!arguments.length) {
                 var inheritable = '', unheritable = '', parameters = this.parameters;
                 for(var prop in parameters) {
                     if (prop[0] !== '/') {
@@ -928,8 +936,10 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             // >> set type and parameters
             
-            var parameters = {}; // replace parameters collection
-            
+            var parameters = this.parameters; // rebuild parameters
+            for(var prop in parameters)
+                delete parameters[prop];
+                
             if (apply_inherited && this.parent) {
                 // get inheritable parameters from this object for transfer to the created object
 
@@ -939,11 +949,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                     parameters[prop] = parent_parameters[prop];
             }
             
-            var __type = parse_type(type, parameters, this.__type);
-            if (__type)
-                this.__type = __type;
-            
-            this.parameters = parameters;
+            this.__type = parse_type(type, parameters, this.attributes) || this.__type;
 
             this.raise('type');
             
@@ -1102,27 +1108,29 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         };
         
         // Create control and insert to the .controls collection
+        // type - type, control or array of controls
+        // type format:
+        //  name:namespace.control`class1 classN#parameters/inheritable_parameters
+        // $prime - primary parameter to control
         //
-        // type
-        //  {string} - type and parameters like 'layout/float=left'
-        //  {object} - control object
-        //  {string, semicolon separated list}
-        //  {array} - array of any type arguments
-        // [repeats] {Number} - optional, specify the number of created controls
-        // [attrs_or_callback] {Object,Function} - pass attributes or callback function to initialize the created object
-        // [this_arg] {Object} - 'this' argument for callback call
-        //
-        this.insert = function(index, type, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+        this.insert = function(index, type, /*optional*/ $prime, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
             if (!type)
                 return;
             
             // normalize arguments
             
-            if ('object function'.indexOf(typeof repeats) >= 0) {
+            if (typeof $prime === 'function') {
+                this_arg = attributes;
+                callback = $prime;
+                $prime = undefined;
+                attributes = undefined;
+            }
+            
+            if ($prime instanceof Object) {
                 this_arg = callback;
                 callback = attributes;
-                attributes = repeats;
-                repeats = 1;
+                attributes = $prime;
+                $prime = undefined;
             }
 
             if (typeof attributes === 'function') {
@@ -1130,14 +1138,12 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 callback = attributes;
                 attributes = undefined;
             }
-                
-            // type of first srgument
             
             if (Array.isArray(type)) {
                 // collection detected
                 var result;
                 for(var i = index, c = index + type.length; i < c; i++)
-                    result = this.insert(i, type[i], repeats, attributes, callback, this_arg);
+                    result = this.insert(i, type[i], $prime, attributes, callback, this_arg);
                 return result;
             }
             
@@ -1149,28 +1155,23 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 return add_control;
             }
             
-            // parse name for new control
+            var attrs = {class:''}, parameters = {};
             
-            var name;
-            var colonpos = type.indexOf(':');
-            var leftpos = type.indexOf('{');
-            if (colonpos >= 0 && (leftpos < 0 || colonpos < leftpos)) {
-                // name: syntax detected
-                name = type.substr(0, colonpos);
-                type = type.substr(colonpos + 1);
-            }
-            
-            // get inheritable parameters from this object for transfer to the created object
-            
-            var inheritable_parameters = this.parameters;
-            var parameters = {};
-            for(var prop in inheritable_parameters)
+            for(var prop in attributes)
+                attrs[prop] = attributes[prop];
+                
+            // transfer inheritable parameters to the created object
+            var this_parameters = this.parameters;
+            for(var prop in this_parameters)
             if (prop[0] === '/')
-                parameters[prop] = inheritable_parameters[prop];
+                parameters[prop] = this_parameters[prop];
             
             // resolve constructor
-            var __type = parse_type(type, parameters/*, this.__type*/);
-            var constructor = resolve_ctr(__type, parameters);
+            var __type = parse_type(type, parameters, attrs),
+                constructor = resolve_ctr(__type, parameters, attributes);
+
+            if ($prime)
+                attrs.$prime = $prime;
             
             // type error processing
             if (!constructor) {
@@ -1186,115 +1187,43 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 }
             }
             
-            var result;
+            // move $parameters to attributes (unsafe)
+            for(var prop in parameters)
+                if (prop[0] === '$')
+                    attrs[prop.substr(1)] = parameters[prop];
             
-            // loop for create control(s)
-            
-            for(var i = 0, c = repeats || 1; i < c; i++) {
-                // prepare parameters and attributes
-                
-                var params = {},
-                    attrs = {class:''};
-                
-                for(var prop in parameters) {
-                    params[prop] = parameters[prop];
-                    if (prop[0] === '$')
-                        attrs[prop.substr(1)] = parameters[prop];
-                }
-                
-                if (attributes)
-                for(var prop in attributes)
-                    attrs[prop] = attributes[prop];
-            
-                // create control(s)
-                
-                var new_control = new constructor(params, attrs);
+            // create control
 
-                if (name)
-                    new_control.name = name;
-                
-                // reflect after creation
-                new_control.raise('type');
-                
-                // set parent property
-                setParent.call(new_control, this, index);
-            
-                // callback
-                if (callback)
-                    callback.call(this_arg || this, new_control);
-                
-                result = new_control;
-            }
+            var new_control = new constructor(parameters, attrs);
 
-            return result;
+            // reflect after creation
+            new_control.raise('type');
+
+            // set parent property
+            setParent.call(new_control, this, index);
+
+            // callback
+            if (callback)
+                callback.call(this_arg || this, new_control);
+
+            return new_control;
         };
         
-        this.add = function(type, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
-            return this.insert(this.controls.length, type, repeats, attributes, callback, this_arg);
+        this.add = function(type, /*optional*/ $prime, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+            return this.insert(this.controls.length, type, $prime, attributes, callback, this_arg);
         };
         
-        this._add = function(type, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
-            this.insert(this.controls.length, type, repeats, attributes, callback, this_arg);
+        this._add = function(type, /*optional*/ $prime, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+            this.insert(this.controls.length, type, $prime, attributes, callback, this_arg);
             return this;
         };
         
-        this.unshift = function(type, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
-            return this.insert(0, type, repeats, attributes, callback, this_arg);
+        this.unshift = function(type, /*optional*/ $prime, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+            return this.insert(0, type, $prime, attributes, callback, this_arg);
         };
         
-        this._unshift = function(type, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
-            this.insert(0, type, repeats, attributes, callback, this_arg);
-            return this;
-        };
-        
-        this.add_text = function(text, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
-            if (typeof repeats === 'object') {
-                this_arg = callback;
-                callback = attributes;
-                attributes = repeats;
-                repeats = 1;
-            }
-            attributes = attributes || {};
-            attributes.$text = text;
-            return this.add('controls.container', repeats, attributes, callback, this_arg);
-        };
-        
-        this._add_text = function(text, repeats, attributes, callback, this_arg) {
-            this.add_text(text, repeats, attributes, callback, this_arg);
-            return this;
-        };
-        
-        this.add_p = function(text, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
-            if (typeof repeats === 'object') {
-                this_arg = callback;
-                callback = attributes;
-                attributes = repeats;
-                repeats = 1;
-            }
-            attributes = attributes || {};
-            attributes.$text = text;
-            return this.add('p', repeats, attributes, callback, this_arg);
-        };
-        
-        this._add_p = function(text, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
-            this.add_p(text, repeats, attributes, callback, this_arg);
-            return this;
-        };
-        
-        this.add_templ = function(template, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
-            if (typeof repeats === 'object') {
-                this_arg = callback;
-                callback = attributes;
-                attributes = repeats;
-                repeats = 1;
-            }
-            attributes = attributes || {};
-            attributes.$template = template;
-            return this.add('controls.custom', repeats, attributes, callback, this_arg);
-        };
-        
-        this._add_templ = function(template, repeats, attributes, callback, this_arg) {
-            this.add_templ(template, repeats, attributes, callback, this_arg);
+        this._unshift = function(type, /*optional*/ $prime, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+            this.insert(0, type, $prime, attributes, callback, this_arg);
             return this;
         };
         
@@ -1348,12 +1277,11 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             return this;
         };
     
-        this.every      = function(delegate, thisArg)   { return this.controls.every(delegate,   thisArg || this); };
-        this.filter     = function(delegate, thisArg)   { return this.controls.filter(delegate,  thisArg || this); };
-        this.each       = function(delegate, thisArg)   { return this.controls.forEach(delegate, thisArg || this); };
-        this.forEach    = this.each;
-        this.map        = function(delegate, thisArg)   { return this.controls.map(delegate,     thisArg || this); };
-        this.some       = function(delegate, thisArg)   { return this.controls.some(delegate,    thisArg || this); };
+        this.every  = function(delegate, thisArg)   { return this.controls.every(delegate,   thisArg || this); };
+        this.filter = function(delegate, thisArg)   { return this.controls.filter(delegate,  thisArg || this); };
+        this.each   = this.forEach = function(delegate, thisArg)   { return this.controls.forEach(delegate, thisArg || this); };
+        this.map    = function(delegate, thisArg)   { return this.controls.map(delegate,     thisArg || this); };
+        this.some   = function(delegate, thisArg)   { return this.controls.some(delegate,    thisArg || this); };
     };
     
     function extract_func_code(func) {
@@ -1366,109 +1294,108 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         return func;
     }
     
-    // Parse full type to base __type and parameters
-    // 
-    // type {string} - type string include parameters
-    // parameters {object} - parameters (;-separated list) parsed from type string will be assigned to the passed parameters object
-    // namespace {string} - base type or context namespace example: 'bootstrap.Label' or 'bootstrap'
+    // Parse full type string
+    // type format:
+    //  name:namespace.control`class1 classN#parameters/inheritable_parameters 
+    // returns value: __type {string} - base type string
+    // parameters - parsed parameters
+    // attributes - parsed attributes and $name
     //
-    function parse_type(type, parameters, namespace) {
-        // remove {reference part}
-        if (type.slice(-1) === '}') {
-            var openpos = type.indexOf('{');
-            if (openpos >= 0) {
-                parameters['#{href}'] = type.substr(openpos + 1, type.length - openpos - 2);
-                type = type.substr(0, openpos).trim();
-            }
+    function parse_type(type, parameters, attributes) {
+        var start = 0,
+            colonpos = type.indexOf(':'),
+            dotpos = type.indexOf('.'),
+            gravepos = type.indexOf('`'),
+            numpos = type.indexOf('#'),
+            slashpos = type.indexOf('/'),
+            leftpos = type.indexOf('{');
+        
+        if (dotpos >= 0 && colonpos > dotpos)
+            colonpos = -1;
+        if (gravepos >= 0) {
+            if (colonpos > gravepos) colonpos = -1;
+            if (dotpos > gravepos) dotpos = -1;
         }
-        
-        // get __type
-        
-        var dotpos = type.indexOf('.'), slashpos = type.indexOf('/'), numberpos = type.indexOf('#');
-        
-        var typelen = -1;
-        if (slashpos >= 0)
-            typelen = slashpos;
-        if (numberpos >= 0 && (numberpos < typelen || typelen < 0))
-            typelen = numberpos;
-        
-        var __type = (typelen < 0) ? type : type.substr(0, typelen);
-        
-        // fix type prefix - namespace
-        if (__type && (dotpos < 0 || (typelen >= 0 && dotpos > typelen))) {
-            if (namespace) {
-                var dotpos = namespace.indexOf('.');
-                if (dotpos >= 0)
-                    namespace = namespace.substr(0, dotpos + 1);
-                else
-                    namespace += '.';
-            }
-            else
-                namespace = 'controls.';
-            
-            __type = namespace + __type;
+        if (numpos >= 0) {
+            if (colonpos > numpos) colonpos = -1;
+            if (dotpos > numpos) dotpos = -1;
+            if (gravepos > numpos) gravepos = -1;
         }
-        
-        if (arguments.length < 2)
-            return __type;
-        
-        // parse parameters
-            
-        if (typelen >= 0) {
-            var paramstr = type.substr(typelen);
-            var inheritable, unheritable;
-            
-            // unheritable starts with #
-            if (numberpos > slashpos)
-                unheritable = type.substr(numberpos + 1);
-            else if (numberpos >= 0)
-                unheritable = type.substr(numberpos + 1, slashpos - numberpos - 1);
-            // unheritable starts with /
-            if (slashpos > numberpos)
-                inheritable = type.substr(slashpos + 1);
-            else if (slashpos >= 0)
-                inheritable = type.substr(slashpos + 1, numberpos - slashpos - 1);
-            
-            if (inheritable) {
-                inheritable = inheritable.split(';'); // ';' - separated list
-                for(var i = 0, c = inheritable.length; i < c; i++) {
-                    var parameter = inheritable[i];
-                    if (parameter) {
-                        parameter = parameter.split('=');
-                        var parname = parameter[0], parvalue = parameter[1];
-                        if (parname) {
-                            if (parvalue === undefined)
-                                parvalue = true;
-                            else if (parvalue)
-                                parvalue = parvalue.trim();
-                                
-                            // inheritable writed to parameters hash under '/'+parametername key
-                            parameters['/' + parname.trim()] = parvalue;
-                        }
-                    }
-                }
-            }
+        if (slashpos >= 0) {
+            if (colonpos > slashpos) colonpos = -1;
+            if (dotpos > slashpos) dotpos = -1;
+            if (gravepos > slashpos) gravepos = -1;
+        }
+        if (leftpos >= 0) {
+            if (colonpos > leftpos) colonpos = -1;
+            if (dotpos > leftpos) dotpos = -1;
+            if (gravepos > leftpos) gravepos = -1;
+            if (slashpos > leftpos) slashpos = -1;
+        }
 
-            if (unheritable) {
-                unheritable = unheritable.split(';'); // ';' - separated list
-                for(var i = 0, c = unheritable.length; i < c; i++) {
-                    var parameter = unheritable[i];
-                    if (parameter) {
-                        parameter = parameter.split('=');
-                        var parname = parameter[0], parvalue = parameter[1];
-                        if (parname) {
-                            if (parvalue === undefined)
-                                parvalue = true;
-                            else if (parvalue)
-                                parvalue = parvalue.trim();
-                            
-                            parameters[parname.trim()] = parvalue;
-                        }
-                    }
-                }
+         // name:... syntax
+        if (colonpos >= 0) {
+            if (attributes)
+                attributes.$name = type.substr(0, colonpos);
+            start = colonpos + 1;
+        }
+
+        var namespace;
+        // namespace. syntax
+        if (dotpos >= 0) {
+            namespace = type.substr(start, 1 + dotpos - start);
+            start = dotpos + 1;
+        }
+        if (!namespace) namespace = 'controls.';
+        
+        var paramsbegin = numpos;
+        if (paramsbegin < 0 || (slashpos >= 0 && slashpos < paramsbegin))   paramsbegin = slashpos;
+        if (paramsbegin < 0 || (leftpos >= 0 && leftpos < paramsbegin))     paramsbegin = leftpos;
+        
+        // __type
+        var __type = namespace + type.substr(start, ((gravepos >= 0) ? gravepos : (paramsbegin >= 0) ? paramsbegin : type.length) - start);
+        
+        // .class1 classN  syntax
+        if (attributes) {
+            var cls = (gravepos < 0) ? '' : (paramsbegin >= 0) ? type.substr(gravepos + 1, paramsbegin - gravepos - 1) : type.substr(gravepos + 1);
+            if (cls || !cls.hasOwnProperty('class'))
+                attributes.class = (attributes.class) ? (attributes.class + ' ' + cls) : cls;
+        }
+        
+        if (leftpos >= 0) {
+            var rightpos = type.lastIndexOf('}');
+            // component source url
+            parameters['#{href}'] = type.substr(leftpos + 1, (rightpos >= 0) ? (rightpos - leftpos - 1) : (type.length - leftpos - 1));
+        }
+        
+        // parse /inheritable parameters
+        if (slashpos >= 0) {
+            var iparams = type.substr(slashpos + 1, ((numpos > slashpos) ? numpos : (leftpos > slashpos) ? leftpos : type.length) - slashpos - 1)
+                .split(';');
+            for(var i = 0, c = iparams.length; i < c; i++) {
+                var param = iparams[i],
+                    eqpos = param.indexOf('=');
+                if (eqpos >= 0)
+                    parameters['/' + param.substr(0, eqpos)] = param.substr(eqpos + 1);
+                else
+                    parameters['/' + param] = true;
             }
         }
         
+        // parse #unheritable parameters
+        if (numpos >= 0) {
+            var uparams = type.substr(numpos + 1, ((slashpos > numpos) ? slashpos : (leftpos > numpos) ? leftpos : type.length) - numpos - 1)
+                .split(';');
+            for(var i = 0, c = uparams.length; i < c; i++) {
+                var param = uparams[i],
+                    eqpos = param.indexOf('=');
+                if (eqpos >= 0)
+                    parameters[param.substr(0, eqpos)] = param.substr(eqpos + 1);
+                else
+                    parameters[param] = true;
+            }
+        }
+
         return __type;
     };
     
@@ -1537,50 +1464,46 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     
     // Create control
     //
-    // syntax: .create(type, attributes); .create(type, parameters, attributes);
-    // type - type and parameters
-    // parameters - optional, parameters
-    // attributes - optional, set attributes to control
-    // return created control
+    // syntax: controls.create(type, attributes); controls.create(type, parameters, attributes);
     //
-    controls.create = function(type, /*optional*/ parameters, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
-        switch(arguments.length) {
-            case 0:  throw new SyntaxError('Invalid Type argument value!');
-            case 1:  attributes = {}; parameters = {}; break;
-            case 2:
-                if (typeof parameters === 'function') {
-                    this_arg = attributes;
-                    callback = parameters;
-                    attributes = {};
-                    parameters = {};
-                }
-                else {
-                    attributes = parameters || {};
-                    parameters = {}; 
-                }
-                break;
-            default:
-                if (typeof attributes === 'function') {
-                    this_arg = callback;
-                    callback = attributes;
-                    attributes = parameters || {};
-                    parameters = {};
-                }
-                else if (typeof parameters === 'function') {
-                    this_arg = attributes;
-                    callback = parameters;
-                    attributes = {};
-                    parameters = {};
-                }
-                else {
-                    attributes = attributes || {};
-                    parameters = parameters || {};
-                }
+    controls.create = function(type, /*optional*/ $prime, /*optional*/ parameters, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+        var arglen = arguments.length;
+        if (typeof $prime !== 'string' || $prime instanceof Object) {
+            this_arg = callback;
+            callback = attributes;
+            attributes = parameters;
+            parameters = $prime;
+            $prime = undefined;
+            arglen++;
+        }
+        if (typeof parameters === 'function') {
+            this_arg = attributes;
+            callback = parameters;
+            parameters = {};
+            attributes = {};
+            arglen+=2;
+        }
+        else if (typeof attributes === 'function') {
+            this_arg = callback;
+            callback = attributes;
+            attributes = parameters;
+            parameters = {};
+            arglen++;
+        }
+        if (arglen === 3) {
+            attributes = parameters;
+            parameters = {};
         }
         
-        var __type = parse_type(type, parameters),
+        parameters = parameters || {};
+        attributes = attributes || {};
+        
+        var __type = parse_type(type, parameters, attributes),
             constructor = resolve_ctr(__type, parameters);
         
+        if ($prime)
+            attributes.$prime = $prime;
+            
         if (!constructor) {
             if (!type_error_mode)
                 throw new TypeError('Type ' + __type + ' not registered!');
@@ -1593,10 +1516,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 constructor = resolve_ctr('controls.Stub', parameters);
             }
         }    
-        
-        if (!attributes.class)
-            attributes.class = '';
-        
+
         for(var prop in parameters)
         if (prop[0] === '$')
             attributes[prop.substr(1)] = parameters[prop];
@@ -1613,40 +1533,6 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         return new_control;
     };
 
-    controls.text = function(text, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
-        if (typeof repeats === 'object') {
-            this_arg = callback;
-            callback = attributes;
-            attributes = repeats;
-            repeats = 1;
-        }
-        attributes = attributes || {};
-        attributes.$text = text;
-        return controls.create('controls.container', repeats, attributes, callback, this_arg);
-    };
-
-    controls.p = function(text, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
-        if (typeof repeats === 'object') {
-            this_arg = callback;
-            callback = attributes;
-            attributes = repeats;
-            repeats = 1;
-        }
-        return controls.create('controls.p', repeats, controls.extend({}, attributes), callback, this_arg);
-    };
-
-    controls.templ = function(template, /*optional*/ repeats, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
-        if (typeof repeats === 'object') {
-            this_arg = callback;
-            callback = attributes;
-            attributes = repeats;
-            repeats = 1;
-        }
-        attributes = attributes || {};
-        attributes.$template = template;
-        return controls.create('controls.custom', repeats, attributes, callback, this_arg);
-    };
-        
     // controls.reviverJSON()
     // 
     // use with JSON.parse(json, controls.reviverJSON), this function restores controls
@@ -1758,7 +1644,7 @@ c' + tagname + '.prototype = controls.control_prototype;\n'
 + (closetag
     ? 'c' + tagname + '.outer_template = function(it) { return \'<' + tagname + '\' + it.printAttributes() + \'>\' + (it.attributes.$text || \'\') + it.printControls() + \'</' + tagname + '>\'; };\n'
     : 'c' + tagname + '.outer_template = function(it) { return \'<' + tagname + '\' + it.printAttributes() + \'>\'; };\n')
-+ 'controls.typeRegister(\'controls.' + tagname + '\', c' + tagname + ');\n';
++ 'controls.typeRegister(\'' + tagname + '\', c' + tagname + ');\n';
         }
         
         Function('controls', 'a,abbr,address,article,aside,b,base,bdi,bdo,blockquote,button,canvas,cite,code,col,colgroup,command,datalist,dd,del,details,\
@@ -1783,19 +1669,23 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
         controls.controlInitialize(this, 'controls.container', parameters, attributes, controls.default_inner_template);
     };
     Container.prototype = controls.control_prototype;
-    controls.typeRegister('controls.container', Container);
+    controls.typeRegister('container', Container);
     
     // Custom
     // 
     // set template after creating the control
     // 
     function Custom(parameters, attributes) {
+        if (attributes.$prime) {
+            attributes.$template = attributes.$prime;
+            delete attributes.$prime;
+        }
         controls.controlInitialize(this, 'controls.custom', parameters, attributes,
             attributes.$template || attributes.$outer_template,
             attributes.$inner_template);
     };
     Custom.prototype = controls.control_prototype;
-    controls.typeRegister('controls.custom', Custom);
+    controls.typeRegister('custom', Custom);
 
     // Stub
     // 
@@ -1863,7 +1753,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
         };
     };
     Stub.prototype = controls.control_prototype;
-    controls.typeRegister('controls.stub', Stub);
+    controls.typeRegister('stub', Stub);
     
     // Head
     function Head(parameters, attributes) {
@@ -1873,7 +1763,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     };
     Head.prototype = controls.control_prototype;
     Head.template = function(it) { return '<head>' + (it.attributes.$text || '') + it.printControls() + '</head>'; };
-    controls.typeRegister('controls.head', Head);
+    controls.typeRegister('head', Head);
     
     // Body
     function Body(parameters, attributes) {
@@ -1883,7 +1773,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     };
     Body.prototype = controls.control_prototype;
     Body.template = function(it) { return '<body' + it.printAttributes('-id') + '>' + (it.attributes.$text || '') + it.printControls() + '</body>'; };
-    controls.typeRegister('controls.body', Body);
+    controls.typeRegister('body', Body);
     
 
     // Layouts /////////////////////////////////////////////////////////////////
@@ -1941,7 +1831,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
             out += cell + ctrls[i].wrappedHTML() + '</div>';
         return out + (it.clearfix) ? '<div style="clear:both;"></div></div>' : '</div>';
     };
-    controls.typeRegister('controls.layout', Layout);
+    controls.typeRegister('layout', Layout);
 
     
     function List(parameters, attributes) {
@@ -1974,7 +1864,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
             out += item + ctrls[i].wrappedHTML() + '</li>';
         return out + '</ul>';
     };
-    controls.typeRegister('controls.list', List);
+    controls.typeRegister('list', List);
     
     
     // Input
@@ -2001,7 +1891,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     };
     Input.prototype = controls.control_prototype;
     Input.template = function(it) { return '<input' + it.printAttributes() + '>' + (it.attributes.$text || '') + '</input>'; };
-    controls.typeRegister('controls.input', Input);
+    controls.typeRegister('input', Input);
     
     
     // Select
@@ -2037,7 +1927,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     Select.prototype = controls.control_prototype;
     Select.template = function(it) { return '<select' + it.printAttributes() + '>' + (it.attributes.$text || '') + it.data.map(function(item){ return '<option value=' + item + '>' + item + '</option>'; }).join('') + '</select>'; };
     Select.inner_template = function(it) { return (it.attributes.$text || '') + it.data.map(function(item){ return '<option value=' + item + '>' + item + '</option>'; }).join(''); };
-    controls.typeRegister('controls.select', Select);
+    controls.typeRegister('select', Select);
 
 
     // exports
