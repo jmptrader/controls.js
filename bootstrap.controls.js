@@ -11,7 +11,7 @@
 
 function Bootstrap(controls) {
     var bootstrap = this;
-    bootstrap.VERSION = '0.6.12'/*#.#.##*/;
+    bootstrap.VERSION = '0.6.13'/*#.#.##*/;
     if (!controls)
         throw new TypeError('controls.bootstrap.js: controls.js not found!');
     if (controls.bootstrap && controls.bootstrap.VERSION >= bootstrap.VERSION)
@@ -203,7 +203,7 @@ function Bootstrap(controls) {
     controls.typeRegister('bootstrap.ToggleBtn', ToggleBtn);
     
     
-    // bootstrap.Button
+    // bootstrap@Button
     // 
     // Parameters:
     //  style {'default','primary','success','info','warning','danger','link'} - one of the predefined style of button from bootstrap

@@ -20,7 +20,7 @@
 function UserControl(parameters, attributes) {
     this.initialize('UserControl', parameters, attributes)
         ._style('width:100px; height:80px; display:inline-block; margin-right:8px; background-color:#' + (Math.random().toString(16).substr(2,3)))
-        .add('button:bootstrap.Button#style=default', {$text:'OK'})
+        .add('button:bootstrap.Button#style=default', 'OK')
             .listen('click', function() {
                 alert('Button-click!');
             });
@@ -35,7 +35,7 @@ var cbody = createDocumentStructure();
 // header panel
 cbody.header.header_pane
     ._add(h1Ref('controls.js', 'http://aplib.github.io/controls.js/'))
-    ._add_p('framework for dynamic html documents and UI solutions')
+    ._add('p', 'framework for dynamic html documents and UI solutions')
     ._add(refLabels([
         'GitHub',           'default', 'https://github.com/aplib/controls.js',
         'Download',         'default', 'https://github.com/aplib/controls.js/archive/master.zip',
@@ -49,23 +49,22 @@ cbody.fill.content_pane
     // Concepts                                                               //
     ////////////////////////////////////////////////////////////////////////////
     
-    ._add('h2', {id:'controls-js-concepts', $text:'Concepts'})
+    ._add('h2', 'Concepts', {id:'controls-js-concepts'})
     
     
     // "Code first, both server-side or client-side html code generation"
     
-    ._add('h3', {id:'code-first', $text:'HTML document object model, both server-side and client-side html code generation'})
+    ._add('h3', 'HTML document object model, both server-side and client-side html code generation', {id:'code-first'})
     ._add(codebox(
 'var body = controls.create("body");\n\
-body.add(["top:Container", "left:Container", "fill:Container"]);\n\
+body.add(["top:container", "left:container", "fill:container"]);\n\
 \n\
 ...\n\
 \n\
 body.fill\n\
-    .add("content_pane:div", {class:"content-pane col-sm-9"})\n\
-        ._add("h2", {id: "lorem-ipsum-group", $text: "Lorem ipsum"})\n\
-        ._add_text("<p>Lorem ipsum dolor sit amet</p>")\n\
-        ._add_p("Lorem ipsum dolor sit amet");\n\
+    .add("content_pane:div`content-pane col-sm-9")\n\
+        ._add("h2", "Lorem ipsum", {id: "lorem-ipsum-group"})\n\
+        ._add("p", "Lorem ipsum dolor sit amet");\n\
 \n\
 body.attach();\n\
 body.refresh();\n'))
@@ -73,26 +72,31 @@ body.refresh();\n'))
 
     // "JavaScript controls tree is used for code generation and managing DOM elements"
     
-    ._add('h3', {id:'full-controls', $text:'JavaScript controls is used for managing DOM elements'})
+    ._add('h3', 'JavaScript controls is used for managing DOM elements', {id:'full-controls'})
     ._add(codebox(
-'var lorem = menu.add("DropdownItem", {$text="Lorem ipsum", class="unchecked"});\n\
+'var lorem = menu.add("bootstrap.DropdownItem`unchecked", "Lorem ipsum");\n\
 \n\
 > lorem.class("checked", "unchecked");'))
     
     
     // "Structured and reusable code"
     
-    ._add('h3', {id:'code-reuse', $text:'Structured and reusable code'})
+    ._add('h3', 'Structured and reusable code', {id:'code-reuse'})
     
-    ._add('div', {class:'example top-box'}, function(example) {
-        example.add("UserControl", 5);
+    ._add('div`example top-box', function(example) {
+        example
+        ._add("UserControl")
+        ._add("UserControl")
+        ._add("UserControl")
+        ._add("UserControl")
+        ._add("UserControl");
     })
     
     ._add(codebox(
 'function UserControl(parameters, attributes) {\n\
     this.initialize("UserControl", parameters, attributes)\n\
         ._style("background-color:#" + (Math.random().toString(16).substr(2,3)))\n\
-        .add("OK:bootstrap.Button", {$text:"OK"})\n\
+        .add("OK:bootstrap.Button", "OK")\n\
             .listen("click", function() {\n\
                 alert("Button-click!");\n\
             });\n\
@@ -101,13 +105,13 @@ body.refresh();\n'))
     
     // "Inversion of control"
     
-    ._add('h3', {id:'inversion-of-control', $text:'Inversion of control'})
+    ._add('h3', 'Inversion of control', {id:'inversion-of-control'})
     
     ._add(codebox(
 '\controls.typeRegister("bootstrap.Button#style=success", CustomBtnControl);\n\
 ...\n\
 > var button = example.add("bootstrap.Button#size=2;style=success");'))
-    ._add_p('The combination of type name and parameters (where parameters may be inheritable) resoves to the specific type of the object in the runtime. IoC allows to\
+    ._add('p', 'The combination of type name and parameters (where parameters may be inheritable) resoves to the specific type of the object in the runtime. IoC allows to\
  override the details of the behavior of existing systems without modifying their code. For example, it will organize a versioning\
  components in the design, switching visual themes at runtime or unbreakable changes at service.');
 
