@@ -98,14 +98,14 @@ cbody.fill.content_pane
     ._add('div`example top-box', function(example) {
         example.add('bootstrap.BtnGroup`btn-group-vertical')
             ._add('bootstrap.Button', 'Button 1')
-            ._add('bootstrap.Button', 'Button 2')
-            ._add('bootstrap.Button', 'Button 3');
+            ._add('bootstrap.Button#success', 'Button 2')
+            ._add('bootstrap.Button#primary', 'Button 3');
     })
     ._add(codebox(
 'example.add("bootstrap.BtnGroup`btn-group-vertical")\n\
     ._add("bootstrap.Button", "Button 1")\n\
-    ._add("bootstrap.Button", "Button 2")\n\
-    ._add("bootstrap.Button", "Button 3");\n\
+    ._add("bootstrap.Button#success", "Button 2")\n\
+    ._add("bootstrap.Button#primary", "Button 3");\n\
 });'))
 
 
@@ -121,9 +121,8 @@ cbody.fill.content_pane
         example.add('bootstrap.Form')
             ._add('bootstrap.FormGroup', function(grp) {
                 var regexp = /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
-                grp
-                ._add('label', 'Email address', {for:'exampleInputEmail1'})
-                .add('input:input`form-control', {type:'email', id:'exampleInputEmail1', placeholder:'Enter email (validation)'})
+                grp.add('label', 'Email address', {for:'exampleInputEmail1'});
+                grp.add('input:input`form-control', {type:'email', id:'exampleInputEmail1', placeholder:'Enter email (validation)'})
                     .listen('keyup', grp.input, function() {
                         if (this._element) {
                             if (regexp.test(this._element.value))
@@ -149,9 +148,8 @@ cbody.fill.content_pane
     ._add(codebox(
 'example.add("bootstrap.Form")\n\
     ._add("bootstrap.FormGroup", function(group) {\n\
-        group\n\
-        ._add("label", "Email address", {for:"exampleInputEmail1"})\n\
-        .add("input:input`form-control", {type:"email", id:"exampleInputEmail1", placeholder:"Enter email (validation)"})\n\
+        group.add("label", "Email address", {for:"exampleInputEmail1"});\n\
+        group.add("input:input`form-control", {type:"email", id:"exampleInputEmail1", placeholder:"Enter email (validation)"})\n\
         \n\
             // e-mail input validation:\n\
             .listen("keyup", group.input, function() {\n\
