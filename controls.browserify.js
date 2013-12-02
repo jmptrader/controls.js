@@ -7,7 +7,7 @@
 //     (c) 2013 vadim b.
 //     License: MIT
 
-(function() { "use strict";
+(function() { 'use strict';
 
     var controls = {
         VERSION: '0.6.13'/*#.#.##*/,
@@ -1872,8 +1872,9 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     function Input(parameters, attributes) {
         this.initialize('controls.input', parameters, attributes, Input.template)
         .listen_('change', function() {
+            // BUG: Calling this event is not reliable
             this.attributes.value = this.element.value;
-        })
+        }, true)
         .listen_('element', function(element) {
             if (element)
                 element.value = this.attributes.value || '';
@@ -1882,10 +1883,9 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
             get: function() { return this.attributes.value; },
             set: function(value) {
                 var element = this._element;
+                this.attributes.value = value;
                 if (element)
                     element.value = value;
-                else
-                    this.attributes.value = value;
             }
         });
     };
@@ -1907,7 +1907,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
         .listen_('data', this.refreshInner) // event routed from data object
         .listen_('change', function() {
             this.attributes.value = this.element.value;
-        })
+        }, true)
         .listen_('element', function(element) {
             if (element)
                 element.value = this.attributes.value;
@@ -1917,10 +1917,9 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
             get: function() { return this.attributes.value; },
             set: function(value) {
                 var element = this._element;
+                this.attributes.value = value;
                 if (element)
                     element.value = value;
-                else
-                    this.attributes.value = value;
             }
         });
     };
