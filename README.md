@@ -17,12 +17,11 @@ http://aplib.github.io/controls.js/
 
 ### files
 
-controls.js - development version with comments, requre doT.js  
-controls.min.js - compressed controls.js, requre doT.js  
+controls.js - development version with comments  
+controls.min.js - compressed controls.js  
 
 Include the following code in your head tag:
 
-    <script src="doT.js"></script>
     <script src="controls.js"></script>
 
 To simplify the first start i compile doT.js and controls.js into a single file:
