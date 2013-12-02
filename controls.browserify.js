@@ -10,7 +10,7 @@
 (function() { 'use strict';
 
     var controls = {
-        VERSION: '0.6.13'/*#.#.##*/,
+        VERSION: '0.6.14'/*#.#.##*/,
         id_generator: 53504,
         // assignable default template engine
         template: function(templ) { return new Function('return \'' + templ.replace(/'/g, "\\'") + '\''); },
