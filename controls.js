@@ -2,7 +2,7 @@
 //     UI framework, code generation tool
 //     status: proposal, example, valid prototype, under development
 //     demo:   http://aplib.github.io/controls.js/
-//     issues: https://github.com/aplib/markdown-site-template/issues
+//     issues: https://github.com/aplib/controls.js/issues
 //     (c) 2013 vadim b.
 //     License: MIT
 
@@ -42,7 +42,7 @@
             if ('$prime' in attributes) {
                 var prime = attributes.$prime;
                 if (prime instanceof DataArray || prime instanceof DataObject)
-                    this.bind(prime)
+                    this.bind(prime);
                 else
                     attributes.$text = prime;
                 delete attributes.$prime;
@@ -142,7 +142,15 @@
     
     
 // >> Events
-
+    
+    /**
+     * Force events collection and event object
+     * 
+     * @param {object} object Object owns a collection of events
+     * @param {string} type Type of event
+     * @param {boolean} capture Capture event flag
+     * @returns {controls.Event} Collection of a specified type
+     */
     function force_event(object, type, capture) {
         var events = object.events;
         if (!events)
@@ -203,21 +211,19 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             if (index >= 0)
                 listeners.splice(index, 2);
         },
-        
         clear: function() {
             this.listeners.length = 0;
         },
-
         toJSON: function() {
             var jsonlisteners = [],
                 listeners = this.listeners;
             // Serialize listeners
             for(var i = 0, c = listeners.length; i < c; i+=2) {
-                var event_func = listeners[i],
-                    call_this = listeners[i+1];
+                var event_func = listeners[i];
                 if (!event_func.no_serialize) {
                     jsonlisteners.push(extract_func_code(event_func));
-                    jsonlisteners.push();
+                    // call_this not serialize
+                    jsonlisteners.push(null);
                 }
             }
             return {type:this.type, capture:this.capture, listeners:jsonlisteners};
@@ -225,7 +231,6 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     };
     
     // Post processing
-    
     var post_events = [];
     setInterval(function() {
         if (post_events.length > 0)
@@ -237,7 +242,6 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             post_events.length = 0;
         };
-        
     }, 30);
     
 // >> Data objects
@@ -1320,7 +1324,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 rbracket = func.indexOf(')');
             var first_par = func.indexOf('{'),
                 last_par = func.lastIndexOf('}');
-            // '@' - separator func arguments names vs body
+            // '@' - separator func argument names vs body
             return func.slice(lbracket + 1, rbracket) + '@' + func.substr(first_par + 1, last_par - first_par - 1);
         }
         return func;
@@ -1641,7 +1645,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             var outer_template = data.outer_template;
             if (outer_template) {
-                // '@' - separator func arguments names vs body
+                // '@' - separator func argument names vs body
                 var atpos = outer_template.indexOf('@');
                 control.template(new Function(outer_template.substr(0, atpos), outer_template.substr(atpos + 1)));
             }
