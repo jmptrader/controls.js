@@ -180,8 +180,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         // revive from JSON data
         if (listeners_data)
         for(var i = 0, c = listeners_data.length; i < c; i+=2) {
-            var listener_ = listeners_data[i];
-            listeners.push((typeof listener_ === 'function') ? listener_ : Function('event', listener_));
+            listeners.push(listeners_data[i]);
             var c_this =  listeners_data[i+1];
             listeners.push((c_this === call_this) ? null : call_this);
         }
@@ -1318,9 +1317,12 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     function extract_func_code(func) {
         if (typeof func === 'function') {
             func = func.toString();
+            var lbracket = func.indexOf('('),
+                rbracket = func.indexOf(')');
             var first_par = func.indexOf('{'),
                 last_par = func.lastIndexOf('}');
-            return func.substr(first_par + 1, last_par - first_par - 1);
+            // '@' - separator func arguments names vs body
+            return func.slice(lbracket + 1, rbracket) + '@' + func.substr(first_par + 1, last_par - first_par - 1);
         }
         return func;
     }
@@ -1639,20 +1641,33 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 control.controls = data.controls;
             
             var outer_template = data.outer_template;
-            if (outer_template)
-                control.template(new Function('it', outer_template));
+            if (outer_template) {
+                // '@' - separator func arguments names vs body
+                var atpos = outer_template.indexOf('@');
+                control.template(new Function(outer_template.substr(0, atpos), outer_template.substr(atpos + 1)));
+            }
             
             var inner_template = data.inner_template;
-            if (inner_template)
-                control.template(null, new Function('it', inner_template));
+            if (inner_template) {
+                var atpos = inner_template.indexOf('@');
+                control.template(null, new Function(inner_template.substr(0, atpos), inner_template.substr(atpos + 1)));
+            }
             
             // Restore events
             var data_events = data.events; // json object collection of serialized controls.Event
             if (data_events) {
                 var events = control.events = {};
                 for(var i = 0, c = data_events.length; i < c; i++) {
-                    var item = data_events[i];
-                    events[item.capture ? ('#' + item.type) : item.type] = new controls.Event(control, item.type, item.capture, item.listeners);
+                    var item = data_events[i],
+                        listeners = item.listeners;
+                    for(var i = 0, c = listeners.length; i < c; i+=2) {
+                        var listener = listeners[i];
+                        if (typeof listener === 'string') {
+                            var atpos = listener.indexOf('@');
+                            listeners[i] = new Function(listener.substr(0, atpos), listener.substr(atpos + 1));
+                        }
+                    }
+                    events[item.capture ? ('#' + item.type) : item.type] = new controls.Event(control, item.type, item.capture, listeners);
                 }
             }
             return control;
