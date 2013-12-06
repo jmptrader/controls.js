@@ -2,7 +2,7 @@
 //     UI framework, code generation tool
 //     status: proposal, example, valid prototype, under development
 //     demo:   http://aplib.github.io/controls.js/
-//     issues: https://github.com/aplib/markdown-site-template/issues
+//     issues: https://github.com/aplib/controls.js/issues
 //     (c) 2013 vadim b.
 //     License: MIT
 
@@ -21,17 +21,17 @@
     var ENCODE_HTML_PAIRS = { "<": "&#60;", ">": "&#62;", '"': '&#34;', "'": '&#39;', "&": "&#38;", "/": '&#47;' };
     var DECODE_HTML_MATCH = /&#(\d{1,8});/g;    
     
-    // Initialize control object
-    // 
-    // type (string) - path.type and initial set of parameters
-    //  format: path.type[/inheritable parameters][#not inheritable parameters]
-    //  parameters:
-    //  1. parameter name - add parameter and set value to boolean true
-    //  2. parameter name=value - add parameter and set value
-    //  3. -parameter name - remove parameter from inheritance (TODO)
-    //  
-    //  example: bootstrap.Button#size=2;style=info
-    //  
+    /**
+     * Initialize control object
+     * 
+     * @param {object} object Control object
+     * @param {string} __type Base type of the control, in format namespace.control
+     * @param {object} parameters Parameters hash object
+     * @param {object} attributes Attributes hash object
+     * @param {function} outer_template Outer template
+     * @param {function} inner_template Inner template
+     * @returns {object} Control object
+     */
     controls.controlInitialize = function(object, __type, parameters, attributes, outer_template, inner_template) {
         
         if (attributes) {
@@ -39,8 +39,12 @@
             object.id = (attributes.id) ? attributes.id : (attributes.id = (++controls.id_generator).toString(16)); // set per session uid
             
             // default move $prime to $text
-            if (attributes.hasOwnProperty('$prime')) {
-                attributes.$text = attributes.$prime;
+            if ('$prime' in attributes) {
+                var prime = attributes.$prime;
+                if (prime instanceof DataArray || prime instanceof DataObject)
+                    this.bind(prime);
+                else
+                    attributes.$text = prime;
                 delete attributes.$prime;
             }
             object.attributes = attributes;
@@ -68,20 +72,29 @@
         return object;
     };
     
-    // plug in control constructor to the controls infrastructure
-    // 
-    // __type {string} - unique type identifier contains namespace and name, like 'controls.Button'
-    // constructor {function} - constructor function
-    // [template] {string,function} - text or template function
-    // [revive] {function} -  json revive function
-    //
+    /**
+     * Register control constructor in the controls library
+     * 
+     * @param {string} type Type of the control
+     * @param {function} constructor Control constructor function
+     * @param {function} revive Control revive function
+     * @returns {undefined}
+     */
     controls.typeRegister = function(type, constructor, revive) {
         controls.factoryRegister(type, constructor);
         constructor.is_constructor = true;
         constructor.revive = revive;
     };
     
-    controls.factoryRegister = function(type, factory_method) {
+    /**
+     * Register control factory function in the controls library
+     * 
+     * @param {string} type Type of the control
+     * @param {function} factory Control factory function
+     * @param {function} revive Control revive function
+     * @returns {undefined}
+     */
+    controls.factoryRegister = function(type, factory) {
         var key_parameters = {},
             __type = parse_type(type, key_parameters) .toLowerCase();
         
@@ -91,7 +104,7 @@
                 subtypes_array = [];
                 controls.subtypes[__type] = subtypes_array;
             }
-            key_parameters.__ctr = factory_method;
+            key_parameters.__ctr = factory;
             subtypes_array.push(key_parameters);
         }
         else {
@@ -99,15 +112,17 @@
             if (controls[__type])
                 throw new TypeError('Type ' + type + ' already registered!');
             
-            controls[__type] = factory_method;
+            controls[__type] = factory;
         }
     };
     
-    // Register existing parameterized type as a standalone type.
-    // 
-    // alias {string} - simple type identifier
-    // type {string} - type with parameters, basic for this type must be an already existing.
-    //
+    /**
+     * Register existing parameterized type as a standalone type
+     * 
+     * @param {string} alias New alias that will be registered, in format namespace.control
+     * @param {string} type Existing base type + additional #parameters, in format existingtype#parameters
+     * @returns {undefined}
+     */
     controls.typeAlias = function(alias, type) {
         var parameters = {},
             __type = parse_type(type, parameters) .toLowerCase(),
@@ -127,7 +142,15 @@
     
     
 // >> Events
-
+    
+    /**
+     * Force events collection and event object
+     * 
+     * @param {object} object Object owns a collection of events
+     * @param {string} type Type of event
+     * @param {boolean} capture Capture event flag
+     * @returns {controls.Event} Collection of a specified type
+     */
     function force_event(object, type, capture) {
         var events = object.events;
         if (!events)
@@ -164,8 +187,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         // revive from JSON data
         if (listeners_data)
         for(var i = 0, c = listeners_data.length; i < c; i+=2) {
-            var listener_ = listeners_data[i];
-            listeners.push((typeof listener_ === 'function') ? listener_ : Function('event', listener_));
+            listeners.push(listeners_data[i]);
             var c_this =  listeners_data[i+1];
             listeners.push((c_this === call_this) ? null : call_this);
         }
@@ -189,21 +211,19 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             if (index >= 0)
                 listeners.splice(index, 2);
         },
-        
         clear: function() {
             this.listeners.length = 0;
         },
-
         toJSON: function() {
             var jsonlisteners = [],
                 listeners = this.listeners;
             // Serialize listeners
             for(var i = 0, c = listeners.length; i < c; i+=2) {
-                var event_func = listeners[i],
-                    call_this = listeners[i+1];
+                var event_func = listeners[i];
                 if (!event_func.no_serialize) {
                     jsonlisteners.push(extract_func_code(event_func));
-                    jsonlisteners.push();
+                    // call_this not serialize
+                    jsonlisteners.push(null);
                 }
             }
             return {type:this.type, capture:this.capture, listeners:jsonlisteners};
@@ -211,7 +231,6 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     };
     
     // Post processing
-    
     var post_events = [];
     setInterval(function() {
         if (post_events.length > 0)
@@ -223,7 +242,6 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             post_events.length = 0;
         };
-        
     }, 30);
     
 // >> Data objects
@@ -708,6 +726,9 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             if (!node)
                 throw new TypeError('Failed to create element!');
+
+            if ('__type' in node)
+                node = node.element;
             
             if (node.insertAdjacentHTML) {
                 var pos;
@@ -1166,8 +1187,21 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 parameters[prop] = this_parameters[prop];
             
             // resolve constructor
-            var __type = parse_type(type, parameters, attrs),
-                constructor = resolve_ctr(__type, parameters, attributes);
+            var __type, constructor;
+            
+            if (type[0] === '<') {
+                // template
+                __type = 'controls.custom';
+                constructor = Custom;
+                attrs.$template = controls.template(type);
+                if (typeof $prime === 'string') {
+                    attrs.$text = $prime;
+                    $prime = undefined;
+                }
+            } else {
+                __type = parse_type(type, parameters, attrs),
+                constructor = resolve_ctr(__type, parameters);
+            }
 
             if ($prime)
                 attrs.$prime = $prime;
@@ -1286,9 +1320,12 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     function extract_func_code(func) {
         if (typeof func === 'function') {
             func = func.toString();
+            var lbracket = func.indexOf('('),
+                rbracket = func.indexOf(')');
             var first_par = func.indexOf('{'),
                 last_par = func.lastIndexOf('}');
-            return func.substr(first_par + 1, last_par - first_par - 1);
+            // '@' - separator func argument names vs body
+            return func.slice(lbracket + 1, rbracket) + '@' + func.substr(first_par + 1, last_par - first_par - 1);
         }
         return func;
     }
@@ -1497,8 +1534,21 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         parameters = parameters || {};
         attributes = attributes || {};
         
-        var __type = parse_type(type, parameters, attributes),
+        var __type, constructor;
+            
+        if (type[0] === '<') {
+            // template
+            __type = 'controls.custom';
+            constructor = Custom;
+            attributes.$template = controls.template(type);
+            if (typeof $prime === 'string') {
+                attributes.$text = $prime;
+                $prime = undefined;
+            }
+        } else {
+            __type = parse_type(type, parameters, attributes);
             constructor = resolve_ctr(__type, parameters);
+        }
         
         if ($prime)
             attributes.$prime = $prime;
@@ -1594,20 +1644,33 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 control.controls = data.controls;
             
             var outer_template = data.outer_template;
-            if (outer_template)
-                control.template(new Function('it', outer_template));
+            if (outer_template) {
+                // '@' - separator func argument names vs body
+                var atpos = outer_template.indexOf('@');
+                control.template(new Function(outer_template.substr(0, atpos), outer_template.substr(atpos + 1)));
+            }
             
             var inner_template = data.inner_template;
-            if (inner_template)
-                control.template(null, new Function('it', inner_template));
+            if (inner_template) {
+                var atpos = inner_template.indexOf('@');
+                control.template(null, new Function(inner_template.substr(0, atpos), inner_template.substr(atpos + 1)));
+            }
             
-            // Restore events
+            // Deserialize events
             var data_events = data.events; // json object collection of serialized controls.Event
             if (data_events) {
                 var events = control.events = {};
                 for(var i = 0, c = data_events.length; i < c; i++) {
-                    var item = data_events[i];
-                    events[item.capture ? ('#' + item.type) : item.type] = new controls.Event(control, item.type, item.capture, item.listeners);
+                    var item = data_events[i],
+                        listeners = item.listeners;
+                    for(var i = 0, c = listeners.length; i < c; i+=2) {
+                        var listener = listeners[i];
+                        if (typeof listener === 'string') {
+                            var atpos = listener.indexOf('@');
+                            listeners[i] = new Function(listener.substr(0, atpos), listener.substr(atpos + 1));
+                        }
+                    }
+                    events[item.capture ? ('#' + item.type) : item.type] = new controls.Event(control, item.type, item.capture, listeners);
                 }
             }
             return control;
@@ -1652,7 +1715,7 @@ noscript,object,ol,optgroup,option,output,p,pre,progress,ruby,rt,rp,s,samp,scrip
 table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
             .split(',').map(function(tagname) { return gencode(tagname.toLowerCase(), true); }).join(''))(controls);
     
-        Function('controls', 'area,hr,meta,param,source,track'
+        Function('controls', 'area,br,hr,meta,param,source,track'
             .split(',').map(function(tagname) { return gencode(tagname.toLowerCase(), false); }).join(''))(controls);
     })();
     
