@@ -26,19 +26,19 @@ Include the following code in your head tag:
 
 ### Hello World!
 
-<!DOCTYPE html>
-<html lang="en-US">
-<head>
-    <meta charset="utf-8">
-    <script src="controls.js"></script>
-</head>
-<body>
-<script type="text/javascript">
-    var body = controls.create('body').attach();
-    body
-        .add('h1', 'Hello World!')
-        .createElement();
-</script>
-</body>
-</html>
+    <!DOCTYPE html>
+    <html lang="en-US">
+    <head>
+        <meta charset="utf-8">
+        <script src="controls.js"></script>
+    </head>
+    <body>
+    <script type="text/javascript">
+        var body = controls.create('body').attach();
+        body
+            .add('h1', 'Hello World!')
+            .createElement();
+    </script>
+    </body>
+    </html>
 

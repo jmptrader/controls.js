@@ -1,6 +1,6 @@
 {
   "name": "controlsjs",
-  "version": "0.6.14",
+  "version": "0.6.15",
   "author": {
     "name": "vadim baklanov",
     "email": "antheworld@gmail.com"
@@ -12,9 +12,6 @@
     "url": "https://github.com/aplib/controls.js.git"
   },
   "main": "controls.js",
-  "dependencies": {
-    "dot": "~1.0.0"
-  },
  "bugs": {
     "url": "http://github.com/aplib/controls.js/issues"
   },
