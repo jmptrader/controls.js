@@ -22,17 +22,17 @@
     var ENCODE_HTML_PAIRS = { "<": "&#60;", ">": "&#62;", '"': '&#34;', "'": '&#39;', "&": "&#38;", "/": '&#47;' };
     var DECODE_HTML_MATCH = /&#(\d{1,8});/g;    
     
-    // Initialize control object
-    // 
-    // type (string) - path.type and initial set of parameters
-    //  format: path.type[/inheritable parameters][#not inheritable parameters]
-    //  parameters:
-    //  1. parameter name - add parameter and set value to boolean true
-    //  2. parameter name=value - add parameter and set value
-    //  3. -parameter name - remove parameter from inheritance (TODO)
-    //  
-    //  example: bootstrap.Button#size=2;style=info
-    //  
+    /**
+     * Initialize control object
+     * 
+     * @param {object} object Control object
+     * @param {string} __type Base type of the control, in format namespace.control
+     * @param {object} parameters Parameters hash object
+     * @param {object} attributes Attributes hash object
+     * @param {function} outer_template Outer template
+     * @param {function} inner_template Inner template
+     * @returns {object} Control object
+     */
     controls.controlInitialize = function(object, __type, parameters, attributes, outer_template, inner_template) {
         
         if (attributes) {
@@ -40,8 +40,12 @@
             object.id = (attributes.id) ? attributes.id : (attributes.id = (++controls.id_generator).toString(16)); // set per session uid
             
             // default move $prime to $text
-            if (attributes.hasOwnProperty('$prime')) {
-                attributes.$text = attributes.$prime;
+            if ('$prime' in attributes) {
+                var prime = attributes.$prime;
+                if (prime instanceof DataArray || prime instanceof DataObject)
+                    this.bind(prime)
+                else
+                    attributes.$text = prime;
                 delete attributes.$prime;
             }
             object.attributes = attributes;
@@ -69,20 +73,29 @@
         return object;
     };
     
-    // plug in control constructor to the controls infrastructure
-    // 
-    // __type {string} - unique type identifier contains namespace and name, like 'controls.Button'
-    // constructor {function} - constructor function
-    // [template] {string,function} - text or template function
-    // [revive] {function} -  json revive function
-    //
+    /**
+     * Register control constructor in the controls library
+     * 
+     * @param {string} type Type of the control
+     * @param {function} constructor Control constructor function
+     * @param {function} revive Control revive function
+     * @returns {undefined}
+     */
     controls.typeRegister = function(type, constructor, revive) {
         controls.factoryRegister(type, constructor);
         constructor.is_constructor = true;
         constructor.revive = revive;
     };
     
-    controls.factoryRegister = function(type, factory_method) {
+    /**
+     * Register control factory function in the controls library
+     * 
+     * @param {string} type Type of the control
+     * @param {function} factory Control factory function
+     * @param {function} revive Control revive function
+     * @returns {undefined}
+     */
+    controls.factoryRegister = function(type, factory) {
         var key_parameters = {},
             __type = parse_type(type, key_parameters) .toLowerCase();
         
@@ -92,7 +105,7 @@
                 subtypes_array = [];
                 controls.subtypes[__type] = subtypes_array;
             }
-            key_parameters.__ctr = factory_method;
+            key_parameters.__ctr = factory;
             subtypes_array.push(key_parameters);
         }
         else {
@@ -100,15 +113,17 @@
             if (controls[__type])
                 throw new TypeError('Type ' + type + ' already registered!');
             
-            controls[__type] = factory_method;
+            controls[__type] = factory;
         }
     };
     
-    // Register existing parameterized type as a standalone type.
-    // 
-    // alias {string} - simple type identifier
-    // type {string} - type with parameters, basic for this type must be an already existing.
-    //
+    /**
+     * Register existing parameterized type as a standalone type
+     * 
+     * @param {string} alias New alias that will be registered, in format namespace.control
+     * @param {string} type Existing base type + additional #parameters, in format existingtype#parameters
+     * @returns {undefined}
+     */
     controls.typeAlias = function(alias, type) {
         var parameters = {},
             __type = parse_type(type, parameters) .toLowerCase(),
@@ -709,6 +724,9 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             if (!node)
                 throw new TypeError('Failed to create element!');
+
+            if ('__type' in node)
+                node = node.element;
             
             if (node.insertAdjacentHTML) {
                 var pos;
@@ -1167,8 +1185,21 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 parameters[prop] = this_parameters[prop];
             
             // resolve constructor
-            var __type = parse_type(type, parameters, attrs),
-                constructor = resolve_ctr(__type, parameters, attributes);
+            var __type, constructor;
+            
+            if (type[0] === '<') {
+                // template
+                __type = 'controls.custom';
+                constructor = Custom;
+                attrs.$template = controls.template(type);
+                if (typeof $prime === 'string') {
+                    attrs.$text = $prime;
+                    $prime = undefined;
+                }
+            } else {
+                __type = parse_type(type, parameters, attrs),
+                constructor = resolve_ctr(__type, parameters);
+            }
 
             if ($prime)
                 attrs.$prime = $prime;
@@ -1498,8 +1529,21 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         parameters = parameters || {};
         attributes = attributes || {};
         
-        var __type = parse_type(type, parameters, attributes),
+        var __type, constructor;
+            
+        if (type[0] === '<') {
+            // template
+            __type = 'controls.custom';
+            constructor = Custom;
+            attributes.$template = controls.template(type);
+            if (typeof $prime === 'string') {
+                attributes.$text = $prime;
+                $prime = undefined;
+            }
+        } else {
+            __type = parse_type(type, parameters, attributes);
             constructor = resolve_ctr(__type, parameters);
+        }
         
         if ($prime)
             attributes.$prime = $prime;
@@ -1653,7 +1697,7 @@ noscript,object,ol,optgroup,option,output,p,pre,progress,ruby,rt,rp,s,samp,scrip
 table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
             .split(',').map(function(tagname) { return gencode(tagname.toLowerCase(), true); }).join(''))(controls);
     
-        Function('controls', 'area,hr,meta,param,source,track'
+        Function('controls', 'area,br,hr,meta,param,source,track'
             .split(',').map(function(tagname) { return gencode(tagname.toLowerCase(), false); }).join(''))(controls);
     })();
     
