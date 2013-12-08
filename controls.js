@@ -91,22 +91,19 @@
      * 
      * @param {string} type Type of the control
      * @param {function} factory Control factory function
-     * @param {function} revive Control revive function
      * @returns {undefined}
      */
     controls.factoryRegister = function(type, factory) {
         var key_parameters = {},
             __type = parse_type(type, key_parameters) .toLowerCase();
         
-        if (__type.length < type.length) { // type is subtype with parameters, register to controls.subtypes
-            var subtypes_array = controls.subtypes[__type];
-            if (!subtypes_array) {
-                subtypes_array = [];
-                controls.subtypes[__type] = subtypes_array;
-            }
+        // type is subtype with parameters, register to controls.subtypes
+        if (__type.length < type.length) {
             key_parameters.__ctr = factory;
+            var subtypes_array = controls.subtypes[__type] || (controls.subtypes[__type] = []);
             subtypes_array.push(key_parameters);
         }
+        // register to controls
         else {
             // check name conflict
             if (controls[__type])
@@ -1330,13 +1327,14 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         return func;
     }
     
-    // Parse full type string
-    // type format:
-    //  name:namespace.control`class1 classN#parameters/inheritable_parameters 
-    // returns value: __type {string} - base type string
-    // parameters - parsed parameters
-    // attributes - parsed attributes and $name
-    //
+    /**
+     * Parse type string
+     * 
+     * @param {string} type Type with parameters, in format name:namespace.control`class1 classN#parameters/inheritable_parameters
+     * @param {object} parameters Object acceptor parsed parameters
+     * @param {object} attributes Object acceptor parsed attributes ($name, class)
+     * @returns {String} Base type string
+     */
     function parse_type(type, parameters, attributes) {
         var start = 0,
             colonpos = type.indexOf(':'),
