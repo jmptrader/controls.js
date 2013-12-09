@@ -1932,7 +1932,6 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     function Input(parameters, attributes) {
         this.initialize('controls.input', parameters, attributes, Input.template)
         .listen_('change', function() {
-            // BUG: Calling this event is not reliable
             this.attributes.value = this.element.value;
         }, true)
         .listen_('element', function(element) {
