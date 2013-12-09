@@ -364,6 +364,37 @@ function Bootstrap(controls) {
     controls.typeRegister('bootstrap.ControlLabel', ControlLabel);
     
     
+    // ControlCheckbox
+    // 
+    function ControlCheckbox(parameters, attributes) {
+        this.initialize('bootstrap.ControlCheckbox', parameters, attributes, ControlCheckbox.template)
+            ._class('checkbox')
+            .add('input:input', attributes.$text, {type:'checkbox', checked:attributes.$checked})
+                .listen_('change', function() {
+                    this.attributes.checked = this.element.checked;
+                }, true)
+                .listen_('element', function(element) {
+                    if (element)
+                        element.checked = this.attributes.checked || '';
+                });
+        Object.defineProperty(this, 'checked', {
+            get: function() { return this.input.attributes.checked; },
+            set: function(value) {
+                value = !!value;
+                var element = this.input._element;
+                this.input.attributes.checked = value;
+                if (element)
+                    element.checked = value;
+            }
+        });
+        attributes.$checked = undefined;
+        attributes.$text = undefined;
+    };
+    ControlCheckbox.prototype = control_prototype;
+    ControlCheckbox.template = function(it) { return '<div' + it.printAttributes() + '><label>' + it.printControls() + '</label></div>'; };
+    controls.typeRegister('bootstrap.ControlCheckbox', ControlCheckbox);
+    
+    
     // ControlInput
     // 
     function ControlInput(parameters, attributes) {
