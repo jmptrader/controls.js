@@ -45,13 +45,13 @@ cbody.fill.content_pane
             var btn_size = 0;
             
             // button chevron-left
-            btngroup._add('btn_prev:bootstrap.Button#style=success', {$icon:'chevron-left'}, function(btn) {
+            btngroup._add('btn_prev:bootstrap.Button style=success', {$icon:'chevron-left'}, function(btn) {
                 btn.listen('click', function() {
                     if (btn_size > -2)
                         btn_size--;
 
                     this.parent.each(function(button) {
-                        button.type('bootstrap.Button#size=' + btn_size + ';style=' + button.parameters.style);
+                        button.type('bootstrap.Button size=' + btn_size + ' style=' + button.parameters.style);
                     });
                 });
             })
@@ -63,32 +63,32 @@ cbody.fill.content_pane
                         btn_size++;
 
                     this.parent.each(function(button) {
-                        button.type('bootstrap.Button#size=' + btn_size + ';style=' + button.parameters.style);
+                        button.type('bootstrap.Button size=' + btn_size + ' style=' + button.parameters.style);
                     });
                 });
 
             // other styled buttons
             ['default','primary','success','info','warning','danger'].forEach(function(style) {
-                btngroup.add('btn_' + style + ':bootstrap.Button#size=2;style=' + style, style, {$icon:'thumbs-up'})
+                btngroup.add('btn_' + style + ':bootstrap.Button size=2 style=' + style, style, {$icon:'thumbs-up'})
                     .listen('click', function() {
                         alert('Button style: ' + style);
                     });
             });
         })
         
-        .add('btn_link:bootstrap.Button#size=2;style=link', 'link', {$icon:'thumbs-up', style:'float:none;'})
+        .add('btn_link:bootstrap.Button size=2 style=link', 'link', {$icon:'thumbs-up', style:'float:none;'})
             .listen('click', function() {
                 alert('Button style: link');
             });
     })
     ._add(codebox(
-'example.add("btn_prev:Button#size=2;style=success",  {$icon:"chevron-left"})\n\
+'example.add("btn_prev:Button size=2 style=success",  {$icon:"chevron-left"})\n\
     .listen("click", function() {\n\
         if (btn_size > -2)\n\
             btn_size--;\n\
         \n\
         this.parent.each(function(button) {\n\
-            button.type("bootstrap.Button#size=" + btn_size + ";style=" + button.parameters.style);\n\
+            button.type("bootstrap.Button size=" + btn_size + " style=" + button.parameters.style);\n\
         });\n\
     });'))
     
@@ -98,14 +98,14 @@ cbody.fill.content_pane
     ._add('div`example top-box', function(example) {
         example.add('bootstrap.BtnGroup`btn-group-vertical')
             ._add('bootstrap.Button', 'Button 1')
-            ._add('bootstrap.Button#success', 'Button 2')
-            ._add('bootstrap.Button#primary', 'Button 3');
+            ._add('bootstrap.Button success', 'Button 2')
+            ._add('bootstrap.Button primary', 'Button 3');
     })
     ._add(codebox(
 'example.add("bootstrap.BtnGroup`btn-group-vertical")\n\
     ._add("bootstrap.Button", "Button 1")\n\
-    ._add("bootstrap.Button#success", "Button 2")\n\
-    ._add("bootstrap.Button#primary", "Button 3");\n\
+    ._add("bootstrap.Button success", "Button 2")\n\
+    ._add("bootstrap.Button primary", "Button 3");\n\
 });'))
 
 

@@ -20,7 +20,7 @@
 function UserControl(parameters, attributes) {
     this.initialize('UserControl', parameters, attributes)
         ._style('width:100px; height:80px; display:inline-block; margin-right:8px; background-color:' + Object.keys(this.parameters)[0] + ';')
-        .add('button:bootstrap.Button#style=default', 'OK')
+        .add('button:bootstrap.Button style=default', 'OK')
             .listen('click', function() {
                 alert('Button-click!');
             });
@@ -87,7 +87,7 @@ body.refresh();\n'))
     
     ._add('div`example top-box', function(example) {
         example
-        ._add(["UserControl#red", "UserControl#green", "UserControl#blue", "UserControl#silver", "UserControl#magenta"]);
+        ._add(["UserControl red", "UserControl green", "UserControl blue", "UserControl silver", "UserControl magenta"]);
     })
     
     ._add(codebox(
@@ -103,7 +103,7 @@ body.refresh();\n'))
 ...\n\
 \n\
 example\n\
-    ._add(["UserControl#red", "UserControl#green", "UserControl#blue", "UserControl#silver", "UserControl#magenta"]);'))
+    ._add(["UserControl red", "UserControl green", "UserControl blue", "UserControl silver", "UserControl magenta"]);'))
 
     
     // "Inversion of control"
@@ -111,9 +111,9 @@ example\n\
     ._add('h3', 'Inversion of control', {id:'inversion-of-control'})
     
     ._add(codebox(
-'\controls.typeRegister("bootstrap.Button#style=success", CustomBtnControl);\n\
+'\controls.typeRegister("bootstrap.Button style=success", CustomBtnControl);\n\
 ...\n\
-> var button = example.add("bootstrap.Button#size=2;style=success");'))
+> var button = example.add("bootstrap.Button size=2 style=success");'))
     ._add('p', 'The combination of type name and parameters (where parameters may be inheritable) resoves to the specific type of the object in the runtime. IoC allows to\
  override the details of the behavior of existing systems without modifying their code. For example, it will organize a versioning\
  components in the design, switching visual themes at runtime or unbreakable changes at service.');
