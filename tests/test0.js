@@ -1,49 +1,68 @@
 module("controls");
 
-test( "construction, passing the parameters and attributes", function()
-{
+test("base syntax of control construction, passing the parameters and attributes", function() {
+    
     // must be case-insensitive
     var custom = controls.create('Custom');
-    ok(custom.id && custom.controls && custom.__type === 'controls.custom', '.create() "Custom"');
+    if (custom.__type !== 'controls.custom')
+        ok(false, 'base syntax #1 .create() must be case-insensitive');
     custom = controls.create('custom');
-    ok(custom.id && custom.controls && custom.__type === 'controls.custom', '.create() "Custom" from "custom"');
+    if (custom.__type !== 'controls.custom')
+        ok(false, 'base syntax #2 .create() must be case-insensitive');
     
-    // bulk creation, naming, passing the params & attribs
-    custom.add(['label:bootstrap.Label', 'layout:Layout#float=left']);
-    custom.label.text('test012');
-    ok(custom.label.text() === 'test012'
-    && custom.layout.parameters['float'] === 'left', 'bulk add');
     
-    // parameters options
+    // bulk add, parameters, id, style
+    custom.add([
+        'control1:bootstrap.Label',
+        'control2:Layout param1=value1 /param2=value2 param3="value "3"#testid`class1 classN border:#777777 solid 1px; font-face: test;']);
+    
+    if (custom.length !== 2 || !custom.control2)
+        ok(false, 'base syntax #3 bulk add');
+        
+    if (custom.control2.id !== 'testid'
+    || custom.control2.parameters['param1'] !== 'value1'
+    || custom.control2.parameters['/param2'] !== 'value2'
+    || custom.control2.parameters['/param3'] !== 'value "3')
+        ok(false, 'base syntax #3 bulk add');
+    
+    if(custom.control2.class() !== 'class1 classN')
+        ok(false, 'base syntax #3 bulk add');
+    
+    
+    // passing attributes hash and calling callback
     var callback_passed = false;
     custom.add('pass_attributes_callback:label', {test:'123'}, function (control) { callback_passed = true; });
-    ok(custom.pass_attributes_callback.attributes.test === '123'
-    && callback_passed, 'parameters options #1');
+    if(custom.pass_attributes_callback.attributes.test !== '123' || !callback_passed)
+        ok(false, 'base syntax #4 attributes hash and callback');
+    
     
     // callback only, check preserved this
     callback_passed = false;
-    custom.add('pass_callback:label', function (added_control)
-    {
+    custom.add('pass_callback:label', function(added_control) {
         callback_passed = true;
-        ok(custom === this // preserved this from custom.add()
-        && added_control === custom.pass_callback, 'parameters options #2');
+        if (custom !== this // preserved this from custom.add()
+        || added_control !== custom.pass_callback)
+            ok(false, 'base syntax #5 this in callback, callback parameter');
     });
-    ok(callback_passed, 'parameters options #2');
+    if (!callback_passed)
+        ok(false, 'base syntax #6 callback only');
+    
+    
+    ok(true, 'base syntax passed');
 });
 
-test( "type resolving", function()
-{
+test( "type resolving", function() {
+    
     // apply test record allow check resolving by parameters values
     
     var test_parameters = {};
-    test_parameters.__ctr = controls.Div;
+    test_parameters.__ctr = controls.div;
     controls.subtypes['controls.div'] = [test_parameters];
     
     // register test subtype
     
-    var DivBlue = function(parameters, attributes)
-    {
-        controls.controlInitialize(this, 'controls.Div', parameters, DivBlue.template, attributes);
+    var DivBlue = function(parameters, attributes) {
+        this.initialize('div', parameters, DivBlue.template, attributes);
         this.test_method = function() { return true; };
     };
     DivBlue.prototype = controls.control_prototype;
@@ -57,20 +76,20 @@ test( "type resolving", function()
     ok(control.test_method(), "controls.create('div/blue'); - subtype resolving");
     
     // change type
-    control.type('test.Custom#test=5');
-    ok(control.__type === 'test.Custom', '.type("test.Custom#test=5"); - change type');
+    control.type('test.custom test=5');
+    ok(control.__type === 'test.custom', '.type("test.custom test=5"); - change type');
     ok(control.parameters['test'] === '5', "check parameter value");
     
    
     // check default 'controls.'
     var defcontrols = control.add('div');
     if (defcontrols.type() !== 'controls.div')
-        ok(0, '"test.Div".add("Div"); - check default controls. namespace');
+        ok(0, '"test.div".add("div"); - check default controls. namespace');
     
     var start = performance.now();
-    control = controls.create('Div/blue');
+    control = controls.create('div/blue');
     for(var i = 0; i < 10000; i++)
-        control.add('Custom#test=5');
+        control.add('custom test=5');
     var spent = performance.now() - start;
     ok(spent < 300, 'check parameters resolving performance 10 000 controls ' + spent + ' ms < 300 ms OK (good to firefox)');
 });
@@ -85,9 +104,9 @@ test( "serialize-deserialize controls", function() {
         
         if (type === 'controls.frame')
             // must be defined src
-            control = controls.create(type + '/test=1#test=2', {src:'http://localhost/'});
+            control = controls.create(type + ' test=2/test=1', {src:'http://localhost/'});
         else
-            control = controls.create(type + '/test=1;test4=4#test=2;test5=5');
+            control = controls.create(type + ' test=2 test5=5/test=1 test4=4');
         
         if (!control.attr)
             continue; // It is not control

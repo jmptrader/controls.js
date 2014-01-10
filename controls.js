@@ -9,14 +9,19 @@
 (function() { 'use strict';
 
     var controls = {
-        VERSION: '0.6.15'/*#.#.##*/,
+        VERSION: '0.7.01'/*#.#.##*/,
         id_generator: 53504,
         // assignable default template engine
-        template: function(templ) { return new Function('return \'' + templ.replace(/'/g, "\\'") + '\''); },
+        //template: function(templ) { return new Function('return \'' + templ.replace('\n', '\\\n').replace(/'/g, "\\'") + '\''); },
+        template: function(templ) {
+            return new Function('return \'' + templ.replace(/'|\n/g, function(substr) {
+                return {"'":"\\'", "\n":"\\n\\\n"}[substr];
+            }) + '\'');
+        },
         subtypes: {} // Registered subtypes
     };
     
-    var IDENTIFIERS = ',add,attach,attributes,class,data,element,first,id,__type,controls,last,name,each,forEach,parameters,parent,remove,style,';
+    var IDENTIFIERS = ',add,_add,attach,attr,_attr,attrs,attributes,class,controls,data,delete,each,element,findFirst,findLast,first,forEach,id,insert,_insert,__type,last,length,name,parameters,parent,refresh,remove,style,template,';
     var ENCODE_HTML_MATCH = /&(?!#?\w+;)|<|>|"|'|\//g;
     var ENCODE_HTML_PAIRS = { "<": "&#60;", ">": "&#62;", '"': '&#34;', "'": '&#39;', "&": "&#38;", "/": '&#47;' };
     var DECODE_HTML_MATCH = /&#(\d{1,8});/g;    
@@ -35,8 +40,8 @@
     controls.controlInitialize = function(object, __type, parameters, attributes, outer_template, inner_template) {
         
         if (attributes) {
-            object.name = attributes.$name;
             object.id = (attributes.id) ? attributes.id : (attributes.id = (++controls.id_generator).toString(16)); // set per session uid
+            object.name = attributes.$name;
             
             // default move $prime to $text
             if ('$prime' in attributes) {
@@ -48,26 +53,27 @@
                 delete attributes.$prime;
             }
             object.attributes = attributes;
-        } else {
-            var id = object.id = (++controls.id_generator).toString(16); // set per session uid
-            object.attributes = {id:id};
-        }
+        } else
+            object.attributes = {id:(object.id = (++controls.id_generator).toString(16))}; // set per session uid
         
-        object.__type       = __type;
+        object.__type       = (__type.indexOf('.') >= 0) ? __type : ('controls.' + __type);
         object.parameters   = parameters || {};
         object.controls     = [];               // This is a collection of nested objects
         
-        if (outer_template)
-        Object.defineProperty(object, 'outer_template', {
-            enumerable: true, writable: true,
-            value: outer_template
-        });
-
-        if (inner_template)
-        Object.defineProperty(object, 'inner_template', {
-            enumerable: true, writable: true,
-            value: inner_template
-        });
+        if (outer_template) {
+            outer_template.no_serialize = true;
+            Object.defineProperty(object, 'outer_template', {
+                enumerable: true, writable: true,
+                value: outer_template
+            });
+        }
+        if (inner_template) {
+            inner_template.no_serialize = true;
+            Object.defineProperty(object, 'inner_template', {
+                enumerable: true, writable: true,
+                value: inner_template
+            });
+        }
     
         return object;
     };
@@ -149,12 +155,9 @@
      * @returns {controls.Event} Collection of a specified type
      */
     function force_event(object, type, capture) {
-        var events = object.events;
-        if (!events)
-            object.events = events = {};
-
-        var key = (capture) ? ('#'/*capture*/ + type) : type;
-        var event = events[key];
+        var events = object.events || (object.events = {}),
+            key = (capture) ? ('#'/*capture*/ + type) : type,
+            event = events[key];
         if (!event) {
             events[key] = event = new controls.Event(object, type, capture);
 
@@ -250,15 +253,16 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             return this;
         },
         listen_: function(call_this/*optional*/, listener) {
-            if (typeof listener === 'function') listener.no_serialize = true;
-            else call_this.no_serialize = true;
+            if (typeof listener === 'function')
+                listener.no_serialize = true;
+            else
+                call_this.no_serialize = true;
             return this.listen.apply(this, arguments);
         },
         removeListener: function(listener) {
             var event = this.event;
             if (event)
                 event.removeListener(listener);
-            
             return this;
         },
         subscribe: function(call_this/*optional*/, listener) {
@@ -279,7 +283,6 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             var post_event = this.post_event;
             if (post_event)
                 post_event.removeListener(listener);
-            
             return this;
         },
         raise: function() {
@@ -372,11 +375,9 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         array.last_operation = 0;                  // Last state-changing operation
         array.last_changed   = undefined;          // Last changed property name or index
         
-        if (parameters && parameters.adapter) {
-            this.adapter = controls.create(parameters.adapter);
-            if (!this.adapter)
-                throw new TypeError('Invalid data adapter type "' + parameters.adapter + '"!');
-        }
+        if (parameters && parameters.adapter)
+        if (!(this.adapter = controls.create(parameters.adapter)))
+            throw new TypeError('Invalid data adapter type "' + parameters.adapter + '"!');
         
         return array;
     }
@@ -389,59 +390,6 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         this.initialize = function(__type, parameters, _attributes, outer_template, inner_template) {
             return controls.controlInitialize(this, __type, parameters, _attributes, outer_template, inner_template);
         };
-        
-        Object.defineProperty(this, 'name', {
-            enumerable: true, 
-            get: function() { return this._name; },
-            set: function(value) {
-                if (IDENTIFIERS.indexOf(',' + value + ',') >= 0)
-                    throw new SyntaxError('Invalid name "' + value + '"!');
-
-                var name = this._name;
-                if (value !== name) {
-                    this._name = value;
-
-                    var parent = this._parent;
-                    if (parent) {
-                        if (name && parent.hasOwnProperty(name) && parent[name] === this)
-                            delete parent[name];
-
-                        if (value)
-                            parent[value] = this;
-                    }
-                }
-            }
-        });
-        
-        // The associated element of control
-        Object.defineProperty(this, 'element', {
-            enumerable: true,
-            get: function() { return this._element; },
-            set: function(attach_to_element) {
-                if (arguments.length === 0)
-                    return this._element;
-
-                var element = this._element;
-                if (attach_to_element !== element) {
-                    this._element = attach_to_element;
-
-                    var events = this.events;
-                    if (events)
-                    for(var event_type in events) {
-                        var event = events[event_type];
-                        if (event.is_dom_event) {
-                            // remove event raiser from detached element
-                            if (element)
-                                element.removeEventListener(event.type, event.raise, event.capture);
-                            // add event raiser as listener for attached element
-                            if (attach_to_element)
-                                attach_to_element.addEventListener(event.type, event.raise, event.capture);
-                        }
-                    }
-                    this.raise('element', attach_to_element);
-                }
-            }
-        });
         
         function setParent(value, index) {
             var parent = this._parent;
@@ -480,12 +428,60 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         }
         
         Object.defineProperties(this, {
+            // name of the control
+            name: {
+                enumerable: true, 
+                get: function() { return this._name; },
+                set: function(value) {
+                    if (IDENTIFIERS.indexOf(',' + value + ',') >= 0)
+                        throw new SyntaxError('Invalid name "' + value + '"!');
+
+                    var name = this._name;
+                    if (value !== name) {
+                        this._name = value;
+
+                        var parent = this._parent;
+                        if (parent) {
+                            if (name && parent.hasOwnProperty(name) && parent[name] === this)
+                                delete parent[name];
+
+                            if (value)
+                                parent[value] = this;
+                        }
+                    }
+                }
+            },
+            // The associated element of control
+            element: {
+                enumerable: true,
+                get: function() { return this._element; },
+                set: function(attach_to_element) {
+                    var element = this._element;
+                    if (attach_to_element !== element) {
+                        this._element = attach_to_element;
+
+                        var events = this.events;
+                        if (events)
+                        for(var event_type in events) {
+                            var event = events[event_type];
+                            if (event.is_dom_event) {
+                                // remove event raiser from detached element
+                                if (element)
+                                    element.removeEventListener(event.type, event.raise, event.capture);
+                                // add event raiser as listener for attached element
+                                if (attach_to_element)
+                                    attach_to_element.addEventListener(event.type, event.raise, event.capture);
+                            }
+                        }
+                        this.raise('element', attach_to_element);
+                    }
+                }
+            },
             parent: {
                 enumerable: true,
                 get: function() { return this._parent; },
                 set: setParent
             },
-        
             wrapper: {
                 enumerable: true,
                 get: function() { return this._wrapper; },
@@ -510,17 +506,203 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         //                        wrapper_controls.splice(index, 1);
 
                             value_controls.push(this);
-
-                            // TODO value.refresh();
                         }
                     }
                 }
             },
-        
-            length: { enumerable: true, get: function() { return this.controls.length; } },
-            first:  { enumerable: true, get: function() { return this.controls[0]; } },
-            last:   { enumerable: true, get: function() { return this.controls[this.controls.length-1]; } }
+            length: {
+                enumerable: true,
+                get: function() {
+                    return this.controls.length;
+                }
+            }
         });
+        
+        this.find = function(selector, by_attrs, recursive) {
+            if (arguments.length < 3)
+                recursive = true;
+            var controls = this.controls,
+                result = [];
+            if (typeof selector === 'object' || typeof by_attrs === 'object') {
+                for(var i = 0, c = controls.length; i < c; i++) {
+                    var control = controls[i];
+                    // by properties
+                    if (selector)
+                    for(var prop in selector)
+                    if (control[prop] === selector[prop])
+                        result.push(control);
+                    // by attributes
+                    else if (by_attrs) {
+                        var attributes = control.attributes;
+                        for(var prop in by_attrs)
+                        if (attributes[prop] === by_attrs[prop])
+                            result.push(control);
+                    }
+                    // find recursively
+                    else if (recursive) {
+                        var finded = control.find(selector, by_attrs, recursive);
+                        if (finded.length)
+                            result.push.apply(result, finded);
+                    }
+                }
+            } else if (!selector) {
+                return controls[0];
+            } else if (typeof selector === 'string') {
+                return callWithSelector.call(this, this.find, selector);
+            } else if (typeof selector === 'function') {
+                for(var i = 0, c = controls.length; i < c; i++) {
+                    var control = controls[i];
+                    if (selector(control))
+                        result.push(control);
+                    // find recursively
+                    else if (recursive) {
+                        var finded = control.find(selector, by_attrs, recursive);
+                        if (finded.length)
+                            result.push.apply(result, finded);
+                    }
+                }
+            }
+        };
+        
+        this.select = function(selector, by_attrs) {
+            return this.find(selector, by_attrs, false);
+        };
+                
+        this.first = function(selector, by_attrs) {
+            return this.findFirst(selector, by_attrs, false);
+        };
+        
+        /**
+         * 
+         * @param {string,function} selector (string) format name:type`class#id, (object) Control property values for comparing
+         * @param {type} attrs Control attribute values for comparing
+         * @returns {object} matched control
+         */
+        this.findFirst = function(selector, by_attrs, recursive) {
+            if (arguments.length < 3)
+                recursive = true;
+            var controls = this.controls;
+            if (typeof selector === 'object' || typeof by_attrs === 'object') {
+                for(var i = 0, c = controls.length; i < c; i++) {
+                    var control = controls[i];
+                    // by properties
+                    if (selector)
+                    for(var prop in selector)
+                    if (control[prop] === selector[prop])
+                        return control;
+                    // by attributes
+                    if (by_attrs) {
+                        var attributes = control.attributes;
+                        for(var prop in by_attrs)
+                        if (attributes[prop] === by_attrs[prop])
+                            return control;
+                    }
+                    // find recursively
+                    if (recursive) {
+                        var finded = control.findFirst(selector, by_attrs, recursive);
+                        if (finded)
+                            return finded;
+                    }
+                }
+            } else if (!selector) {
+                return controls[0];
+            } else if (typeof selector === 'string') {
+                return callWithSelector.call(this, this.findFirst, selector);
+            } else if (typeof selector === 'function') {
+                for(var i = 0, c = controls.length; i < c; i++) {
+                    var control = controls[i];
+                    if (selector(control))
+                        return control;
+                    // find recursively
+                    if (recursive) {
+                        var finded = control.findFirst(selector, by_attrs, recursive);
+                        if (finded)
+                            return finded;
+                    }
+                }
+            }
+        };
+        
+        this.last = function(selector, by_attrs) {
+            return this.findLast(selector, by_attrs, false);
+        };
+        
+        this.findLast = function(selector, by_attrs, recursive) {
+            if (arguments.length < 3)
+                recursive = true;
+            var controls = this.controls;
+            if (typeof selector === 'object' || typeof by_attrs === 'object') {
+                for(var i = controls.length - 1; i >= 0; i--) {
+                    var control = controls[i];
+                    // by properties
+                    if (selector)
+                    for(var prop in selector)
+                    if (control[prop] === selector[prop])
+                        return control;
+                    // by attributes
+                    if (by_attrs) {
+                        var attributes = control.attributes;
+                        for(var prop in by_attrs)
+                        if (attributes[prop] === by_attrs[prop])
+                            return control;
+                    }
+                    // find recursively
+                    if (recursive) {
+                        var finded = control.findLast(selector, by_attrs, recursive);
+                        if (finded)
+                            return finded;
+                    }
+                }
+            } else if (!selector) {
+                return controls[0];
+            } else if (typeof selector === 'string') {
+                return callWithSelector.call(this, this.findLast, selector);
+            } else if (typeof selector === 'function') {
+                for(var i = controls.length - 1; i >= 0; i--) {
+                    var control = controls[i];
+                    if (selector(control))
+                        return control;
+                    // find recursively
+                    if (recursive) {
+                        var finded = control.findLast(selector, by_attrs, recursive);
+                        if (finded)
+                            return finded;
+                    }
+                }
+            }
+        };
+        
+        function callWithSelector(method, selector) {
+            // name:...
+            var name, type = selector, colonpos = selector.indexOf(':');
+            if (colonpos >= 0) {
+                name = selector.substr(0, colonpos);
+                type = selector.substr(colonpos + 1);
+            }
+            // `...
+            var clss, gravepos = type.indexOf('`');
+            if (gravepos >= 0) {
+                type = selector.substr(0, gravepos);
+                clss = selector.substr(gravepos + 1);
+            }
+            // #...
+            var num, numpos = type.indexOf('#');
+            if (numpos >= 0) {
+                type = selector.substr(0, numpos);
+                num = selector.substr(numpos + 1);
+            }
+            
+            if (type && type.indexOf('.') < 0)
+                type = 'controls.' + type;
+            
+            var by_props, by_attrs;
+            if (type)   (by_props || (by_props = {})).__type = type;
+            if (name)   (by_props || (by_props = {})).name = name;
+            if (clss)   (by_attrs || (by_attrs = {})).class = clss;
+            return method.call(this, by_props, by_attrs);
+        }
+        
+        
         
         // default html template
         this.outer_template = function(it) { return '<div' + it.printAttributes() + '>' + (it.attributes.$text || '') + it.printControls() + '</div>'; };
@@ -589,10 +771,16 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             if (ctrls.length)
                 json.controls = ctrls;
             
-            if (this.hasOwnProperty('outer_template'))
-                json.outer_template = extract_func_code(this.outer_template);
-            if (this.hasOwnProperty('inner_template'))
-                json.inner_template = extract_func_code(this.inner_template);
+            if (this.hasOwnProperty('outer_template')) {
+                var outer_template = this.outer_template;
+                if (!outer_template.no_serialize)
+                    json.outer_template = extract_func_code(this.outer_template);
+            }
+            if (this.hasOwnProperty('inner_template')) {
+                var inner_template = this.outer_template;
+                if (!inner_template.no_serialize)
+                    json.inner_template = extract_func_code(this.inner_template);
+            }
             
             var events = this.events;
             if (events) {
@@ -622,24 +810,24 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 if (!element.parentNode) {
                     // orphaned element
                     this._element = undefined;
-                }
-                else
-                try {
-                    // Setting .outerHTML breaks hierarchy DOM, so you need a complete re-initialisation bindings to DOM objects.
-                    // Remove wherever possible unnecessary calls .refresh()
+                } else {
+                    try {
+                        // Setting .outerHTML breaks hierarchy DOM, so you need a complete re-initialisation bindings to DOM objects.
+                        // Remove wherever possible unnecessary calls .refresh()
 
-                    var html = this.outerHTML();
-                    if (html !== element.outerHTML) {
-                        this.detachAll();
-                        element.outerHTML = html;
-                        this.attachAll();
+                        var html = this.outerHTML();
+                        if (html !== element.outerHTML) {
+                            this.detachAll();
+                            element.outerHTML = html;
+                            this.attachAll();
+                        }
                     }
-                }
-                catch (e) {
-                    // Uncaught Error: NoModificationAllowedError: DOM Exception 7
-                    //  1. ? xml document
-                    //  2. ? "If the element is the root node" ec orphaned element
-                    this._element = undefined;
+                    catch (e) {
+                        // Uncaught Error: NoModificationAllowedError: DOM Exception 7
+                        //  1. ? xml document
+                        //  2. ? "If the element is the root node" ec orphaned element
+                        this._element = undefined;
+                    }
                 }
             }
             return this;
@@ -721,11 +909,11 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 opcode = 0;
             }
             
+            if (node && '__type' in node)
+                node = node.element;
+            
             if (!node)
                 throw new TypeError('Failed to create element!');
-
-            if ('__type' in node)
-                node = node.element;
             
             if (node.insertAdjacentHTML) {
                 var pos;
@@ -749,10 +937,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
 
                 switch(opcode) {
                     case 1:
-                        if (node.childNodes.length === 0)
-                            node.appendChild(fragment);
-                        else
-                            node.insertBefore(node.firstChild, fragment);
+                        (node.childNodes.length === 0) ? node.appendChild(fragment) : node.insertBefore(node.firstChild, fragment);
                         break;
                     case 2:
                         var nodeparent = node.parentNode;
@@ -779,6 +964,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         this.deleteElement = function() {
             var element = this._element;
             if (element) {
+                this.detachAll();
                 var parent_node = element.parentNode;
                 if (parent_node)
                     parent_node.removeChild(element);
@@ -801,7 +987,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         // listener {string,function(event)} - event listener function or function body text
         // [capture {bool}] - 
         //
-        this.listen = function(type, call_this/*optional*/, listener, capture/*optional*/) {
+        this.on = this.listen = function(type, call_this/*optional*/, listener, capture/*optional*/) {
             if (typeof(call_this) === 'function') {
                 capture = listener;
                 listener = call_this;
@@ -814,7 +1000,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         };
         
         // set listener and check listener as no_serialize
-        this.listen_ = function(type, call_this, listener, capture) {
+        this.on_ = this.listen_ = function(type, call_this, listener, capture) {
             if (typeof(call_this) === 'function') {
                 capture = listener;
                 listener = call_this;
@@ -929,22 +1115,30 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             if (!arguments.length) {
                 var inheritable = '', unheritable = '', parameters = this.parameters;
                 for(var prop in parameters) {
-                    if (prop[0] !== '/') {
-                        // not inheritable parameters
-                        if (unheritable) unheritable += ';';
-                        unheritable += prop + '=' + parameters[prop];
-                    } else {
+                    var value = parameters[prop];
+                    if (typeof value === 'boolean' && value)
+                        value = '';
+                    else  {
+                        if (typeof value !== 'string')
+                            value = String(value);
+                        value = ((value.indexOf(' ') >= 0) ? ('="' + value + '"') : ('=' + value));
+                    }
+                    if (prop[0] === '/') {
                         // inheritable parameters
-                        if (inheritable) inheritable += ';';
-                        inheritable += prop.substr(1) + '=' + parameters[prop];
+                        if (inheritable) inheritable += ' ';
+                        inheritable += prop.substr(1) + value;
+                    } else {    
+                        // not inheritable parameters
+                        if (unheritable) unheritable += ' ';
+                        unheritable += prop + value;
                     }
                 }
                 
                 var type = this.__type;
+                if (unheritable)
+                    type += ' ' + unheritable;
                 if (inheritable)
                     type += '/' + inheritable;
-                if (unheritable.length > 0)
-                    type += '#' + unheritable;
 
                 return type;
             }
@@ -1196,7 +1390,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                     $prime = undefined;
                 }
             } else {
-                __type = parse_type(type, parameters, attrs),
+                __type = parse_type(type, parameters, attrs);
                 constructor = resolve_ctr(__type, parameters);
             }
 
@@ -1328,7 +1522,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     }
     
     /**
-     * Parse type string
+     * Parse type string, format 2.0
      * 
      * @param {string} type Type with parameters, in format name:namespace.control`class1 classN#parameters/inheritable_parameters
      * @param {object} parameters Object acceptor parsed parameters
@@ -1336,108 +1530,109 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
      * @returns {String} Base type string
      */
     function parse_type(type, parameters, attributes) {
-        var start = 0,
-            colonpos = type.indexOf(':'),
-            dotpos = type.indexOf('.'),
-            gravepos = type.indexOf('`'),
-            numpos = type.indexOf('#'),
-            slashpos = type.indexOf('/'),
-            leftpos = type.indexOf('{');
         
-        if (dotpos >= 0 && colonpos > dotpos)
-            colonpos = -1;
-        if (gravepos >= 0) {
-            if (colonpos > gravepos) colonpos = -1;
-            if (dotpos > gravepos) dotpos = -1;
-        }
-        if (numpos >= 0) {
-            if (colonpos > numpos) colonpos = -1;
-            if (dotpos > numpos) dotpos = -1;
-            if (gravepos > numpos) gravepos = -1;
-        }
-        if (slashpos >= 0) {
-            if (colonpos > slashpos) colonpos = -1;
-            if (dotpos > slashpos) dotpos = -1;
-            if (gravepos > slashpos) gravepos = -1;
-        }
-        if (leftpos >= 0) {
-            if (colonpos > leftpos) colonpos = -1;
-            if (dotpos > leftpos) dotpos = -1;
-            if (gravepos > leftpos) gravepos = -1;
-            if (slashpos > leftpos) slashpos = -1;
-        }
-
-         // name:... syntax
-        if (colonpos >= 0) {
-            if (attributes)
-                attributes.$name = type.substr(0, colonpos);
-            start = colonpos + 1;
-        }
-
-        var namespace;
-        // namespace. syntax
-        if (dotpos >= 0) {
-            namespace = type.substr(start, 1 + dotpos - start);
-            start = dotpos + 1;
-        }
-        if (!namespace) namespace = 'controls.';
+        var match = type.match(/\S+?(?=#|\/|`|\s|$|@)/);
+        if (!match)
+            return '';
+        var match = match[0],
+            __type, commapos = match.indexOf(':');
+        if (commapos >= 0) {
+            attributes.$name = match.substr(0, commapos);
+            __type = match.substr(commapos + 1);
+        } else
+            __type = match;
+        if (__type.indexOf('.') < 0)
+            __type = 'controls.' + __type;
         
-        var paramsbegin = numpos;
-        if (paramsbegin < 0 || (slashpos >= 0 && slashpos < paramsbegin))   paramsbegin = slashpos;
-        if (paramsbegin < 0 || (leftpos >= 0 && leftpos < paramsbegin))     paramsbegin = leftpos;
-        
-        // __type
-        var __type = namespace + type.substr(start, ((gravepos >= 0) ? gravepos : (paramsbegin >= 0) ? paramsbegin : type.length) - start);
-        
-        // .class1 classN  syntax
-        if (attributes) {
-            var cls = (gravepos < 0) ? '' : (paramsbegin >= 0) ? type.substr(gravepos + 1, paramsbegin - gravepos - 1) : type.substr(gravepos + 1);
-            if (cls || !cls.hasOwnProperty('class'))
-                attributes.class = (attributes.class) ? (attributes.class + ' ' + cls) : cls;
-        }
-        
-        if (leftpos >= 0) {
-            var rightpos = type.lastIndexOf('}');
-            // component source url
-            parameters['#{href}'] = type.substr(leftpos + 1, (rightpos >= 0) ? (rightpos - leftpos - 1) : (type.length - leftpos - 1));
-        }
-        
-        // parse /inheritable parameters
-        if (slashpos >= 0) {
-            var iparams = type.substr(slashpos + 1, ((numpos > slashpos) ? numpos : (leftpos > slashpos) ? leftpos : type.length) - slashpos - 1)
-                .split(';');
-            for(var i = 0, c = iparams.length; i < c; i++) {
-                var param = iparams[i],
-                    eqpos = param.indexOf('=');
-                if (eqpos >= 0)
-                    parameters['/' + param.substr(0, eqpos)] = param.substr(eqpos + 1);
-                else
-                    parameters['/' + param] = true;
+        // parse parameters
+        var params = type.slice(match.length),
+            pos = 0, paramslen = params.length, inheritable = false, style = false;
+        while(pos < paramslen && !style) {
+            switch(params.charAt(pos)) {
+                case ' ':case '\n':case '\t':  // parameters separator
+                    pos++;
+                    break;
+                case '/': // next parameters is inheritable
+                    inheritable = true; pos++;
+                    break;
+                case '`': // reminder of the line is style
+                    style = true; pos++;
+                    break;
+                case '#': // assign identifier
+                    var id_regex = /\S+?(?=#|`|\/|\s|$|@)/g;
+                    id_regex.lastIndex = pos;
+                    var match_id = id_regex.exec(params)[0];
+                    attributes.id = match_id.slice(1);
+                    pos += match_id.length;
+                    break;
+                default:
+                    // TODO попробовать вынести создание регекса вне цикла
+                    var par_name_regex = /\S+?(?=(=|#|`|\/|\s|$|@))/g;
+                    par_name_regex.lastIndex = pos;
+                    var par_name_match = par_name_regex.exec(params);
+                    if (!par_name_match)
+                        pos++;
+                    else {
+                        var parname = par_name_match[0],
+                        par_name_after = par_name_match.index + parname.length;
+                        if (par_name_match[1] === '=') {
+                            if (params.charAt(par_name_after + 1) === '"') {
+                                // param="value with spaces"
+                                var quotepos = params.indexOf('"', par_name_after + 2);
+                                while(quotepos >= 0 && quotepos < paramslen - 1 && ' \n\t#/`'.indexOf(params.charAt(quotepos + 1)) < 0)
+                                    quotepos = params.indexOf('"', quotepos + 1);
+                                if (quotepos < 0) {
+                                    // param=" may be \" and no "
+                                    if (inheritable) parname = '/' + parname;
+                                    parameters[parname] = params.substr(par_name_after + 2);
+                                    pos = paramslen;
+                                } else {
+                                    if (inheritable) parname = '/' + parname;
+                                    parameters[parname] = params.slice(par_name_after + 2, quotepos);
+                                    pos = quotepos + 1;
+                                }
+                            } else {
+                                // param=value
+                                var value_regex = /\S*?(?=(#|`|\/|\s|$|@))/g;
+                                value_regex.lastIndex = par_name_after + 1;
+                                var value = value_regex.exec(params)[0];
+                                pos = par_name_after + 1 + value.length;
+                                if (inheritable) parname = '/' + parname;
+                                parameters[parname] = value;
+                            }
+                        } else {
+                            // param
+                            if (inheritable) parname = '/' + parname;
+                            parameters[parname] = true;
+                            pos = par_name_after;
+                        }
+                    }
             }
         }
         
-        // parse #unheritable parameters
-        if (numpos >= 0) {
-            var uparams = type.substr(numpos + 1, ((slashpos > numpos) ? slashpos : (leftpos > numpos) ? leftpos : type.length) - numpos - 1)
-                .split(';');
-            for(var i = 0, c = uparams.length; i < c; i++) {
-                var param = uparams[i],
-                    eqpos = param.indexOf('=');
-                if (eqpos >= 0)
-                    parameters[param.substr(0, eqpos)] = param.substr(eqpos + 1);
-                else
-                    parameters[param] = true;
+        if (style) {
+            var classes = params.length,
+                colonpos = params.indexOf(':', pos);
+            if (colonpos >= 0) {
+                while(' \n\t`'.indexOf(params.charAt(colonpos)) < 0 && colonpos > pos)
+                    colonpos--;
+                classes = colonpos;
             }
+            attributes.class = params.slice(pos, classes);
+            attributes.style = params.slice(classes).trim();
         }
+    
+        // TODO {href} syntax
 
         return __type;
-    };
+    }
     
-    // Resolve __type and parameters to control constructor
-    //
-    // __type - base type, example "controls.Custom"
-    // parameters - parameters parsed from original type
-    //
+    /**
+     *  Resolve __type and parameters to control constructor
+     * @param {string} __type Base type, example "controls.custom"
+     * @param {object} parameters Parameters parsed from original type
+     * @returns {object} Control constructor
+     */
     function resolve_ctr(__type, parameters) {
         // after parse and before ctr resolve apply alias
         
@@ -1479,7 +1674,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         }
         
         return constructor;
-    };
+    }
     controls.resolveType = resolve_ctr;
     
     // Unresolved type error processing mode
@@ -1501,6 +1696,9 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     // syntax: controls.create(type, attributes); controls.create(type, parameters, attributes);
     //
     controls.create = function(type, /*optional*/ $prime, /*optional*/ parameters, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+        
+        // normalize arguments
+        
         var arglen = arguments.length;
         if (typeof $prime !== 'string' || $prime instanceof Object) {
             this_arg = callback;
@@ -1534,7 +1732,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         
         var __type, constructor;
             
-        if (type[0] === '<') {
+        if (type.charAt(0) === '<') {
             // template
             __type = 'controls.custom';
             constructor = Custom;
@@ -1548,7 +1746,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             constructor = resolve_ctr(__type, parameters);
         }
         
-        if ($prime)
+        if ($prime !== undefined)
             attributes.$prime = $prime;
             
         if (!constructor) {
@@ -1708,8 +1906,8 @@ c' + tagname + '.prototype = controls.control_prototype;\n'
         }
         
         Function('controls', 'a,abbr,address,article,aside,b,base,bdi,bdo,blockquote,button,canvas,cite,code,col,colgroup,command,datalist,dd,del,details,\
-dfn,div,dl,dt,em,embed,fieldset,figcaption,figure,footer,form,gnome,h1,h2,h3,h4,h5,h6,header,i,iframe,img,ins,kbd,keygen,label,legend,li,link,map,mark,menu,meter,nav,\
-noscript,object,ol,optgroup,option,output,p,pre,progress,ruby,rt,rp,s,samp,script,section,small,span,strong,style,sub,summary,sup,\
+dfn,div,dl,dt,em,embed,fieldset,figcaption,figure,footer,form,g,gnome,h1,h2,h3,h4,h5,h6,header,i,iframe,img,ins,kbd,keygen,label,legend,li,link,map,mark,menu,meter,nav,\
+noscript,object,ol,optgroup,option,output,p,pre,progress,ruby,rt,rp,s,samp,script,section,small,span,strong,style,sub,summary,sup,svg,\
 table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
             .split(',').map(function(tagname) { return gencode(tagname.toLowerCase(), true); }).join(''))(controls);
     
@@ -1817,22 +2015,22 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     
     // Head
     function Head(parameters, attributes) {
-        controls.controlInitialize(this, 'controls.head', parameters, attributes, Head.template);
+        controls.controlInitialize(this, 'controls.head', parameters, attributes, Head.outer_template);
         this.attach    = function() { this.element = document.head; return this; };
         this.attachAll = function() { this.element = document.head; return Head.prototype.attachAll.call(this); return this; };
     };
     Head.prototype = controls.control_prototype;
-    Head.template = function(it) { return '<head>' + (it.attributes.$text || '') + it.printControls() + '</head>'; };
+    Head.outer_template = function(it) { return '<head>' + (it.attributes.$text || '') + it.printControls() + '</head>'; };
     controls.typeRegister('head', Head);
     
     // Body
     function Body(parameters, attributes) {
-        controls.controlInitialize(this, 'controls.body', parameters, attributes, Body.template);
+        controls.controlInitialize(this, 'controls.body', parameters, attributes, Body.outer_template);
         this.attach    = function() { this.element = document.body; return this; };
         this.attachAll = function() { this.element = document.body; return Body.prototype.attachAll.call(this); return this; };
     };
     Body.prototype = controls.control_prototype;
-    Body.template = function(it) { return '<body' + it.printAttributes('-id') + '>' + (it.attributes.$text || '') + it.printControls() + '</body>'; };
+    Body.outer_template = function(it) { return '<body' + it.printAttributes('-id') + '>' + (it.attributes.$text || '') + it.printControls() + '</body>'; };
     controls.typeRegister('body', Body);
     
 
@@ -1847,7 +2045,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     // layout.cellSet.class(...);
     // 
     function Layout(parameters, attributes) {
-        this.initialize('controls.layout', parameters, attributes, Layout.template);
+        this.initialize('controls.layout', parameters, attributes, Layout.outer_template);
         var clearfix = false; // use clearfix if float
         
         this.cellSet = new Container();
@@ -1884,7 +2082,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
         });
     };
     Layout.prototype = controls.control_prototype;
-    Layout.template = function(it) {
+    Layout.outer_template = function(it) {
         var out = '<div' + it.printAttributes() + '>',
             ctrls = it.controls, cell = '<div data-type="layout-item"' + it.cellSet.printAttributes("-id") + '>';
         for(var i = 0, c = ctrls.length; i < c; i++)
@@ -1895,7 +2093,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
 
     
     function List(parameters, attributes) {
-        this.initialize('controls.list', parameters, attributes, List.template);
+        this.initialize('controls.list', parameters, attributes, List.outer_template);
         
         this.itemSet = new Container();
         this.itemSet.listen_('attributes', this, function(event) {
@@ -1917,7 +2115,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
         });
     };
     List.prototype = controls.control_prototype;
-    List.template = function(it) {
+    List.outer_template = function(it) {
         var out ='<ul' + it.printAttributes() + '>',
             ctrls = it.controls, item = '<li' + it.itemSet.printAttributes("-id") + '>';
         for(var i = 0, c = ctrls.length; i < c; i++)
@@ -1930,7 +2128,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     // Input
     // 
     function Input(parameters, attributes) {
-        this.initialize('controls.input', parameters, attributes, Input.template)
+        this.initialize('controls.input', parameters, attributes, Input.outer_template)
         .listen_('change', function() {
             this.attributes.value = this.element.value;
         }, true)
@@ -1949,7 +2147,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
         });
     };
     Input.prototype = controls.control_prototype;
-    Input.template = function(it) { return '<input' + it.printAttributes() + '>' + (it.attributes.$text || '') + '</input>'; };
+    Input.outer_template = function(it) { return '<input' + it.printAttributes() + '>' + (it.attributes.$text || '') + '</input>'; };
     controls.typeRegister('input', Input);
     
     
@@ -1959,7 +2157,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     //  $data {DataArray}
     //
     function Select(parameters, attributes) {
-        this.initialize('controls.select', parameters, attributes, Select.template, Select.inner_template)
+        this.initialize('controls.select', parameters, attributes, Select.outer_template, Select.inner_template)
         .bind(attributes.hasOwnProperty('$data')
             ? controls.create('DataArray', {$data: attributes.$data})
             : controls.create('DataArray'))
@@ -1983,11 +2181,10 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
         });
     };
     Select.prototype = controls.control_prototype;
-    Select.template = function(it) { return '<select' + it.printAttributes() + '>' + (it.attributes.$text || '') + it.data.map(function(item){ return '<option value=' + item + '>' + item + '</option>'; }).join('') + '</select>'; };
+    Select.outer_template = function(it) { return '<select' + it.printAttributes() + '>' + (it.attributes.$text || '') + it.data.map(function(item){ return '<option value=' + item + '>' + item + '</option>'; }).join('') + '</select>'; };
     Select.inner_template = function(it) { return (it.attributes.$text || '') + it.data.map(function(item){ return '<option value=' + item + '>' + item + '</option>'; }).join(''); };
     controls.typeRegister('select', Select);
-
-
+    
     // exports
     if (typeof module !== 'undefined' && module.exports) module.exports = controls;
     if (typeof define === 'function' && define.amd) define(controls);

@@ -11,7 +11,7 @@
 
 function Bootstrap(controls) {
     var bootstrap = this;
-    bootstrap.VERSION = '0.6.15'/*#.#.##*/;
+    bootstrap.VERSION = '0.7.01'/*#.#.##*/;
     if (!controls)
         throw new TypeError('controls.bootstrap.js: controls.js not found!');
     if (controls.bootstrap && controls.bootstrap.VERSION >= bootstrap.VERSION)
@@ -85,26 +85,23 @@ function Bootstrap(controls) {
     // Panel
     // 
     function Panel(parameters, attributes) {
-        this.initialize('bootstrap.Panel', parameters, attributes);
-        this.body = this.add('div', {class:'panel-body'});
-        Object.defineProperty(this, 'header', { enumerable: true, get: function() {
-            var _header = this._header;
-            if (!_header) {
-                 _header = this.insert(0, 'div', {class:'panel-heading panel-title'});
-                 _header._name = 'header';
-                 this._header = _header;
-            }
-            return _header;
-        } });
-        Object.defineProperty(this, 'footer', { enumerable: true, get: function() {
-            var _footer = this._footer;
-            if (!_footer) {
-                 _footer = this.add('div', {class:'panel-footer'});
-                 _footer._name = 'header';
-                 this._footer = _footer;
-            }
-            return _footer;
-        } });
+        this.initialize('bootstrap.Panel', parameters, attributes)
+            .add('body:div`panel-body', attributes.$text);
+        attributes.$text = undefined;
+    
+        if (parameters.header) {
+            if (typeof parameters.header === 'string')
+                this.insert(0, 'header:div`panel-heading panel-title', parameters.header);
+            else
+                this.insert(0, 'header:div`panel-heading panel-title');
+        }
+        
+        if (parameters.footer) {
+            if (typeof parameters.footer === 'string')
+                this.add('footer:div`panel-footer', parameters.footer);
+            else
+                this.add('footer:div`panel-footer');
+        }
     
         this.listen_('type', function() {
             this.class('panel panel-' + this.getControlStyle(), 'panel-default panel-link panel-primary panel-success panel-info panel-warning panel-danger');
@@ -113,11 +110,6 @@ function Bootstrap(controls) {
         this.text = function(_text) {
             return this.body.text(_text);
         };
-        
-        if (attributes.$text) {
-            this.body.text(attributes.$text);
-            attributes.$text = undefined;
-        }
     };
     Panel.prototype = control_prototype;
     controls.typeRegister('bootstrap.Panel', Panel);
@@ -285,8 +277,7 @@ function Bootstrap(controls) {
     TabHeader.template = function(it) {
         var attrs = it.attributes;
         return '<li' + it.printAttributes() + '><a href="' + (attrs.$href || '') + '" data-toggle="tab">'
-            + (attrs.$icon ? ('<span class="glyphicon glyphicon-' + attrs.$icon + '"></span>') : '')
-            + ((attrs.$icon && attrs.$text) ? '&nbsp;' : '')
+            + (attrs.$icon ? ('<span class="glyphicon glyphicon-' + attrs.$icon + '"></span>' + ((attrs.$text) ? '&nbsp;' : '')) : '')
             + (attrs.$text || '')
             + '</a></li>';
     };

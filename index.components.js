@@ -1,18 +1,19 @@
 
 function h1Ref(text, href) {
     return controls.create('a', {href:href})
-        ._add('h1`btn-primary', text, {style:'border-radius:4px; padding:12px; display:inline-block;'});
+        .add('h1`btn-primary border-radius:4px; padding:12px; display:inline-block;', text);
 }
 
 function refLabels(refs) {
     var html = '';
     for(var i = 0, c = refs.length; i < c; i+=3)
         html += '<a href="' + refs[i+2] + '" class="label label-' + refs[i+1] + '">' + refs[i] + '</a>&nbsp;&nbsp;';
-    return controls.create('container', html);
+    return controls.create(html);
 }
 
 function codebox(content, _class) {
-    return controls.create('container', '<div class="codebox ' + (_class || 'box') +'"><pre><code>' + controls.encodeHTML(content) + '</code></pre></div>');
+    //return controls.create('div`codebox ' + (_class || 'box'), '<pre><code>' + controls.encodeHTML(content) + '</code></pre>');
+    return controls.create('<div class="codebox ' + (_class || 'box') +'"><pre><code>' + controls.encodeHTML(content) + '</code></pre></div>');
 }
 
 
