@@ -1044,14 +1044,13 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         this.parameter = function(name, value) {
             var parameters = this.parameters;
             
-            if (arguments.length > 1) {
-                if (value !== parameters[name]) {
-                    parameters[name] = value;
-                    this.refresh();
-                }
-            }
-            else
+            if (arguments.length <= 1)
                 return parameters[name] || parameters['/'+name];
+            
+            if (value !== parameters[name]) {
+                parameters[name] = value;
+                this.refresh();
+            }
         };
         
         this._parameter = function(name, value) {
@@ -1325,29 +1324,28 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         // $prime - primary parameter to control
         //
         this.insert = function(index, type, /*optional*/ $prime, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+            
             if (!type)
                 return;
             
             // normalize arguments
-            
             if (typeof $prime === 'function') {
                 this_arg = attributes;
                 callback = $prime;
                 $prime = undefined;
                 attributes = undefined;
-            }
-            
-            if ($prime instanceof Object) {
-                this_arg = callback;
-                callback = attributes;
-                attributes = $prime;
-                $prime = undefined;
-            }
-
-            if (typeof attributes === 'function') {
-                this_arg = callback;
-                callback = attributes;
-                attributes = undefined;
+            } else {
+                if (typeof $prime === 'object' && !Array.isArray($prime)) {
+                    this_arg = callback;
+                    callback = attributes;
+                    attributes = $prime;
+                    $prime = undefined;
+                }
+                if (typeof attributes === 'function') {
+                    this_arg = callback;
+                    callback = attributes;
+                    attributes = undefined;
+                }
             }
             
             if (Array.isArray(type)) {
@@ -1522,7 +1520,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     }
     
     /**
-     * Parse type string, format 2.0
+     * Parse type string, revision 2.0
      * 
      * @param {string} type Type with parameters, in format name:namespace.control`class1 classN#parameters/inheritable_parameters
      * @param {object} parameters Object acceptor parsed parameters
@@ -1541,7 +1539,9 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             __type = match.substr(commapos + 1);
         } else
             __type = match;
-        if (__type.indexOf('.') < 0)
+        if (!__type)
+            __type = 'controls.container';
+        else if (__type.indexOf('.') < 0)
             __type = 'controls.' + __type;
         
         // parse parameters
@@ -1559,14 +1559,13 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                     style = true; pos++;
                     break;
                 case '#': // assign identifier
-                    var id_regex = /\S+?(?=#|`|\/|\s|$|@)/g;
+                    var id_regex = /#.*?(?=#|`|\/|\s|$|@)/g;
                     id_regex.lastIndex = pos;
                     var match_id = id_regex.exec(params)[0];
                     attributes.id = match_id.slice(1);
                     pos += match_id.length;
                     break;
                 default:
-                    // TODO попробовать вынести создание регекса вне цикла
                     var par_name_regex = /\S+?(?=(=|#|`|\/|\s|$|@))/g;
                     par_name_regex.lastIndex = pos;
                     var par_name_match = par_name_regex.exec(params);
@@ -1629,6 +1628,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     
     /**
      *  Resolve __type and parameters to control constructor
+     *  
      * @param {string} __type Base type, example "controls.custom"
      * @param {object} parameters Parameters parsed from original type
      * @returns {object} Control constructor
@@ -1691,43 +1691,73 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         }
     };
     
-    // Create control
-    //
-    // syntax: controls.create(type, attributes); controls.create(type, parameters, attributes);
-    //
-    controls.create = function(type, /*optional*/ $prime, /*optional*/ parameters, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
-        
-        // normalize arguments
-        
-        var arglen = arguments.length;
-        if (typeof $prime !== 'string' || $prime instanceof Object) {
-            this_arg = callback;
-            callback = attributes;
-            attributes = parameters;
-            parameters = $prime;
-            $prime = undefined;
-            arglen++;
-        }
-        if (typeof parameters === 'function') {
-            this_arg = attributes;
-            callback = parameters;
-            parameters = {};
-            attributes = {};
-            arglen+=2;
-        }
-        else if (typeof attributes === 'function') {
-            this_arg = callback;
-            callback = attributes;
-            attributes = parameters;
-            parameters = {};
-            arglen++;
-        }
-        if (arglen === 3) {
-            attributes = parameters;
-            parameters = {};
-        }
-        
+    /*
+     * Create control from parsed type, parameters and attributes
+     * 
+     * @param {type} type
+     * @param {type} parameters
+     * @param {type} attributes
+     * @returns {object} Created control
+     */
+    controls.createBase = function(type, parameters, attributes) {
         parameters = parameters || {};
+        attributes = attributes || {};
+        
+        var __type = parse_type(type, parameters, attributes),
+            constructor = resolve_ctr(__type, parameters);
+            
+        if (!constructor)
+            throw new TypeError('Type ' + __type + ' not registered!');
+
+        for(var prop in parameters)
+        if (prop[0] === '$')
+            attributes[prop.substr(1)] = parameters[prop];
+                
+        // create object
+        
+        var new_control = (constructor.is_constructor) // constructor or factory method ?
+            ? new constructor(parameters, attributes)
+            : constructor(parameters, attributes);
+        
+        // reflect after creation
+        new_control.raise('type');
+        
+        return new_control;
+    };
+    
+    /*
+     * Create control
+     * 
+     * @param {type} type Type containing the parameters attributes and styles
+     * @param {type} $prime optional, prime value
+     * @param {type} attributes optional
+     * @param {type} callback optional
+     * @param {type} this_arg optional
+     * @returns {object} Created control
+     */
+    controls.create = function(type, /*optional*/ $prime, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+
+        // normalize arguments
+        if (typeof $prime === 'function') {
+            this_arg = attributes;
+            callback = $prime;
+            $prime = undefined;
+            attributes = undefined;
+        } else {
+            if (typeof $prime === 'object' && !Array.isArray($prime)) {
+                this_arg = callback;
+                callback = attributes;
+                attributes = $prime;
+                $prime = undefined;
+            }
+            if (typeof attributes === 'function') {
+                this_arg = callback;
+                callback = attributes;
+                attributes = undefined;
+            }
+        }
+            
+        var parameters = {};
         attributes = attributes || {};
         
         var __type, constructor;
@@ -1758,7 +1788,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 parameters['#{__type}'] = __type;
                 parameters['#{callback}'] = callback;
                 parameters['#{this_arg}'] = this_arg;
-                constructor = resolve_ctr('controls.Stub', parameters);
+                constructor = resolve_ctr('controls.stub', parameters);
             }
         }    
 
@@ -2001,7 +2031,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
             for(var prop in attributes)
                 attrs[prop] = attributes[prop];
         
-            var control = controls.create(parameters['#{type}'], params, attrs);
+            var control = controls.createBase(parameters['#{type}'], params, attrs);
             if (control) {
                 control.class(null, 'stub stub-loading stub-error');
                 this.replaceItself(control);
