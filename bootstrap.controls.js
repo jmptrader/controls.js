@@ -11,7 +11,7 @@
 
 function Bootstrap(controls) {
     var bootstrap = this;
-    bootstrap.VERSION = '0.7.01'/*#.#.##*/;
+    bootstrap.VERSION = '0.7.02'/*#.#.##*/;
     if (!controls)
         throw new TypeError('controls.bootstrap.js: controls.js not found!');
     if (controls.bootstrap && controls.bootstrap.VERSION >= bootstrap.VERSION)
