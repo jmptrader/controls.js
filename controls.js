@@ -58,7 +58,7 @@
         
         object.__type       = (__type.indexOf('.') >= 0) ? __type : ('controls.' + __type);
         object.parameters   = parameters || {};
-        object.controls     = [];               // This is a collection of nested objects
+        object.controls     = [];   // Collection of child nodes
         
         if (outer_template) {
             outer_template.no_serialize = true;
@@ -104,7 +104,7 @@
             __type = parse_type(type, key_parameters) .toLowerCase();
         
         // type is subtype with parameters, register to controls.subtypes
-        if (__type.length < type.length) {
+        if (__type.length < type.length || Object.keys(key_parameters).length) {
             key_parameters.__ctr = factory;
             var subtypes_array = controls.subtypes[__type] || (controls.subtypes[__type] = []);
             subtypes_array.push(key_parameters);
@@ -1649,10 +1649,10 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             // check for matching all key params values
             var hit = true;
             for(var prop in parameters)
-            if ('__ctr,??'.indexOf(prop) < 0 && key_parameters[prop] !== parameters[prop]) {
-                hit = false;
-                break;
-            }
+                if ('__ctr,??'.indexOf(prop) < 0 && key_parameters[prop] !== parameters[prop]) {
+                    hit = false;
+                    break;
+                }
             if (hit) {
                 constructor = key_parameters.__ctr;
                 break;
@@ -1719,8 +1719,9 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             ? new constructor(parameters, attributes)
             : constructor(parameters, attributes);
         
-        // reflect after creation
-        new_control.raise('type');
+        // reflect after creation if control only
+        if (typeof new_control === 'object' && '__type' in new_control)
+            new_control.raise('type');
         
         return new_control;
     };
@@ -1802,8 +1803,9 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             ? new constructor(parameters, attributes)
             : constructor(parameters, attributes);
         
-        // reflect after creation
-        new_control.raise('type');
+        // reflect after creation if control only
+        if (typeof new_control === 'object' && '__type' in new_control)
+            new_control.raise('type');
         
         return new_control;
     };
