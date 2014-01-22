@@ -1640,22 +1640,24 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         __type = __type.toLowerCase();
         
         // map __type -> subtypes array
-        var subtypes_array = controls.subtypes[__type]; 
-        if (subtypes_array)
-        for(var i = 0, c = subtypes_array.length; i < c; i++) { // iterate subtypes array
-            // each subtypes array item is key parameters object and contains the constructor reference
-            var key_parameters = subtypes_array[i];
-            
-            // check for matching all key params values
-            var hit = true;
-            for(var prop in parameters)
-                if ('__ctr,??'.indexOf(prop) < 0 && key_parameters[prop] !== parameters[prop]) {
-                    hit = false;
+        if (Object.keys(parameters).length) {
+            var subtypes_array = controls.subtypes[__type]; 
+            if (subtypes_array)
+            for(var i = 0, c = subtypes_array.length; i < c; i++) { // iterate subtypes array
+                // each subtypes array item is key parameters object and contains the constructor reference
+                var key_parameters = subtypes_array[i];
+
+                // check for matching all key params values
+                var hit = true;
+                for(var prop in parameters)
+                    if ('__ctr,??'.indexOf(prop) < 0 && key_parameters[prop] !== parameters[prop]) {
+                        hit = false;
+                        break;
+                    }
+                if (hit) {
+                    constructor = key_parameters.__ctr;
                     break;
                 }
-            if (hit) {
-                constructor = key_parameters.__ctr;
-                break;
             }
         }
         

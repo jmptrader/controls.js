@@ -1,7 +1,7 @@
 
 function h1Ref(text, href) {
     return controls.create('a', {href:href})
-        .add('h1`btn-primary border-radius:4px; padding:12px; display:inline-block;', text);
+            ._add('h1`btn-primary border-radius:4px; padding:20px; display:inline-block;', text);
 }
 
 function refLabels(refs) {
