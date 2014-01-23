@@ -40,7 +40,7 @@
     controls.controlInitialize = function(object, __type, parameters, attributes, outer_template, inner_template) {
         
         if (attributes) {
-            object.id = (attributes.id) ? attributes.id : (attributes.id = (++controls.id_generator).toString(16)); // set per session uid
+            object.id = attributes.id || (attributes.id = (++controls.id_generator).toString(16)); // set per session uid
             object.name = attributes.$name;
             
             // default move $prime to $text
@@ -367,8 +367,11 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         }
         
         for(var prop in data_object_common)
+        if (data_object_common.hasOwnProperty(prop))
             array[prop] = data_object_common[prop];
+    
         for(var prop in data_array_common)
+        if (data_array_common.hasOwnProperty(prop))
             array[prop] = data_array_common[prop];
         
         array.state_id       = Number.MIN_VALUE;   // Value identifying the state of the object is incremented each state-changing operation
@@ -526,23 +529,25 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             if (typeof selector === 'object' || typeof by_attrs === 'object') {
                 for(var i = 0, c = controls.length; i < c; i++) {
                     var control = controls[i];
+                    
                     // by properties
                     if (selector)
                     for(var prop in selector)
-                    if (control[prop] === selector[prop])
-                        result.push(control);
-                    // by attributes
-                    else if (by_attrs) {
-                        var attributes = control.attributes;
-                        for(var prop in by_attrs)
-                        if (attributes[prop] === by_attrs[prop])
+                    if (selector.hasOwnProperty(prop)) {
+                        if (control[prop] === selector[prop])
                             result.push(control);
-                    }
-                    // find recursively
-                    else if (recursive) {
-                        var finded = control.find(selector, by_attrs, recursive);
-                        if (finded.length)
-                            result.push.apply(result, finded);
+                        // by attributes
+                        else if (by_attrs) {
+                            var attributes = control.attributes;
+                            for(var prop in by_attrs)
+                            if (by_attrs.hasOwnProperty(prop) && attributes[prop] === by_attrs[prop])
+                                result.push(control);
+                        } else if (recursive) {
+                        // find recursively
+                            var finded = control.find(selector, by_attrs, recursive);
+                            if (finded.length)
+                                result.push.apply(result, finded);
+                        }
                     }
                 }
             } else if (!selector) {
@@ -585,18 +590,21 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             if (typeof selector === 'object' || typeof by_attrs === 'object') {
                 for(var i = 0, c = controls.length; i < c; i++) {
                     var control = controls[i];
+                    
                     // by properties
                     if (selector)
                     for(var prop in selector)
-                    if (control[prop] === selector[prop])
+                    if (selector.hasOwnProperty(prop) && control[prop] === selector[prop])
                         return control;
+            
                     // by attributes
                     if (by_attrs) {
                         var attributes = control.attributes;
                         for(var prop in by_attrs)
-                        if (attributes[prop] === by_attrs[prop])
+                        if (by_attrs.hasOwnProperty(prop) && attributes[prop] === by_attrs[prop])
                             return control;
                     }
+                    
                     // find recursively
                     if (recursive) {
                         var finded = control.findFirst(selector, by_attrs, recursive);
@@ -634,18 +642,21 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             if (typeof selector === 'object' || typeof by_attrs === 'object') {
                 for(var i = controls.length - 1; i >= 0; i--) {
                     var control = controls[i];
+                    
                     // by properties
                     if (selector)
                     for(var prop in selector)
-                    if (control[prop] === selector[prop])
+                    if (selector.hasOwnProperty(prop) && control[prop] === selector[prop])
                         return control;
+                
                     // by attributes
                     if (by_attrs) {
                         var attributes = control.attributes;
                         for(var prop in by_attrs)
-                        if (attributes[prop] === by_attrs[prop])
+                        if (by_attrs.hasOwnProperty(prop) && attributes[prop] === by_attrs[prop])
                             return control;
                     }
+                    
                     // find recursively
                     if (recursive) {
                         var finded = control.findLast(selector, by_attrs, recursive);
@@ -785,7 +796,8 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             var events = this.events;
             if (events) {
                 var jevents = [];
-                for(var prop in events) {
+                for(var prop in events)
+                if (events.hasOwnProperty(prop)) {
                     var event = events[prop],
                         listeners = event.listeners,
                         serialize = false;
@@ -1088,7 +1100,8 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             if (arguments.length > 0) {
                 var updated = false;
 
-                for(var prop in _attributes) {
+                for(var prop in _attributes)
+                if (_attributes.hasOwnProperty(prop)) {
                     var value = _attributes[prop];
                     if (value !== attributes[prop]) {
                         attributes[prop] = value;
@@ -1113,7 +1126,8 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             if (!arguments.length) {
                 var inheritable = '', unheritable = '', parameters = this.parameters;
-                for(var prop in parameters) {
+                for(var prop in parameters)
+                if (parameters.hasOwnProperty(prop)) {
                     var value = parameters[prop];
                     if (typeof value === 'boolean' && value)
                         value = '';
@@ -1148,6 +1162,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             var parameters = this.parameters; // rebuild parameters
             for(var prop in parameters)
+            if (parameters.hasOwnProperty(prop)) 
                 delete parameters[prop];
                 
             if (apply_inherited && this.parent) {
@@ -1155,7 +1170,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
 
                 var parent_parameters = parent.parameters;
                 for(var prop in parent_parameters)
-                if (prop[0] === '/')
+                if (parameters.hasOwnProperty(prop) && prop[0] === '/')
                     parameters[prop] = parent_parameters[prop];
             }
             
@@ -1192,7 +1207,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                     // exclusion defined
                     var exclude = filter.substr(1).split(' ');
                     for(var prop in attributes)
-                    if (prop[0] !== '$' && exclude.indexOf(prop) < 0) {
+                    if (attributes.hasOwnProperty(prop) && prop[0] !== '$' && exclude.indexOf(prop) < 0) {
                         var value = attributes[prop];
                         if (value)
                             result += ' ' + prop + '="' + value + '"';
@@ -1213,7 +1228,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             else {
                 // unconditional out all attributes
                 for(var prop in attributes)
-                if (prop[0] !== '$') {
+                if (attributes.hasOwnProperty(prop) && prop[0] !== '$') {
                     var value = attributes[prop];
                     if (value)
                         result += ' ' + prop + '="' + value + '"';
@@ -1367,12 +1382,13 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             var attrs = {class:''}, parameters = {};
             
             for(var prop in attributes)
+            if (attributes.hasOwnProperty(prop)) 
                 attrs[prop] = attributes[prop];
                 
             // transfer inheritable parameters to the created object
             var this_parameters = this.parameters;
             for(var prop in this_parameters)
-            if (prop[0] === '/')
+            if (this_parameters.hasOwnProperty(prop) && prop[0] === '/')
                 parameters[prop] = this_parameters[prop];
             
             // resolve constructor
@@ -1411,8 +1427,8 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             
             // move $parameters to attributes (unsafe)
             for(var prop in parameters)
-                if (prop[0] === '$')
-                    attrs[prop.substr(1)] = parameters[prop];
+            if (parameters.hasOwnProperty(prop) && prop[0] === '$')
+                attrs[prop.substr(1)] = parameters[prop];
             
             // create control
 
@@ -1640,22 +1656,28 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         __type = __type.toLowerCase();
         
         // map __type -> subtypes array
-        var subtypes_array = controls.subtypes[__type]; 
-        if (subtypes_array)
-        for(var i = 0, c = subtypes_array.length; i < c; i++) { // iterate subtypes array
-            // each subtypes array item is key parameters object and contains the constructor reference
-            var key_parameters = subtypes_array[i];
-            
-            // check for matching all key params values
-            var hit = true;
-            for(var prop in parameters)
-                if ('__ctr,??'.indexOf(prop) < 0 && key_parameters[prop] !== parameters[prop]) {
-                    hit = false;
+        if (Object.keys(parameters).length) {
+            var subtypes_array = controls.subtypes[__type]; 
+            if (subtypes_array)
+            for(var i = 0, c = subtypes_array.length; i < c; i++) { // iterate subtypes array
+                // each subtypes array item is key parameters object and contains the constructor reference
+                var key_parameters = subtypes_array[i];
+
+                // check for matching all key params values
+                var hit = true;
+                
+                for(var prop in parameters)
+                    if (parameters.hasOwnProperty(prop)
+                    && '__ctr,??'.indexOf(prop) < 0
+                    && key_parameters[prop] !== parameters[prop]) {
+                        hit = false;
+                        break;
+                    }
+                
+                if (hit) {
+                    constructor = key_parameters.__ctr;
                     break;
                 }
-            if (hit) {
-                constructor = key_parameters.__ctr;
-                break;
             }
         }
         
@@ -1667,6 +1689,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 // apply alias parameters
                 var alias_parameters = constructor.parameters;
                 for(var prop in alias_parameters)
+                if (alias_parameters.hasOwnProperty(prop)) 
                     parameters[prop] = alias_parameters[prop];
                 
                 constructor = resolve_ctr(constructor.__type, parameters);
@@ -1694,9 +1717,9 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     /*
      * Create control from parsed type, parameters and attributes
      * 
-     * @param {type} type
-     * @param {type} parameters
-     * @param {type} attributes
+     * @param {string} type Base type
+     * @param {object} parameters
+     * @param {object} attributes
      * @returns {object} Created control
      */
     controls.createBase = function(type, parameters, attributes) {
@@ -1710,7 +1733,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             throw new TypeError('Type ' + __type + ' not registered!');
 
         for(var prop in parameters)
-        if (prop[0] === '$')
+        if (parameters.hasOwnProperty(prop) && prop[0] === '$')
             attributes[prop.substr(1)] = parameters[prop];
                 
         // create object
@@ -1729,11 +1752,11 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     /*
      * Create control
      * 
-     * @param {type} type Type containing the parameters attributes and styles
-     * @param {type} $prime optional, prime value
-     * @param {type} attributes optional
-     * @param {type} callback optional
-     * @param {type} this_arg optional
+     * @param {string} type Type containing the parameters attributes and styles
+     * @param $prime optional, prime value
+     * @param {object} attributes optional
+     * @param {function} callback optional
+     * @param {object} this_arg optional
      * @returns {object} Created control
      */
     controls.create = function(type, /*optional*/ $prime, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
@@ -1794,7 +1817,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         }    
 
         for(var prop in parameters)
-        if (prop[0] === '$')
+        if (parameters.hasOwnProperty(prop) && prop[0] === '$')
             attributes[prop.substr(1)] = parameters[prop];
                 
         // create object
@@ -1915,6 +1938,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
     
     controls.extend = function(object, source) {
         for(var prop in source)
+        if (source.hasOwnProperty(prop)) 
             object[prop] = source[prop];
         return object;
     };
@@ -2027,10 +2051,11 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
                 attributes = this.attributes;
         
             for(var prop in parameters)
-            if (prop[0] !== '#' && prop[1] !== '{')
+            if (parameters.hasOwnProperty(prop) && prop[0] !== '#' && prop[1] !== '{')
                 params[prop] = parameters[prop];
             
             for(var prop in attributes)
+            if (attributes.hasOwnProperty(prop))
                 attrs[prop] = attributes[prop];
         
             var control = controls.createBase(parameters['#{type}'], params, attrs);
@@ -2104,7 +2129,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
                 floatvalue;
             
             for(var prop in parameters)
-            if (prop === 'float' || prop === '/float')
+            if (parameters.hasOwnProperty(prop) && prop === 'float' || prop === '/float')
                 floatvalue = parameters[prop];
             
             if (floatvalue)
