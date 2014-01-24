@@ -12,7 +12,6 @@ function refLabels(refs) {
 }
 
 function codebox(content, _class) {
-    //return controls.create('div`codebox ' + (_class || 'box'), '<pre><code>' + controls.encodeHTML(content) + '</code></pre>');
     return controls.create('<div class="codebox ' + (_class || 'box') +'"><pre><code>' + controls.encodeHTML(content) + '</code></pre></div>');
 }
 
