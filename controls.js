@@ -103,14 +103,20 @@
         var key_parameters = {},
             __type = parse_type(type, key_parameters) .toLowerCase();
         
-        // type is subtype with parameters, register to controls.subtypes
+        // normalize prop name, remove lead '/'
+        for(var prop in key_parameters)
+        if (prop[0] === '/') {
+            key_parameters[prop.slice(1)] = key_parameters[prop];
+            delete key_parameters[prop];
+        }
+        
         if (__type.length < type.length || Object.keys(key_parameters).length) {
+            // type is subtype with parameters, register to controls.subtypes
             key_parameters.__ctr = factory;
             var subtypes_array = controls.subtypes[__type] || (controls.subtypes[__type] = []);
             subtypes_array.push(key_parameters);
-        }
-        // register to controls
-        else {
+        } else {
+            // register as standalone type
             // check name conflict
             if (controls[__type])
                 throw new TypeError('Type ' + type + ' already registered!');
@@ -1451,6 +1457,16 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             return this.insert(this.controls.length, type, $prime, attributes, callback, this_arg);
         };
         
+        this.addOrStub = function(type, /*optional*/ $prime, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
+            type_error_mode = 1;
+            try {
+                return this.add.apply(this, arguments);
+            } catch (e) {}
+            finally {
+                type_error_mode = 0;
+            }
+        };
+        
         this._add = function(type, /*optional*/ $prime, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
             this.insert(this.controls.length, type, $prime, attributes, callback, this_arg);
             return this;
@@ -1667,13 +1683,17 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                 var hit = true;
                 
                 for(var prop in parameters)
-                    if (parameters.hasOwnProperty(prop)
-                    && '__ctr,??'.indexOf(prop) < 0
-                    && key_parameters[prop] !== parameters[prop]) {
+                if (parameters.hasOwnProperty(prop)) {
+                    var par_value = parameters[prop];
+                    if (prop[0] === '/')
+                        prop = prop.slice(1);
+                    if ('__ctr,??'.indexOf(prop) < 0
+                    && key_parameters[prop] !== par_value) {
                         hit = false;
                         break;
                     }
-                
+                }
+            
                 if (hit) {
                     constructor = key_parameters.__ctr;
                     break;
