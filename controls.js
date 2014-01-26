@@ -437,7 +437,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         }
         
         Object.defineProperties(this, {
-            // name of the control
+            // name of the control in parent collection
             name: {
                 enumerable: true, 
                 get: function() { return this._name; },
