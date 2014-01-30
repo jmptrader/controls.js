@@ -1,12 +1,13 @@
 module("controls");
+var create = controls.create;
 
 test("base syntax of control construction, passing the parameters and attributes", function() {
     
     // must be case-insensitive
-    var custom = controls.create('Custom');
+    var custom = create('Custom');
     if (custom.__type !== 'controls.custom')
         ok(false, 'base syntax #1 .create() must be case-insensitive');
-    custom = controls.create('custom');
+    custom = create('custom');
     if (custom.__type !== 'controls.custom')
         ok(false, 'base syntax #2 .create() must be case-insensitive');
     
@@ -48,16 +49,22 @@ test("base syntax of control construction, passing the parameters and attributes
         ok(false, 'base syntax #6 callback only');
     
     
+    // Inheritable parameter and creating a subcomponent
+    var com = create('div/param1=value1') .add('div');
+    if (com.parameter('param1') !=='value1')
+        ok(false, 'base syntax #6 inherited parameter');
+    
     ok(true, 'base syntax passed');
 });
+
 
 test( "type resolving", function() {
     
     // apply test record allow check resolving by parameters values
     
-    var test_parameters = {};
-    test_parameters.__ctr = controls.div;
-    controls.subtypes['controls.div'] = [test_parameters];
+//    var test_parameters = {};
+//    test_parameters.__ctr = controls.div;
+//    controls.subtypes['controls.div'] = [test_parameters];
     
     // register test subtype
     
@@ -93,6 +100,7 @@ test( "type resolving", function() {
     var spent = performance.now() - start;
     ok(spent < 300, 'check parameters resolving performance 10 000 controls ' + spent + ' ms < 300 ms OK (good to firefox)');
 });
+
 
 // TODO actions ser/deser
 // Test all controls, set custom parameters, attributes, template and listeners

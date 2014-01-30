@@ -9,7 +9,7 @@
 (function() { 'use strict';
 
     var controls = {
-        VERSION: '0.7.02'/*#.#.##*/,
+        VERSION: '0.7.04'/*#.#.##*/,
         id_generator: 53504,
         // assignable default template engine
         //template: function(templ) { return new Function('return \'' + templ.replace('\n', '\\\n').replace(/'/g, "\\'") + '\''); },
@@ -437,7 +437,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         }
         
         Object.defineProperties(this, {
-            // name of the control
+            // name of the control in parent collection
             name: {
                 enumerable: true, 
                 get: function() { return this._name; },
@@ -998,14 +998,16 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             return this;
         };
         
-        // Set or remove event listener. Event type may be DOM event as "click" or special control event as "type"
-        //
-        // type {string} - a string representing the event type to listen for. (without "on") example: "click"
-        // [call_this {object}] - 
-        // listener {string,function(event)} - event listener function or function body text
-        // [capture {bool}] - 
-        //
-        this.on = this.listen = function(type, call_this/*optional*/, listener, capture/*optional*/) {
+        /**
+         * Add event listener.
+         * 
+         * @param {string} type Event type. Event type may be DOM event as "click" or special control event as "type".
+         * @param {object} [call_this] The value to be passed as the this parameter to the target function when the event handler function is called.
+         * @param {function} listener Event handler function.
+         * @param {boolean} [capture] This argument will be passed to DOM.addEventListener(,, useCapture).
+         * @returns Returns this.
+         */
+        this.on = this.listen = function(type, /*optional*/ call_this, listener, /*optional*/ capture) {
             if (typeof(call_this) === 'function') {
                 capture = listener;
                 listener = call_this;
@@ -1037,12 +1039,27 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             return this.listen(type, call_this, listener, capture);
         };
         
+        /**
+         * Remove event listener.
+         * 
+         * @param {string} type Event type.
+         * @param {function} listener Event handler function.
+         * @param [capture] This argument will be passed to DOM.removeEventListener(,, useCapture).
+         * @returns Returns this.
+         */
         this.removeListener = function(type, listener, capture) {
             if (type && listener)
                 force_event(this, type, capture).removeListener(listener);
             return this;
         };
         
+        /**
+         * Raise event.
+         * 
+         * @param {string} type Event type.
+         * @param Arbitrary number of arguments to be passed to handlers.
+         * @returns Returns this.
+         */
         this.raise = function(type) {
             var events = this.events;
             if (type && events) {
@@ -1338,12 +1355,17 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             return this;
         };
         
-        // Create control and insert to the .controls collection
-        // type - type, control or array of controls
-        // type format:
-        //  name:namespace.control`class1 classN#parameters/inheritable_parameters
-        // $prime - primary parameter to control
-        //
+        /**
+         * Create a new component and insert to the component.controls collection at the specified index.
+         * 
+         * @param {number} index Index in component.controls collection.
+         * @param {string} type Type containing the parameters attributes and styles.
+         * @param $prime [prime] Prime value is a responsibility of the component. This parameter value can be of simple type or be derived from DataObject DataArray.
+         * @param {object} [attributes] Attributes hash object to be passed to the component.
+         * @param {function} [callback] The callback will be called each time after the creation of a new component.
+         * @param {object} [this_arg] The value to be passed as the this parameter to the target function when the callback function is called. 
+         * @returns {object} Returns newly created component object.
+         */
         this.insert = function(index, type, /*optional*/ $prime, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
             
             if (!type)
@@ -1734,13 +1756,13 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         }
     };
     
-    /*
+    /**
      * Create control from parsed type, parameters and attributes
      * 
-     * @param {string} type Base type
-     * @param {object} parameters
-     * @param {object} attributes
-     * @returns {object} Created control
+     * @param {string} type Base type [and parameters].
+     * @param {object} parameters Parsed parameters.
+     * @param {object} attributes Parsed attributes.
+     * @returns {object} Returns newly created component object.
      */
     controls.createBase = function(type, parameters, attributes) {
         parameters = parameters || {};
@@ -1769,15 +1791,15 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         return new_control;
     };
     
-    /*
+    /**
      * Create control
      * 
-     * @param {string} type Type containing the parameters attributes and styles
-     * @param $prime optional, prime value
-     * @param {object} attributes optional
-     * @param {function} callback optional
-     * @param {object} this_arg optional
-     * @returns {object} Created control
+     * @param {string} type Type containing the parameters attributes and styles.
+     * @param $prime [prime] Prime value is a responsibility of the component. This parameter value can be of simple type or be derived from DataObject DataArray.
+     * @param {object} [attributes] Attributes hash object to be passed to the component.
+     * @param {function} [callback] The callback will be called each time after the creation of a new component.
+     * @param {object} [this_arg] The value to be passed as the this parameter to the target function when the callback function is called. 
+     * @returns {object} Returns newly created component object.
      */
     controls.create = function(type, /*optional*/ $prime, /*optional*/ attributes, /*optional*/ callback, /*optional*/ this_arg) {
 

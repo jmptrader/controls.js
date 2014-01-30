@@ -1,7 +1,7 @@
 
 function h1Ref(text, href) {
     return controls.create('a', {href:href})
-        .add('h1`btn-primary border-radius:4px; padding:12px; display:inline-block;', text);
+            ._add('h1`btn-primary border-radius:4px; padding:20px; display:inline-block;', text);
 }
 
 function refLabels(refs) {
@@ -12,7 +12,6 @@ function refLabels(refs) {
 }
 
 function codebox(content, _class) {
-    //return controls.create('div`codebox ' + (_class || 'box'), '<pre><code>' + controls.encodeHTML(content) + '</code></pre>');
     return controls.create('<div class="codebox ' + (_class || 'box') +'"><pre><code>' + controls.encodeHTML(content) + '</code></pre></div>');
 }
 
