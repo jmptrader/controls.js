@@ -36,22 +36,26 @@
  * [component.add(component[s])](#component-add-component) - add child component[s].
  * [component._add()](#component-add-query) - same as component.add(), but returns this.
  * [Component constructor function](#component-constructor-function)
- * [component.initialize()](#component-initialize) - component initialization
+ * [component.initialize()](#component-initialize) - component initialization.
 * [Events](#events)
- * [component.on()](#component-on) - add event listener
- * [component.raise()](#component-raise) - raise event
- * [component.removeListener()](#component-removelistener) - remove event listener
+ * [component.on()](#component-on) - add event listener.
+ * [component.raise()](#component-raise) - raise event.
+ * [component.removeListener()](#component-removelistener) - remove event listener.
 * [Hierarchy and interaction](#hierarchy-and-interaction)
- * [component.name](#component-name) - name of the component
- * [component.parent](#component-parent) - parent property
- * [component.controls](#component-controls) - child controls collection
- * [component.length](#component-length) - length of child nodes collection
+ * [component.parent](#component-parent) - parent property.
+ * [component.controls](#component-controls) - child controls collection.
+ * [component.length](#component-length) - length of child controls collection.
 * [Component properties and methods](#component-properties-and-methods)
- * [component.id](#component-id)
- * [component.__type](#component-__type)
- * [component.parameters](#component-parameters)
- * [component.parameter()](#component-parameter) - get and set parameter value
- * [component.attributes](#component-attributes)
+ * [component.id](#component-id) - component identifier.
+ * [component.name](#component-name) - name of the component within the parent collection.
+ * [component.element](#component-element) - associated DOM element.
+ * [component.__type](#component-__type) - base type.
+ * [component.parameters](#component-parameters) - parameters collection.
+ * [component.parameter()](#component-parameter) - get or set parameter value.
+ * [component.attributes](#component-attributes) - attributes collection.
+ * [component.innerHTML()](#component-innerHTML) - assemble inner HTML-code.
+ * [component.outerHTML()](#component-outerHTML) - assemble outer HTML-code.
+ * [component.wrappedHTML()](#component-wrappedHTML) - assemble wrapped HTML-code.
 * [Built-in components](#built-in-components)
  * [container](#default-container)
 
@@ -362,10 +366,6 @@ Returns component this.
 ***
 
 
-[h2#component-name]component.name[/h2]
-
-{string} Name of the component within the parent collection.
-
 
 [h2#component-parent]component.parent[/h2]
 
@@ -396,6 +396,13 @@ Parent of the specified component.
 
 
 
+
+[h2#component-name]component.name[/h2]
+
+{string} Name of the component within the parent collection.
+
+
+
 [h2#component-__type]component.__type[/h2]
 
 {string} Namespace and base type of the component.
@@ -411,7 +418,7 @@ parameters['{params}'] contain array of fixed order parameters.
 
 [h2#component-parameter]component.parameter()[/h2]
 
-Get and set parameter value.
+Get or set parameter value.
 
 >syntax:  
 >`component.parameter(name)` - get parameter value  
@@ -428,7 +435,26 @@ For inheritable parameters name starts with a '/'. Name argument of this method 
 
 
 
-[h2#built-in-components`martop20 padtop20]Built in components[/h2]
+[h2#component-innerHTML]component.innerHTML()[/h2]
+
+Assemble inner HTML-code of the control. This value is obtained by calling this.inner_template(). That normally is the concatenation of results of .wrappedHTML() from all the child controls.
+
+
+
+[h2#component-outerHTML]component.outerHTML()[/h2]
+
+Assemble HTML-code of the control. This value is obtained by calling this.outer_template(). That normally is the combination of the current control tags and results of .wrappedHTML() from all the child controls.
+
+
+
+[h2#component-wrappedHTML]component.wrappedHTML()[/h2]
+
+Assemble wrapped html code of the control.
+
+
+
+
+[h2#built-in-components`martop20 padtop20]Built-in components[/h2]
 
 ***
 
@@ -450,8 +476,14 @@ Neutral html-less component for using as component-container.-->
 
 
 
+
+
+
 <!--right-side-panel
 -->
+
+
+
 
 
 
