@@ -45,14 +45,21 @@
  * [component.parent](#component-parent) - parent property.
  * [component.controls](#component-controls) - child controls collection.
  * [component.length](#component-length) - length of child controls collection.
+* [Library properties and methods](#controls-properties-and-methods)
+ * [controls.default_outer_template](#controls.default_outer_template) - default html template.
+ * [controls.default_inner_template](#controls.default_inner_template) - default inner html template.
+ * [controls.default_outer_inline_template](#controls.default_outer_inline_template) - default inline html template.
 * [Component properties and methods](#component-properties-and-methods)
  * [component.id](#component-id) - component identifier.
  * [component.name](#component-name) - name of the component within the parent collection.
- * [component.element](#component-element) - associated DOM element.
+ * [component.element](#component-element) - associated DOM node.
  * [component.__type](#component-__type) - base type.
  * [component.parameters](#component-parameters) - parameters collection.
  * [component.parameter()](#component-parameter) - get or set parameter value.
  * [component.attributes](#component-attributes) - attributes collection.
+ * [component.outer_template](#component-outer_template) - access to outer html template function.
+ * [component.inner_template](#component-inner_template) - access to inner html template function.
+ * [component.template()](#component-template) - assemble inner HTML-code.
  * [component.innerHTML()](#component-innerHTML) - assemble inner HTML-code.
  * [component.outerHTML()](#component-outerHTML) - assemble outer HTML-code.
  * [component.wrappedHTML()](#component-wrappedHTML) - assemble wrapped HTML-code.
@@ -383,6 +390,23 @@ Parent of the specified component.
 
 
 
+[h2#controls-properties-and-methods`martop20 padtop20]Library properties and methods[/h2]
+
+***
+
+
+
+[h2#controls.default_outer_template]controls.default_outer_template[/h2]
+{function} Default html template.
+
+[h2#controls.default_inner_template]controls.default_inner_template[/h2]
+{string} Default inner html template.
+
+[h2#controls.default_outer_inline_template]controls.default_outer_inline_template[/h2]
+{string} Default inline html template.
+
+
+
 
 [h2#component-properties-and-methods`martop20 padtop20]Component properties and methods[/h2]
 
@@ -391,26 +415,24 @@ Parent of the specified component.
 
 
 [h2#component-id]component.id[/h2]
-
 {string} Identifier of the component. The value is set automatically when you create a object of the component.
 
 
 
-
 [h2#component-name]component.name[/h2]
-
 {string} Name of the component within the parent collection.
 
 
+[h2#component-element]component.element[/h2]
+The associated DOM node.
+
 
 [h2#component-__type]component.__type[/h2]
-
 {string} Namespace and base type of the component.
 
 
 
 [h2#component-parameters]component.parameters[/h2]
-
 {object} Hash object is a collection of named parameters.  
 parameters['{params}'] contain array of fixed order parameters.
 
@@ -428,10 +450,37 @@ For inheritable parameters name starts with a '/'. Name argument of this method 
 
 
 [h2#component-arguments]component.attributes[/h2]
-
 {object} Hash object is a collection of attributes.
 
 
+
+[h2#component-outer_template]component.outer_template[/h2]
+
+{function} Access to outer html template function.
+
+Control templates can be overridden by passing in arguments [this.initialize()](#component-initialize) or by [component.template()](#component-template) method.
+
+[h2#component-inner_template]component.inner_template[/h2]
+{function} Access to inner html template function.
+
+
+
+[h2#component-template]component.template()[/h2]
+
+Set control templates.
+
+>syntax:  
+>`component.template(outer_template, [inner_template])`
+
+[defl]
+
+--outer_template {function}
+Template function to get the outer HTML code.
+
+--inner_template {function}
+Template function to get the inner HTML code.
+
+[/defl]
 
 
 
@@ -466,30 +515,8 @@ Neutral html-less component for using as component-container.-->
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 <!--right-side-panel
 -->
-
-
-
-
-
-
-
-
-
 
 </body>
 </html>
