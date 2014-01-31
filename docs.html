@@ -36,22 +36,46 @@
  * [component.add(component[s])](#component-add-component) - add child component[s].
  * [component._add()](#component-add-query) - same as component.add(), but returns this.
  * [Component constructor function](#component-constructor-function)
- * [component.initialize()](#component-initialize) - component initialization
+ * [component.initialize()](#component-initialize) - component initialization.
 * [Events](#events)
- * [component.on()](#component-on) - add event listener
- * [component.raise()](#component-raise) - raise event
- * [component.removeListener()](#component-removelistener) - remove event listener
+ * [component.on()](#component-on) - add event listener.
+ * [component.raise()](#component-raise) - raise event.
+ * [component.removeListener()](#component-removelistener) - remove event listener.
 * [Hierarchy and interaction](#hierarchy-and-interaction)
- * [component.name](#component-name) - name of the component
- * [component.parent](#component-parent) - parent property
- * [component.controls](#component-controls) - child controls collection
- * [component.length](#component-length) - length of child nodes collection
+ * [component.parent](#component-parent) - parent property.
+ * [component.controls](#component-controls) - child controls collection.
+ * [component.length](#component-length) - length of child controls collection.
+* [Library properties and methods](#controls-properties-and-methods)
+ * [controls.default_outer_template](#controls.default_outer_template) - default html template.
+ * [controls.default_inner_template](#controls.default_inner_template) - default inner html template.
+ * [controls.default_outer_inline_template](#controls.default_outer_inline_template) - default inline html template.
 * [Component properties and methods](#component-properties-and-methods)
- * [component.id](#component-id)
- * [component.__type](#component-__type)
- * [component.parameters](#component-parameters)
- * [component.parameter()](#component-parameter) - get and set parameter value
- * [component.attributes](#component-attributes)
+ * [component.id](#component-id) - component identifier.
+ * [component.name](#component-name) - name of the component within the parent collection.
+ * [component.element](#component-element) - associated DOM node.
+ * [component.__type](#component-__type) - base type.
+ * [component.parameters](#component-parameters) - parameters collection.
+ * [component.parameter()](#component-parameter) - get or set parameter value.
+ * [component._parameter()](#component-_parameter) - set parameter value and return this.
+ * [component.attributes](#component-attributes) - attributes collection.
+ * [component.attr()](#component-attr) - get or set attribute value.
+ * [component._attr()](#component-_attr) - set attribute value and return this.
+ * [component.outer_template](#component-outer_template) - access to outer html template function.
+ * [component.inner_template](#component-inner_template) - access to inner html template function.
+ * [component.template()](#component-template) - set control templates.
+ * [component.innerHTML()](#component-innerHTML) - assemble inner HTML-code.
+ * [component.outerHTML()](#component-outerHTML) - assemble outer HTML-code.
+ * [component.wrappedHTML()](#component-wrappedHTML) - assemble wrapped HTML-code.
+ * [component.refresh()](#component-refresh) - refresh DOM element.
+ * [component.refreshInner()](#component-refreshInner) - refresh child DOM elements.
+ * [component.attach()](#component-attach) - attach to an existing DOM element.
+ * [component.attachAll()](#component-attachAll) - attach this and all nested controls to DOM by id.
+ * [component.detach()](#component-detach) - detach control from DOM.
+ * [component.detachAll()](#component-detachAll) - detach this and all nested controls from DOM.
+ * [component.replaceItself()](#component-replaceItself) - replace control in hierarchy tree.
+ * [component.createElement()](#component-createElement) - create DOM node.
+ * [component.deleteElement()](#component-deleteElement) - delete attached DOM node.
+ * [component.deleteAll()](#component-deleteAll) - delete all child DOM nodes.
 * [Built-in components](#built-in-components)
  * [container](#default-container)
 
@@ -362,10 +386,6 @@ Returns component this.
 ***
 
 
-[h2#component-name]component.name[/h2]
-
-{string} Name of the component within the parent collection.
-
 
 [h2#component-parent]component.parent[/h2]
 
@@ -379,7 +399,24 @@ Parent of the specified component.
 
 [h2#component-length]component.length[/h2]
 
-{number} Get and set the length of child components collection.
+{number} Get and set the length of child controls collection.
+
+
+
+[h2#controls-properties-and-methods`martop20 padtop20]Library properties and methods[/h2]
+
+***
+
+
+
+[h2#controls.default_outer_template]controls.default_outer_template[/h2]
+{function} Default html template.
+
+[h2#controls.default_inner_template]controls.default_inner_template[/h2]
+{string} Default inner html template.
+
+[h2#controls.default_outer_inline_template]controls.default_outer_inline_template[/h2]
+{string} Default inline html template.
 
 
 
@@ -391,19 +428,24 @@ Parent of the specified component.
 
 
 [h2#component-id]component.id[/h2]
-
 {string} Identifier of the component. The value is set automatically when you create a object of the component.
 
 
 
-[h2#component-__type]component.__type[/h2]
+[h2#component-name]component.name[/h2]
+{string} Name of the component within the parent collection.
 
+
+[h2#component-element]component.element[/h2]
+The associated DOM node.
+
+
+[h2#component-__type]component.__type[/h2]
 {string} Namespace and base type of the component.
 
 
 
 [h2#component-parameters]component.parameters[/h2]
-
 {object} Hash object is a collection of named parameters.  
 parameters['{params}'] contain array of fixed order parameters.
 
@@ -411,7 +453,7 @@ parameters['{params}'] contain array of fixed order parameters.
 
 [h2#component-parameter]component.parameter()[/h2]
 
-Get and set parameter value.
+Get or set parameter value.
 
 >syntax:  
 >`component.parameter(name)` - get parameter value  
@@ -420,15 +462,148 @@ Get and set parameter value.
 For inheritable parameters name starts with a '/'. Name argument of this method can be specified without '/'.
 
 
-[h2#component-arguments]component.attributes[/h2]
 
+[h2#component-_parameter]component._parameter()[/h2]
+
+Set parameter value and return this.
+
+>syntax:  
+>`component.parameter(name, value)`
+
+
+
+[h2#component-attributes]component.attributes[/h2]
 {object} Hash object is a collection of attributes.
 
 
 
 
+[h2#component-attr]component.attr()[/h2]
 
-[h2#built-in-components`martop20 padtop20]Built in components[/h2]
+Get or set attribute value.
+
+>syntax:  
+>`component.attr(name)` - get attribute value  
+>`component.attr(name, value)` - set attribute value  
+
+
+
+[h2#component-_attr]component._attr()[/h2]
+
+Set attribute value and return this.
+
+>syntax:  
+>`component._attr(name, value)`
+
+
+
+[h2#component-outer_template]component.outer_template[/h2]
+
+{function} Access to outer html template function.
+
+Control templates can be overridden by passing in arguments [this.initialize()](#component-initialize) or by [component.template()](#component-template) method.
+
+[h2#component-inner_template]component.inner_template[/h2]
+{function} Access to inner html template function.
+
+
+
+[h2#component-template]component.template()[/h2]
+
+Set control templates.
+
+>syntax:  
+>`component.template(outer_template, [inner_template])`
+
+[defl]
+
+--outer_template {function}
+Template function to get the outer HTML code.
+
+--inner_template {function}
+Template function to get the inner HTML code.
+
+[/defl]
+
+
+
+[h2#component-innerHTML]component.innerHTML()[/h2]
+Assemble inner HTML-code of the control. This value is obtained by calling this.inner_template(). That normally is the concatenation of results of .wrappedHTML() from all the child controls.
+
+
+[h2#component-outerHTML]component.outerHTML()[/h2]
+Assemble HTML-code of the control. This value is obtained by calling this.outer_template(). That normally is the combination of the current control tags and results of .wrappedHTML() from all the child controls.
+
+
+[h2#component-wrappedHTML]component.wrappedHTML()[/h2]
+Assemble wrapped html code of the control.
+
+
+[h2#component-refresh]component.refresh()[/h2]
+Refresh DOM element.
+
+
+[h2#component-refreshInner]component.refreshInner()[/h2]
+Refresh child DOM elements.
+
+
+[h2#component-attach]component.attach()[/h2]
+Attach to an existing DOM element.
+
+
+[h2#component-attachAll]component.attachAll()[/h2]
+Attach this and all nested controls to DOM by id.
+
+
+[h2#component-detach]component.detach()[/h2]
+Detach control from DOM.
+
+
+[h2#component-detachAll]component.detachAll()[/h2]
+Detach this and all nested controls from DOM.
+
+
+[h2#component-replaceItself]component.replaceItself()[/h2]
+
+Replace control in hierarchy tree.
+
+>syntax:  
+>`component.replaceItself(control)`
+
+[defl]
+--control
+A new control.
+[/defl]
+
+
+[h2#component-createElement]component.createElement()[/h2]
+
+Create DOM node.
+
+>syntax:  
+>`component.createElement(node, opcode)`
+
+[defl]
+
+--node
+DOM node for positioning newly created node.
+
+--opcode
+Position on the node. 0 - insert before end, 1 - insert after begin, 2 - insert before, 3 - insert after.
+
+[/defl]
+
+
+[h2#component-deleteElement]component.deleteElement()[/h2]
+Delete attached DOM node.
+
+
+[h2#component-deleteAll]component.deleteAll()[/h2]
+Delete all child DOM nodes.
+
+
+
+[h2#built-in-components`martop20 padtop20]Built-in components[/h2]
 
 ***
 
@@ -447,11 +622,9 @@ Neutral html-less component for using as component-container.-->
 
 
 
-
-
-
 <!--right-side-panel
 -->
+
 
 
 
