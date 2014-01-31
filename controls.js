@@ -460,7 +460,7 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                     }
                 }
             },
-            // The associated element of control
+            // The associated DOM node
             element: {
                 enumerable: true,
                 get: function() { return this._element; },
@@ -719,41 +719,77 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             return method.call(this, by_props, by_attrs);
         }
         
+        /**
+         * Default html template accessable from this.
+         * @member {function}
+         */
+        this.outer_template = function(it) {
+            return '<div' + it.printAttributes() + '>' + (it.attributes.$text || '') + it.printControls() + '</div>';
+        };
         
-        
-        // default html template
-        this.outer_template = function(it) { return '<div' + it.printAttributes() + '>' + (it.attributes.$text || '') + it.printControls() + '</div>'; };
+        /**
+         * Default html template accessable from library context.
+         * @member {function}
+         */
         controls.default_outer_template = this.outer_template;
-        // default inner html template
-        this.inner_template = function(it) { return (it.attributes.$text || '') + it.printControls(); };
+
+        /**
+         * Default inner html template accessable from this.
+         * @member {function}
+         */
+        this.inner_template = function(it) {
+            return (it.attributes.$text || '') + it.printControls();
+        };
+        
+        /**
+         * Default inner html template accessable from library context.
+         * @member {function}
+         */
         controls.default_inner_template = this.inner_template;
-        // default inline template
-        this.outer_inline_template = function(it) { return '<span' + it.printAttributes() + '>' + (it.attributes.$text || '') + it.printControls() + '</span>'; };
-        controls.default_outer_inline_template = this.outer_inline_template;
+        
+        /**
+         * Default inline html template accessable from library context.
+         * @member {function}
+         */
+        controls.default_outer_inline_template = function(it) {
+            return '<span' + it.printAttributes() + '>' + (it.attributes.$text || '') + it.printControls() + '</span>';
+        };
 
-        // snippets:
-        // 
-        // {{? it.attributes.$icon }}<span class="{{=it.attributes.$icon}}"></span>&nbsp;{{?}}
-        // {{? it.attributes.$text }}{{=it.attributes.$text}}{{?}}
-        // include list of subcontrols html:
-        // {{~it.controls :value:index}}{{=value.wrappedHTML()}}{{~}}
-
+        /**
+         * Assemble inner HTML-code of the control. This value is obtained by calling this.inner_template(). That normally is the concatenation of results of .wrappedHTML() from all the child controls.
+         * 
+         * @returns {string} Returns inner HTML code string.
+         */
         this.innerHTML = function() {
-            // assemble html
             return this.inner_template(this);
         };
         
+        /**
+         * Assemble HTML-code of the control. This value is obtained by calling this.outer_template(). That normally is the combination of the current control tags and results of .wrappedHTML() from all the child controls.
+         * 
+         * @returns {string} Returns inner HTML code string.
+         */
         this.outerHTML = function() {
-            // assemble html
             return this.outer_template(this);
         };
         
+        /**
+         * Assemble wrapped html code of the control.
+         * 
+         * @returns {string} Returns inner HTML code string.
+         */
         this.wrappedHTML = function() {
             var wrapper = this._wrapper;
             return (wrapper) ? wrapper.wrappedHTML() : this.outerHTML();
         };
         
-        // set template text or template function
+        /**
+         * Set control templates
+         * 
+         * @param {function} outer_template - template function to get the outer HTML code.
+         * @param {function} [inner_template] - template function to get the inner HTML code.
+         * @returns Returns this.
+         */
         this.template = function(outer_template, inner_template) {
             if (outer_template) {
                 if (typeof outer_template === 'string')
@@ -821,7 +857,9 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             return json;
         };
         
-        // TODO: remove excess refresh calls
+        /**
+         * Refresh DOM element.
+         */
         this.refresh = function() {
             var element = this._element;
             if (element) {
@@ -851,6 +889,9 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             return this;
         };
         
+        /**
+         * Refresh child DOM elements.
+         */
         this.refreshInner = function() {
             var element = this._element;
             if (element)
@@ -858,7 +899,9 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             return this;
         };
         
-        // Attach to DOM element
+        /**
+         * Attach to an existing DOM element.
+         */
         this.attach = function(some) {
             this.element = (!arguments.length)
                 ? document.getElementById(this.id)
@@ -866,7 +909,9 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             return this;
         };
         
-        // Attach this and all nested controls to DOM by id
+        /**
+         * Attach this and all nested controls to DOM by id.
+         */
         this.attachAll = function() {
             if (!this._element)
                 this.element = document.getElementById(this.id);
@@ -875,13 +920,17 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             return this;
         };
         
-        // Detach from DOM
+        /**
+         * Detach control from DOM.
+         */
         this.detach = function() {
             this.element = undefined;
             return this;
         };
         
-        // Detach this and all nested from DOM
+        /**
+         * Detach this and all nested controls from DOM.
+         */
         this.detachAll = function() {
             this.element = undefined;
             for(var ctrls = this.controls, i = 0, c = ctrls.length; i < c; i++)

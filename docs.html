@@ -59,10 +59,17 @@
  * [component.attributes](#component-attributes) - attributes collection.
  * [component.outer_template](#component-outer_template) - access to outer html template function.
  * [component.inner_template](#component-inner_template) - access to inner html template function.
- * [component.template()](#component-template) - assemble inner HTML-code.
+ * [component.template()](#component-template) - set control templates.
  * [component.innerHTML()](#component-innerHTML) - assemble inner HTML-code.
  * [component.outerHTML()](#component-outerHTML) - assemble outer HTML-code.
  * [component.wrappedHTML()](#component-wrappedHTML) - assemble wrapped HTML-code.
+ * [component.refresh()](#component-refresh) - refresh DOM element.
+ * [component.refreshInner()](#component-refreshInner) - refresh child DOM elements.
+ * [component.attach()](#component-attach) - attach to an existing DOM element.
+ * [component.attachAll()](#component-attachAll) - attach this and all nested controls to DOM by id.
+ * [component.detach()](#component-detach) - detach control from DOM.
+ * [component.detachAll()](#component-detachAll) - detach this and all nested controls from DOM.
+
 * [Built-in components](#built-in-components)
  * [container](#default-container)
 
@@ -386,7 +393,7 @@ Parent of the specified component.
 
 [h2#component-length]component.length[/h2]
 
-{number} Get and set the length of child components collection.
+{number} Get and set the length of child controls collection.
 
 
 
@@ -485,20 +492,39 @@ Template function to get the inner HTML code.
 
 
 [h2#component-innerHTML]component.innerHTML()[/h2]
-
 Assemble inner HTML-code of the control. This value is obtained by calling this.inner_template(). That normally is the concatenation of results of .wrappedHTML() from all the child controls.
 
 
-
 [h2#component-outerHTML]component.outerHTML()[/h2]
-
 Assemble HTML-code of the control. This value is obtained by calling this.outer_template(). That normally is the combination of the current control tags and results of .wrappedHTML() from all the child controls.
 
 
-
 [h2#component-wrappedHTML]component.wrappedHTML()[/h2]
-
 Assemble wrapped html code of the control.
+
+
+[h2#component-refresh]component.refresh()[/h2]
+Refresh DOM element.
+
+
+[h2#component-refreshInner]component.refreshInner()[/h2]
+Refresh child DOM elements.
+
+
+[h2#component-attach]component.attach()[/h2]
+Attach to an existing DOM element.
+
+
+[h2#component-attachAll]component.attachAll()[/h2]
+Attach this and all nested controls to DOM by id.
+
+
+[h2#component-detach]component.detach()[/h2]
+Detach control from DOM.
+
+
+[h2#component-detachAll]component.detachAll()[/h2]
+Detach this and all nested controls from DOM.
 
 
 
@@ -511,7 +537,11 @@ Assemble wrapped html code of the control.
 
 [h2#default-container]container[/h2]
 
-Neutral html-less component for using as component-container.-->
+Neutral html-less component for using as component-container.
+
+
+-->
+
 
 
 
