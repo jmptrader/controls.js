@@ -56,7 +56,10 @@
  * [component.__type](#component-__type) - base type.
  * [component.parameters](#component-parameters) - parameters collection.
  * [component.parameter()](#component-parameter) - get or set parameter value.
+ * [component._parameter()](#component-_parameter) - set parameter value and return this.
  * [component.attributes](#component-attributes) - attributes collection.
+ * [component.attr()](#component-attr) - get or set attribute value.
+ * [component._attr()](#component-_attr) - set attribute value and return this.
  * [component.outer_template](#component-outer_template) - access to outer html template function.
  * [component.inner_template](#component-inner_template) - access to inner html template function.
  * [component.template()](#component-template) - set control templates.
@@ -69,7 +72,10 @@
  * [component.attachAll()](#component-attachAll) - attach this and all nested controls to DOM by id.
  * [component.detach()](#component-detach) - detach control from DOM.
  * [component.detachAll()](#component-detachAll) - detach this and all nested controls from DOM.
-
+ * [component.replaceItself()](#component-replaceItself) - replace control in hierarchy tree.
+ * [component.createElement()](#component-createElement) - create DOM node.
+ * [component.deleteElement()](#component-deleteElement) - delete attached DOM node.
+ * [component.deleteAll()](#component-deleteAll) - delete all child DOM nodes.
 * [Built-in components](#built-in-components)
  * [container](#default-container)
 
@@ -456,8 +462,38 @@ Get or set parameter value.
 For inheritable parameters name starts with a '/'. Name argument of this method can be specified without '/'.
 
 
-[h2#component-arguments]component.attributes[/h2]
+
+[h2#component-_parameter]component._parameter()[/h2]
+
+Set parameter value and return this.
+
+>syntax:  
+>`component.parameter(name, value)`
+
+
+
+[h2#component-attributes]component.attributes[/h2]
 {object} Hash object is a collection of attributes.
+
+
+
+
+[h2#component-attr]component.attr()[/h2]
+
+Get or set attribute value.
+
+>syntax:  
+>`component.attr(name)` - get attribute value  
+>`component.attr(name, value)` - set attribute value  
+
+
+
+[h2#component-_attr]component._attr()[/h2]
+
+Set attribute value and return this.
+
+>syntax:  
+>`component._attr(name, value)`
 
 
 
@@ -527,6 +563,44 @@ Detach control from DOM.
 Detach this and all nested controls from DOM.
 
 
+[h2#component-replaceItself]component.replaceItself()[/h2]
+
+Replace control in hierarchy tree.
+
+>syntax:  
+>`component.replaceItself(control)`
+
+[defl]
+--control
+A new control.
+[/defl]
+
+
+[h2#component-createElement]component.createElement()[/h2]
+
+Create DOM node.
+
+>syntax:  
+>`component.createElement(node, opcode)`
+
+[defl]
+
+--node
+DOM node for positioning newly created node.
+
+--opcode
+Position on the node. 0 - insert before end, 1 - insert after begin, 2 - insert before, 3 - insert after.
+
+[/defl]
+
+
+[h2#component-deleteElement]component.deleteElement()[/h2]
+Delete attached DOM node.
+
+
+[h2#component-deleteAll]component.deleteAll()[/h2]
+Delete all child DOM nodes.
+
 
 
 [h2#built-in-components`martop20 padtop20]Built-in components[/h2]
@@ -537,16 +611,26 @@ Detach this and all nested controls from DOM.
 
 [h2#default-container]container[/h2]
 
-Neutral html-less component for using as component-container.
+Neutral html-less component for using as component-container.-->
 
 
--->
+
+
+
+
 
 
 
 
 <!--right-side-panel
 -->
+
+
+
+
+
+
+
 
 </body>
 </html>
