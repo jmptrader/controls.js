@@ -52,6 +52,23 @@
                     attributes.$text = prime;
                 delete attributes.$prime;
             }
+            
+            if ('$template' in attributes){
+                if (!outer_template)
+                    outer_template = attributes.$template;
+                delete attributes.$template;
+            }
+            if ('outer_template' in attributes){
+                if (!outer_template)
+                    outer_template = attributes.outer_template;
+                delete attributes.outer_template;
+            }
+            if ('inner_template' in attributes){
+                if (!inner_template)
+                    inner_template = attributes.inner_template;
+                delete attributes.inner_template;
+            }
+            
             object.attributes = attributes;
         } else
             object.attributes = {id:(object.id = (++controls.id_generator).toString(16))}; // set per session uid
@@ -900,12 +917,16 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         };
         
         /**
-         * Attach to an existing DOM element.
+         * Attach control to an existing DOM element.
+         * 
+         * @param {object|string} [selector] DOM element or CSS selector string.
+         * @returns Returns this.
          */
-        this.attach = function(some) {
-            this.element = (!arguments.length)
-                ? document.getElementById(this.id)
-                : (typeof(some) === 'string') ? document.getElementById(some) : (some && (some._element || some));
+        this.attach = function(selector) {
+            if (typeof selector === 'object')
+                this.element = selector;
+            else if (typeof selector === 'string')
+            this.element = document.querySelector(selector);
             return this;
         };
         
@@ -1144,6 +1165,34 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
                     event.raise.apply(this, args);
             }
             return this;
+        };
+        
+        this.raiseDOMEvent = function(event, options) {
+            
+            if (!this._element)
+                throw new TypeError('Control not attached to DOM!');
+            
+            var event_object,
+                event_default = {
+                    // Event https://developer.mozilla.org/en-US/docs/Web/API/Event
+                    target: this._element,
+                    type: event,
+                    bubbles: true,
+                    cancelable: true
+                };
+
+            if (/^(?:click|dblclick|mouse(?:down|up|over|move|out))$/.test(event)) {
+                // MouseEvent https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent
+                ['button', 'buttons', 'clientX', 'clientY', 'movementX', 'movementY', 'screenX', 'screenY'].forEach(function(prop) { event_default[prop] = 0; });
+                ['altKey', 'ctrlKey', 'metaKey', 'shiftKey'].forEach(function(prop) { event_default[prop] = false; });
+                event_default.relatedTarget = null;
+                // https://developer.mozilla.org/en-US/docs/Web/API/UIEvent
+                event_default.view = this._element.ownerDocument.defaultView;
+                event_object = new MouseEvent(event, controls.extend(event_default, options));
+            }
+
+            if (event_object)
+                this._element.dispatchEvent(event_object);
         };
         
         /**
@@ -1520,15 +1569,16 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
             // resolve constructor
             var __type, constructor;
             
-            if (type[0] === '<') {
+            if (typeof type === 'function') {
+                // template function
+                __type = 'controls.custom';
+                constructor = Custom;
+                attrs.$template = type;
+            } else if (type.charAt(0) === '<') {
                 // template
                 __type = 'controls.custom';
                 constructor = Custom;
                 attrs.$template = controls.template(type);
-                if (typeof $prime === 'string') {
-                    attrs.$text = $prime;
-                    $prime = undefined;
-                }
             } else {
                 __type = parse_type(type, parameters, attrs);
                 constructor = resolve_ctr(__type, parameters);
@@ -1926,15 +1976,16 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         
         var __type, constructor;
             
-        if (type.charAt(0) === '<') {
-            // template
+        if (typeof type === 'function') {
+            // template function
+            __type = 'controls.custom';
+            constructor = Custom;
+            attributes.$template = type;
+        } else if (type.charAt(0) === '<') {
+            // html template
             __type = 'controls.custom';
             constructor = Custom;
             attributes.$template = controls.template(type);
-            if (typeof $prime === 'string') {
-                attributes.$text = $prime;
-                $prime = undefined;
-            }
         } else {
             __type = parse_type(type, parameters, attributes);
             constructor = resolve_ctr(__type, parameters);
@@ -2076,10 +2127,14 @@ DOMNodeInsertedIntoDocument,DOMNodeRemoved,DOMNodeRemovedFromDocument,DOMSubtree
         return text ? text.replace(ENCODE_HTML_MATCH, function(match) { return ENCODE_HTML_PAIRS[match] || match; }) : text;
     };
     
-    controls.extend = function(object, source) {
-        for(var prop in source)
-        if (source.hasOwnProperty(prop)) 
-            object[prop] = source[prop];
+    controls.extend = function(object) {
+        for(var i = 1, c = arguments.length; i < c; i++) {
+            var src = arguments[i];
+            if (typeof src === 'object')
+            for(var prop in src)
+            if (src.hasOwnProperty(prop))
+                object[prop] = src[prop];
+        }
         return object;
     };
     
@@ -2130,13 +2185,7 @@ table,tbody,td,textarea,tfoot,th,thead,time,title,tr,u,ul,var,video,wbr'
     // set template after creating the control
     // 
     function Custom(parameters, attributes) {
-        if (attributes.$prime) {
-            attributes.$template = attributes.$prime;
-            delete attributes.$prime;
-        }
-        controls.controlInitialize(this, 'controls.custom', parameters, attributes,
-            attributes.$template || attributes.$outer_template,
-            attributes.$inner_template);
+        controls.controlInitialize(this, 'controls.custom', parameters, attributes);
     };
     Custom.prototype = controls.control_prototype;
     controls.typeRegister('custom', Custom);
